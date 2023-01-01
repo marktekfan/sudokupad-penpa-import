@@ -154,7 +154,7 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 				.then(penpa => loadPenpaPuzzle(penpa))
 				.then(res => loadFPuzzle.compressPuzzle(res))
 				.then(ctc => {				
-					var redirect = 'https://alpha.sudokupad.app/ctc' + ctc;
+					var redirect = 'https://beta.sudokupad.app/ctc' + ctc;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');
 				})
