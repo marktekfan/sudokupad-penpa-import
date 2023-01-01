@@ -429,15 +429,18 @@ const loadPenpaPuzzle = (() => {
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1]);
 		});
 	}
-	parse.thermo = (qa, pu, puzzle) => {
-		const list = pu[qa].thermo;
+	parse.thermo = (qa, pu, puzzle, feature='thermo') => {
+		const list = pu[qa][feature];
 		const {point2RC} = PenpaTools;
 		parse.nobulbthermo(qa, pu, puzzle, 'thermo');
-		list.forEach(line => {
+		list.forEach((line, i) => {
+			if (line.length === 0) return;
 			let cells = line.map(point2RC);
+			let cc = pu[qa + '_col'][feature][i];
+			let color = cc || '#CFCFCF'; 
 			puzzleAdd(puzzle, 'underlays', {
-				borderColor: '#CFCFCF',
-				backgroundColor: '#CFCFCF',
+				borderColor: color,
+				backgroundColor: color,
 				center: cells[0],
 				rounded: true,
 				width: 0.85,
@@ -450,12 +453,13 @@ const loadPenpaPuzzle = (() => {
 		if (pu.nobulbthermo && pu.nobulbthermo.find(l => l !== line && l.includes(endpoint))) return true;
 		return false;
 	}
-	parse.nobulbthermo = (qa, pu, puzzle, line='nobulbthermo') => {
-		const list = pu[qa][line];
+	parse.nobulbthermo = (qa, pu, puzzle, feature='nobulbthermo') => {
+		const list = pu[qa][feature];
 		const {point2RC} = PenpaTools;
 		const reduce_straight = 0.32;
 		const reduce_diagonal = 0.22;
-		list.forEach(line => {
+		list.forEach((line, i) => {
+			if (line.length === 0) return;
 			let cells = line.map(point2RC);
 			if (cells.length >= 2) {
 				let end = line[line.length - 1];
@@ -474,21 +478,26 @@ const loadPenpaPuzzle = (() => {
 					}
 				}
 			}
+			let cc = pu[qa + '_col'][feature][i];
+			let color = cc || '#CFCFCF'; 
 			puzzleAdd(puzzle, 'lines', {
-				color: '#CFCFCF',
+				color: color,
 				thickness: 21,
 				wayPoints: PenpaTools.reduceWayPoints(cells)
 			}, 'thermo line');
 		});
 	}
-	parse.squareframe = (qa, pu, puzzle) => {
-		const list = pu[qa].squareframe;
+	parse.squareframe = (qa, pu, puzzle, feature='squareframe') => {
+		const list = pu[qa][feature];
 		// FIXME: adjust start and end positions
 		const {point2RC} = PenpaTools;
-		list.forEach(line => {
+		list.forEach((line, i) => {
+			if (line.length === 0) return;
 			let cells = line.map(point2RC);
+			let cc = pu[qa + '_col'][feature][i];
+			let color = cc || '#CFCFCF'; 
 			puzzleAdd(puzzle, 'lines', {
-				color: '#CFCFCF',
+				color: color,
 				thickness: 64 * 0.8,
 				'stroke-linecap': 'square',
 				'stroke-linejoin': 'square',
@@ -510,17 +519,19 @@ const loadPenpaPuzzle = (() => {
 			puzzleAdd(puzzle, 'cages', pCage, 'killercages');
 		});
 	}
-	parse.arrows = (qa, pu, puzzle) => {
-		const list = pu[qa].arrows;
+	parse.arrows = (qa, pu, puzzle, feature='arrows') => {
+		const list = pu[qa][feature];
 		const {point2RC} = PenpaTools;
-		list.forEach(line => {
+		list.forEach((line, i) => {
 			if(line.length < 2) return;
 			let points = PenpaTools.reduceWayPoints(line.map(point2RC));
 			let dr = points[1][0] - points[0][0], dc = points[1][1] - points[0][1], dist = Math.sqrt(dr * dr + dc * dc);
 			points[0][0] += Math.round(10 * 0.3 * Math.sign(dr) / dist) / 10;
 			points[0][1] += Math.round(10 * 0.3 * Math.sign(dc) / dist) / 10;
+			let cc = pu[qa + '_col'][feature][i];
+			let color = cc || '#a1a1a1'; 
 			puzzleAdd(puzzle, 'arrows', Object.assign({
-				color: '#a1a1a1',
+				color: color,
 				headLength: 0.3,
 				thickness: 5,
 				wayPoints: PenpaTools.reduceWayPoints(points)
@@ -528,7 +539,7 @@ const loadPenpaPuzzle = (() => {
 
 			const bulbStrokeThickness = 5;
 			puzzleAdd(puzzle, 'overlays', Object.assign({
-				borderColor: '#a1a1a1',
+				borderColor: color,
 				backgroundColor: '#ffffff',
 				center: point2RC(line[0]),
 				thickness: bulbStrokeThickness,
@@ -538,18 +549,20 @@ const loadPenpaPuzzle = (() => {
 			}), 'arrow bulb');
 		});
 	}
-	parse.direction = (qa, pu, puzzle) => {
-		const list = pu[qa].direction;
+	parse.direction = (qa, pu, puzzle, feature='direction') => {
+		const list = pu[qa][feature];
 		// FIXME: sudokupad renders start point too short
 		const {point2RC} = PenpaTools;
-		list.forEach(line => {
+		list.forEach((line, i) => {
 			if(line.length < 2) return;
 			let points = line.map(point2RC);
 			let dr = points[1][0] - points[0][0], dc = points[1][1] - points[0][1], dist = Math.sqrt(dr * dr + dc * dc);
 			points[0][0] += Math.round(10 * 0.3 * Math.sign(dr) / dist) / 10;
 			points[0][1] += Math.round(10 * 0.3 * Math.sign(dc) / dist) / 10;
+			let cc = pu[qa + '_col'][feature][i];
+			let color = cc || '#a1a1a1'; 
 			puzzleAdd(puzzle, 'arrows', Object.assign({
-				color: '#a1a1a1',
+				color: color,
 				headLength: 0.3,
 				thickness: 5,
 				wayPoints: PenpaTools.reduceWayPoints(points)
@@ -683,7 +696,7 @@ const loadPenpaPuzzle = (() => {
 		const list = pu[qa].cage;
 		const {RC2k} = PenpaTools;
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list);
-		const cages = pu[qa].killercages;
+		const cages = pu[qa].killercages || [];
 		// Filter out cage lines which are on killer cages.
 		wpLines = wpLines.filter(line => {
 			//if (line.value === 7 || line.value === 16) return true;
@@ -755,6 +768,10 @@ const loadPenpaPuzzle = (() => {
 			}
 			if (isCtcCell(surface.center, parse.bb) && !doc.centerlist.includes(RC2k(surface.center))) {
 				ctx.target = 'overlay';
+			}
+			if (ctx.fillStyle === Color.GREY_DARK_VERY) {
+			 	ctx.fillStyle = '#010101'
+			 	ctx.target = 'overlay';
 			}
 			puzzleAdd(puzzle, 'underlays', Object.assign(ctx.toOpts(), {
 				center: surface.center,

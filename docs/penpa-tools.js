@@ -261,6 +261,9 @@ const PenpaTools = (() => {
 		const c = point.x - 2;
 		return [r, c];
 	}
+	C.point = function(p) {
+		return C.doc.point[p];
+	}
 
 	return C;
 })();

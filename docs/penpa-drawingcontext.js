@@ -196,10 +196,11 @@ class FakeContext {
 
 
     pathToOpts() {
-        const {round, round1} = PenpaTools;
+        const {round, round1, round2} = PenpaTools;
         const mapX = (d) => round1((d - FakeContext.offset[1]) * this.ctcSize);
         const mapY = (d) => round1((d - FakeContext.offset[0]) * this.ctcSize);
         const scale = (d) => round1(d * this.ctcSize);
+        const scale2 = (d) => round2(d * this.ctcSize);
         const mapPathToPuzzle = p => {
             if('ML'.includes(p[0])) {
                 return `${p[0]}${mapX(p[1])} ${mapY(p[2])}`
@@ -211,7 +212,10 @@ class FakeContext {
                 return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${mapX(p[6])} ${mapY(p[7])}`
             }
             else if('a'.includes(p[0])) {
-                return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale(p[6])} ${scale(p[7])}`
+                if (Math.max(p[1], p[2]) > 0.5) // Large radius should round with more decimals for better precision
+                    return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`
+                else
+                    return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale(p[6])} ${scale(p[7])}`
             }
             else if('Q'.includes(p[0])) {
                 return `${p[0]}${mapX(p[1])} ${mapY(p[2])} ${mapX(p[3])} ${mapY(p[4])}`
@@ -323,9 +327,10 @@ class FakeContext {
         }
 
         if (ctx.lineDash.length > 0) {
-            opts['stroke-dasharray'] = ctx.lineDash.map(p => p * this.ctcSize / this.penpaSize).map(round).join(',');
+            const scale = (d) => round1(d * this.ctcSize);
+            opts['stroke-dasharray'] = ctx.lineDash.map(scale).map(round).join(',');
             if (ctx.lineDashOffset) {
-                opts['stroke-dashoffset'] = round(ctx.lineDashOffset * this.ctcSize / this.penpaSize);
+                opts['stroke-dashoffset'] = scale(ctx.lineDashOffset);
             }
         }
 

@@ -78,19 +78,6 @@ const PenpaSymbol = (() => {
     }
 
 	P.draw_symbol = function(ctx, x, y, num, sym) {
-        const color = undefined;
-        switch (sym + 'x') {
-        case "sudokumore":
-        case "sudokuetc":
-            //if (num === 1)
-            this['draw_' + sym](ctx, num, x, y, color);
-            break;
-        }
-        if (ctx.path && ctx.path.length > 0) {
-            this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:' + sym);
-            return
-        }
-
          switch (sym) {
              case "circle_L":
              case "circle_M":

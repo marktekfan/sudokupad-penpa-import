@@ -7,17 +7,19 @@ const PenpaNumber = (() => {
     }
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
-	const {point2RC} = PenpaTools;
+	const {point2RC, point} = PenpaTools;
 
 	P.draw_number = function(number, p) {
 		let text = number[0];
 		//const str_alph_low = "abcdefghijklmnopqrstuvwxyz";
 		//let factor = str_alph_low.includes(text) ? 0 : 1;
 		if (p.slice(-1) === 'E') p = slice(0, -1);
-		const rc = point2RC(p);
+		let [p_y, p_x] = point2RC(p);
 		const ctx = new FakeContext();
-		let [p_y, p_x] = rc;
-		let width = 1;
+		// Vertex numbers/circles (point.type=1 or 2) should be drawn over gridlines
+		if (point(p).type === 1 || point(p).type === 2) {
+			ctx.target =  'overlay'
+		}
 		switch(number[2]) {
 			case "1": //normal
 				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.42);
@@ -252,7 +254,7 @@ const PenpaNumber = (() => {
 			center: [y, x],
 			width: 2 * r,
 			height: 2 * r,
-			target: 'cages'
+			target: ctx.target || 'cages',
 		});
 		this.decoder.puzzleAdd(this.puzzle, 'underlays', opts);
     }
