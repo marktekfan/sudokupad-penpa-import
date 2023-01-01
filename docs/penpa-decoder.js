@@ -4,7 +4,9 @@ const loadPenpaPuzzle = (() => {
 	const DEBUG = 0;
 
 	const doc = {};
-	const UserSettings = {};
+	const UserSettings = {
+		displaysize: 38
+	};
 
 
 	const getRegionShape = (size = 9) => {
@@ -15,12 +17,6 @@ const loadPenpaPuzzle = (() => {
 		while(!Number.isInteger(size / height) && height > 1) height--;
 		return height > 0 ? [height, size / height] : [1, 1];
 	};
-
-	class Penpa2Ctc {
-		constructor(pu) {
-			this.pu = pu;
-		}
-	}
 
 	// const highlightColours = '#a8a8a8a8,#000,#ffa0a0,#ffdf61,#feffaf,#b0ffb0,#61d060,#d0d0ff,#8180f0,#ff08ff,#ffd0d0'.split(',');
 	// const layerOrder = 'number,symbol_S,author,ruleset,clone,grid,disjointgroups,thermometer,killercage,arrow,difference,ratio,betweenline,lockout,quadruple,rectangle,circle,text,palindrome,line,minimum,maximum'.split(',');
@@ -183,7 +179,7 @@ const loadPenpaPuzzle = (() => {
 		return edgePoints;
 	};
 
-	function drawOutsideFrame(pu, doc) {
+	function drawOutsideFrame(pu, puzzle, doc) {
 		const {point2cell, RC2k} = PenpaTools;
 		const {centerlist} = pu;
 
@@ -277,7 +273,7 @@ const loadPenpaPuzzle = (() => {
 		});
 	}
 
-	function positionBoard(pu, doc) {
+	function positionBoard(pu, puzzle, doc) {
 		// Add transparant rectangle to position the puzzle
 		ctx = new FakeContext();
 		opts = Object.assign(ctx.toOpts(), {
@@ -291,30 +287,8 @@ const loadPenpaPuzzle = (() => {
 		puzzleAdd(puzzle, 'overlays', opts, 'board position');
 	}
 
-	// const reMetaTags = /^([^: ]+):\s*(.+)/m;
-	// const reTransparentColor = /#([0-9a-f]{3}0|[0-9a-f]{6}00)/i;
-	// const puzzleAddMeta = (puzzle, key, val) => {
-	// 	if(puzzle.metaData === undefined) puzzle.metaData = {};
-	// 	let {metaData} = puzzle;
-	// 	if(metaData[key] === undefined) {
-	// 		metaData[key] = val;
-	// 	}
-	// 	else {
-	// 		if(!Array.isArray(metaData[key])) metaData[key] = [metaData[key]];
-	// 		metaData[key].push(val);
-	// 	}
-	// };
 	const offsetRC = (or, oc) => ([r, c]) => [r + or, c + oc];
-	const rcMinMax = rcs => {
-		let min = [999, 999], max = [-999, -999];
-		rcs.forEach(rc => {
-			min[0] = Math.min(min[0], rc[0]);
-			max[0] = Math.max(max[0], rc[0]);
-			min[1] = Math.min(min[1], rc[1]);
-			max[1] = Math.max(max[1], rc[1]);
-		});
-		return [min, max];
-	};
+
 	const applyDefaultMeta = (doc, puzzle, metaName, defaultValFunc) => {
 		let metaValue = doc[metaName] || defaultValFunc(doc, puzzle);
 		if(metaValue !== undefined) {
@@ -328,63 +302,7 @@ const loadPenpaPuzzle = (() => {
 	const getDefaultAuthor = (pu, puzzle) => 'Unknown';
 	const getDefaultRules = (pu, puzzle) => 'No rules provided for this puzzle. Please check the related video or website for rules.';
 
-	// ML FIXME, move
-	let puzzle = {};
-
 	const parse = {};
-
-
-
-	// function draw_polygon(ctx, x, y, r, n, th) {
-    //     // ctx.LineCap = "round";
-    //     // ctx.beginPath();
-    //     // ctx.moveTo(x - r * Math.cos(th * (Math.PI / 180)) * this.size, y - r * Math.sin(th * (Math.PI / 180)) * this.size);
-    //     // for (var i = 0; i < n - 1; i++) {
-    //     //     th += 360 / n;
-    //     //     ctx.lineTo(x - r * Math.cos(th * (Math.PI / 180)) * this.size, y - r * Math.sin(th * (Math.PI / 180)) * this.size);
-    //     // }
-    //     // ctx.closePath();
-    //     // ctx.fill();
-    //     // ctx.stroke();
-	// 	let opts = Object.assign(ctx.toOpts(), {
-	// 		//opts.rounded = false;
-	// 		center: [y, x],
-	// 		width: r * 1.5,
-	// 		height: r * 1.5,
-	// 	});
-	// 	//if (n !== 4) return;
-	// 	if (th !== 45) opts.angle = th - 45;
-	// 	puzzleAdd(puzzle, 'underlays', opts);
-    // }
-
-	// function arrowWaypoints_org(startX, startY, endX, endY, controlPoints) {
-	//     var dx = endX - startX;
-	//     var dy = endY - startY;
-	//     var len = Math.sqrt(dx * dx + dy * dy);
-	//     var sin = dy / len;
-	//     var cos = dx / len;
-	//     var a = [];
-	//     a.push(0, 0);
-	//     for (var i = 0; i < controlPoints.length; i += 2) {
-	//         var x = controlPoints[i];
-	//         var y = controlPoints[i + 1];
-	//         a.push(x < 0 ? len + x : x, y);
-	//     }
-	//     a.push(len, 0);
-	//     for (var i = controlPoints.length; i > 0; i -= 2) {
-	//         var x = controlPoints[i - 2];
-	//         var y = controlPoints[i - 1];
-	//         a.push(x < 0 ? len + x : x, -y);
-	//     }
-	//     a.push(0, 0);
-	// 	let waypoints = [];
-	//     for (var i = 0; i < a.length; i += 2) {
-	//         var x = a[i] * cos - a[i + 1] * sin + startX;
-	//         var y = a[i] * sin + a[i + 1] * cos + startY;
-	//         waypoints.push([y, x]);
-	//     }
-	// 	return waypoints;
-	// }
 
 	parse.number = (qa, pu, puzzle, feature) => {
 		const draw = new PenpaNumber(pu, puzzle, 64, {puzzleAdd});
@@ -407,7 +325,7 @@ const loadPenpaPuzzle = (() => {
 			draw.draw_numberS(number, key);
 		});
 	}
-	parse.symbol = (qa, pu) => {
+	parse.symbol = (qa, pu, puzzle, feature) => {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa].symbol;
 		const {point2RC} = PenpaTools;
@@ -429,10 +347,10 @@ const loadPenpaPuzzle = (() => {
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1]);
 		});
 	}
-	parse.thermo = (qa, pu, puzzle, feature='thermo') => {
+	parse.thermo = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature];
 		const {point2RC} = PenpaTools;
-		parse.nobulbthermo(qa, pu, puzzle, 'thermo');
+		parse.nobulbthermo(qa, pu, puzzle, feature);
 		list.forEach((line, i) => {
 			if (line.length === 0) return;
 			let cells = line.map(point2RC);
@@ -453,7 +371,7 @@ const loadPenpaPuzzle = (() => {
 		if (pu.nobulbthermo && pu.nobulbthermo.find(l => l !== line && l.includes(endpoint))) return true;
 		return false;
 	}
-	parse.nobulbthermo = (qa, pu, puzzle, feature='nobulbthermo') => {
+	parse.nobulbthermo = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature];
 		const {point2RC} = PenpaTools;
 		const reduce_straight = 0.32;
@@ -487,7 +405,7 @@ const loadPenpaPuzzle = (() => {
 			}, 'thermo line');
 		});
 	}
-	parse.squareframe = (qa, pu, puzzle, feature='squareframe') => {
+	parse.squareframe = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature];
 		// FIXME: adjust start and end positions
 		const {point2RC} = PenpaTools;
@@ -506,7 +424,7 @@ const loadPenpaPuzzle = (() => {
 			}, 'squareframe');
 		});
 	}
-	parse.killercages = (qa, pu, puzzle) => {
+	parse.killercages = (qa, pu, puzzle, feature) => {
 		const list = pu[qa].killercages;
 		const {point2cell} = PenpaTools;
 		list.forEach(cage => {
@@ -519,7 +437,7 @@ const loadPenpaPuzzle = (() => {
 			puzzleAdd(puzzle, 'cages', pCage, 'killercages');
 		});
 	}
-	parse.arrows = (qa, pu, puzzle, feature='arrows') => {
+	parse.arrows = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature];
 		const {point2RC} = PenpaTools;
 		list.forEach((line, i) => {
@@ -549,7 +467,7 @@ const loadPenpaPuzzle = (() => {
 			}), 'arrow bulb');
 		});
 	}
-	parse.direction = (qa, pu, puzzle, feature='direction') => {
+	parse.direction = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature];
 		// FIXME: sudokupad renders start point too short
 		const {point2RC} = PenpaTools;
@@ -752,7 +670,7 @@ const loadPenpaPuzzle = (() => {
 		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: k}));
 		const predicate = (s1, s2) => {
 			return s1.value === s2.value
-			&& doc.centerlist.includes(RC2k(s1.center)) === doc.centerlist.includes(RC2k(s2.center))
+			&& pu.centerlist.includes(RC2k(s1.center)) === pu.centerlist.includes(RC2k(s2.center))
 			&& s1.layer === s2.layer
 			// When there is an auto generated white outside mask
 			// and a colored surface on the outside of the board and attached to the square board boundary
@@ -766,7 +684,7 @@ const loadPenpaPuzzle = (() => {
 				ctx.fillStyle = color[surface.key];
 				ctx.strokeStyle = color[surface.key];
 			}
-			if (isCtcCell(surface.center, parse.bb) && !doc.centerlist.includes(RC2k(surface.center))) {
+			if (isCtcCell(surface.center, parse.bb) && !pu.centerlist.includes(RC2k(surface.center))) {
 				ctx.target = 'overlay';
 			}
 			if (ctx.fillStyle === Color.GREY_DARK_VERY) {
@@ -821,37 +739,76 @@ const loadPenpaPuzzle = (() => {
 		return pu;
 	}
 
-	// function changetype() {
-	// 	UserSettings.gridtype = doc.gridtype;
-	// 	switch (UserSettings.gridtype) {
-	// 		case "square":
-	// 			//"*White space is subtracted from the row/column size";
-	// 			doc.nb_size1 = 10;
-	// 			doc.nb_size2 = 10;
-	// 			doc.nb_size3 = 38;
-	// 			doc.nb_space1 = 0;
-	// 			doc.nb_space2 = 0;
-	// 			doc.nb_space3 = 0;
-	// 			doc.nb_space4 = 0;		
-	// 			break;
-	// 		case "sudoku":
-	// 			doc.nb_sudoku1 = false;
-	// 			doc.nb_sudoku2 = false;
-	// 			doc.nb_sudoku3 = false;
-	// 			doc.nb_sudoku4 = false;
-	// 			doc.nb_sudoku5 = false;
-	// 			doc.nb_sudoku6 = false;
-	// 			doc.nb_sudoku8 = false;
-	// 			break;;
-	// 	}
-	// }
+	class FakeDoc {
+		constructor() {
+			//this.ids = {}
+		}
+		getElementById(id) {
+			let elem = this[id];
+			if (!elem) {
+				elem = {
+					value: '',
+					style: {
+						display: 'none'
+					},						
+				}
+				this[id] = elem;
+			}
+			return elem;
+		}
+		querySelector(selector) {
+			return undefined;
+		}
+	}
+
+	const parsePuzzLink = (urlstring) => {
+		doc.nb_space1 = 0;
+		doc.nb_space2 = 0;
+		doc.nb_space3 = 0;
+		doc.nb_space4 = 0;		
+
+		let fakedoc = new FakeDoc();
+		const general = new PenpaGeneral(fakedoc, UserSettings);
+		general.decode_puzzlink(urlstring);
+
+		let pu = general.get_pu();
+		return pu;
+	}
+	
+	const parsePuzzleUrl = urlstring => {
+		doc.nb_space1 = 0;
+		doc.nb_space2 = 0;
+		doc.nb_space3 = 0;
+		doc.nb_space4 = 0;
+
+        if (urlstring.indexOf("/penpa-edit/") !== -1) {
+			let param = urlstring.substring(urlstring.indexOf('&') + 1);
+
+			// Inject fake document;
+			PenpaPuzzle.document = new FakeDoc();			
+			let pu =  parsePenpaPuzzle(param);
+			
+			return convertPuzzle(pu, doc);
+		}
+		else if (urlstring.match(/\/puzz.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p\.html\?/)) {
+
+			let pu = parsePuzzLink(urlstring);
+
+			doc.nb_size1 = pu.nx;
+			doc.nb_size2 = pu.ny;
+			doc.cols0 = doc.nb_size1;
+			doc.rows0 = doc.nb_size2;
+			doc.cols = doc.cols0 + 4;
+			doc.rows = doc.rows0 + 4;	
+	
+			return convertPuzzle(pu);			
+		}
+	}
 
 	const parsePenpaPuzzle = urlParam => {
 		// let puzzle = {id: `penpa${md5Digest(fpuzzleRaw)}`};
 		if (urlParam.indexOf('?') !== -1)
 			[urlParam] = urlParam.split('?', 1);
-
-		puzzle.id = `penpa${md5Digest(urlParam)}`;
 
 		let param = urlParam.split('&');
         let paramArray = [];
@@ -1020,7 +977,6 @@ const loadPenpaPuzzle = (() => {
 		}
 
 		pu.centerlist = rtext[5];
-		doc.centerlist = rtext[5]; //FIXME: remove
 
 		// Decrypt a
 		if (paramArray.a) {
@@ -1045,10 +1001,15 @@ const loadPenpaPuzzle = (() => {
 		// }
 
 		pu.create_point();
+		return pu;
+	}
 
+	function convertPuzzle(pu) {
 		// FIXME
 		doc.point = pu.point;
 		PenpaTools.doc = doc;
+
+		let puzzle = {id: `penpa_unknown`};
 
 		let fpuzzle = {}
 
@@ -1077,6 +1038,7 @@ const loadPenpaPuzzle = (() => {
 		let [top, left, bottom, right] = parse.bb;
 		doc.col0 = left;
 		doc.row0 = top;
+
 		FakeContext.offset = [doc.row0, doc.col0]
 		const width = right - left + 1;
 		const height = bottom - top + 1;
@@ -1099,53 +1061,28 @@ const loadPenpaPuzzle = (() => {
                     cell.value = num[0];
 					num.role = 'given';
                 }
-				// if (!pu.centerlist.includes(pos))
-				// {
-				// 	let opts = {};
-				// 	opts.rounded = false;
-				// 	opts.center = point2RC(pos);
-				// 	opts.width = 1.05;
-				// 	opts.height = 1.05;
-				// 	opts.backgroundColor = '#FFFFFF'
-				// 	opts.borderColor = '#FFFFFF'
-				// 	opts.target = 'cell-errors';
-				// 	//if (n !== 4) return;
-				// 	//if (th !== 45) opts.angle = th - 45;
-				// 	puzzleAdd(puzzle, 'overlays', opts);
-				// }
-                //cell.region = '1';
-				//cell.hideclue = true;
             }
         }
 
 		createBlankPuzzle(pu, fpuzzle, puzzle);
 
-		//FIXME: Remove fpuzzleSnegurochka
-		// fpuzzle.cellSize = UserSettings.displaysize; //ML
-		// fpuzzle.title = doc.puzzletitle;
-		// fpuzzle.author = doc.puzzleauthor;
-		// fpuzzle.rules = doc.saveinforules;
-
-		drawOutsideFrame(pu, doc);
-		positionBoard(pu, doc);
+		drawOutsideFrame(pu, puzzle, doc);
+		positionBoard(pu, puzzle, doc);
 
 		// parseMetaData(fpuzzle, puzzle);
 		[...layerOrder, ...Object.keys(pu.pu_q).filter(feature => !layerOrder.includes(feature))]
 			.filter(feature => pu.pu_q[feature] !== undefined)
 			.forEach(feature => {
 				if(typeof parse[feature] !== 'function') return loadPuzzle.logUnsupported ? console.error('Unsupported feature:', feature, pu.pu_q[feature]) : null;
-				//parse[feature](pu.pu_q[feature], puzzle, pu.pu_q);
 				parse[feature]('pu_q', pu, puzzle, feature);
 			});
 
-			// [...layerOrder, ...Object.keys(pu.pu_q).filter(feature => !layerOrder.includes(feature))]
-			// .filter(feature => pu.pu_a[feature] !== undefined)
-			// .forEach(feature => {
-			// 	if(typeof parse[feature] !== 'function') return loadPuzzle.logUnsupported ? console.error('Unsupported feature:', feature, pu.pu_a[feature]) : null;
-			// 	// parse[feature](pu.pu_a[feature], puzzle, pu.pu_a);
-			// 	parse[feature]('pu_a', pu, puzzle, feature);
-			// });
-
+		// [...layerOrder, ...Object.keys(pu.pu_a).filter(feature => !layerOrder.includes(feature))]
+		// 	.filter(feature => pu.pu_a[feature] !== undefined)
+		// 	.forEach(feature => {
+		// 		if(typeof parse[feature] !== 'function') return loadPuzzle.logUnsupported ? console.error('Unsupported feature:', feature, pu.pu_q[feature]) : null;
+		// 		parse[feature]('pu_a', pu, puzzle, feature);
+		// 	});
 
 		if(puzzle.regions.length === 0) {
 			let [top, left, bottom, right] = parse.bb;
@@ -1233,7 +1170,7 @@ const loadPenpaPuzzle = (() => {
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
 		}
 
-		console.log(puzzle);
+		// console.log(puzzle);
 		return puzzle;
 	};
 
@@ -1245,7 +1182,7 @@ const loadPenpaPuzzle = (() => {
 
 	const loadPuzzle = penpaRaw => Promise.resolve(penpaRaw)
 		.then(penpaRaw => penpaRaw.replace(/^penpa/, ''))
-		.then(parsePenpaPuzzle)
+		.then(parsePuzzleUrl)
 		.then(puzzle => PuzzleZipper.zip(JSON.stringify(puzzle)))
 		.catch(err => (console.error('Error fetching penpa:', err), Promise.reject(err)));
 
@@ -1254,7 +1191,10 @@ const loadPenpaPuzzle = (() => {
 	loadPuzzle.getDefaultTitle = getDefaultTitle;
 	loadPuzzle.getDefaultAuthor = getDefaultAuthor;
 	loadPuzzle.getDefaultRules = getDefaultRules;
+	loadPuzzle.parsePuzzleUrl = parsePuzzleUrl;
 	loadPuzzle.parsePenpaPuzzle = parsePenpaPuzzle;
+	loadPuzzle.parsePuzzLink = parsePuzzLink;
+	loadPuzzle.convertPuzzle = convertPuzzle;
 
 	return loadPuzzle;
 })();

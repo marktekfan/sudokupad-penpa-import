@@ -5,27 +5,72 @@
 		<title>Sudokupad penpa+ importer 0.1.0</title>
 		<meta name="author" content="Mark Langezaal, MarkTekfan#8907">
 		<meta name="copyright"content="Mark Langezaal">
-		<!-- <meta name="url" content="https://app.crackingthecryptic.com"> -->
 		<meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no, minimal-ui" />
 		<meta name="HandheldFriendly" content="true" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABXFBMVEX////aGk0daJs8fakaZpnhOmfcIVRFg67+/f5nmLvjRG7cI1XbHlDnaovkRnAuc6LhPGjdJ1g0d6Ynb6DgNmP7/P3++vvw9fj3zdhUjrQ5e6gjbZ4gap3qfZrfMmD2+fv+9vj98/XM3emxy92Ut9DztMTwnbNEgq1AgKswdaQqcqHob4/iQWveLl3n7/T87/Pj7PPd6PD75+zC1uS40OD40tyiwdWZutKCrMh/qcd8qMZtnr/xo7ddkrdOiLBIhrChh6iqep7mZYflVXviT3fiS3Tq8PX64uj63+bF2Oanxdn2yNT2xNGHpMHzrsBwn8Dyrb95lribl7Xuk6zukartj6jMiaZFeqaEgKVifKXuiaNveKHNgaBHc6B7dp5Sb53peZbnd5aOa5ReZJLcb5HpcJCiZ4+yZo2eYYukXojcYIW1WIHLWIC9T3rRR3LVQm3lPmrSPGnTM2LXMF5v7Cm9AAABh0lEQVQ4y72S51PCQBDFs5dLciQxjQBSBRGRZu+CdHvvvfde/v8ZwUkAB/KNcb/97r3budt9VJtrvpOQkUFrfUPQ9zI4tmhp8EPOi73uKSvdWYDzqAfHpxzNWihEkRUeUsfYzsmYGyGUa65R7y3rkQIIUkDI0zjGeZFtXLOHGwxKQBIgqYC6HezqsWO6D2E5467rRAHQeVG8Ha5S/zrycWfvpbzT1IfcXyqvQqnTPOiexa8sA+Uxg6ezTzroa6Te0hF+YRmRTRg4g0+fH1f/fquDZRRp1wDXJKKRrdlwNFBDupWBr8E/GBxLWiuDkDYn1UPLTYbLh6tv8Btgi/todGjO0ZxlfFO6MGhUwzS6FhPDptw/U9mGZ/+jdsd1EJXvFFB3glUy9xkN1TvyN5/VNAATISTswVolEZzMNQZGFPwSpCQVilvoN1MTWt9k46PGFihnOgVMJRT3Hhwbd1CDQ83BHEiwYpJ5Q26XZeyLAqgnaJqyqkgAkrmsb4KyrOXeYNdoN6HaWj9O3CwsngKXCwAAAABJRU5ErkJggg==" />
 		<style>
-			body { background-color: #121212; } /* Avoid flash-of-white */
+body { background-color: #121212; } /* Avoid flash-of-white */
+.penpa {
+	display:flex;
+	font-size: 1.2rem;
+	margin: 1rem;
+}
+.penpa button {
+	height: 3rem; line-height: 3rem;
+	padding: 0 2rem;
+	height: 2.4rem;
+	min-width: 10rem;
+	line-height: 2.4rem;
+	padding: 0 0.5rem;
+	margin: 0. 1rem;
+	font-size: 1.2rem;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	user-select: none;
+}
+#penpa-url {
+	width: 100%;
+	height: 10rem;
+}
+
+.footer2 {
+	/* display: inline-flex; */
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin: 0.5rem 0 0 0;
+	font-size: 70%;
+}
+#errortext {
+	margin: 0.5rem;
+	color: darkred;
+	height: 4rem;
+}
+#disclaimer {
+	font-size: 70%;
+}
+.extra {
+	font-weight: 500;
+}
+
 		</style>
 		<link rel="stylesheet" href="./style.css">
 	</head>
 	<body>
 
-		<script src="./fpuzzlesdecoder.js"></script>
-		<script src="./penpa-style.js"></script>
-		<script src="./penpa-puzzle.js"></script>
-		<script src="./penpa-drawingcontext.js"></script>
-		<script src="./penpa-tools.js"></script>
-		<script src="./penpa-decoder.js"></script>
-		<script src="./penpa-number.js"></script>
-		<script src="./penpa-symbol.js"></script>
+		<script defer src="./fpuzzlesdecoder.js"></script>
+		<script defer src="./penpa-style.js"></script>
+		<script defer src="./penpa-puzzle.js"></script>
+		<script defer src="./penpa-drawingcontext.js"></script>
+		<script defer src="./penpa-tools.js"></script>
+		<script defer src="./penpa-decoder.js"></script>
+		<script defer src="./penpa-number.js"></script>
+		<script defer src="./penpa-symbol.js"></script>
+		<script defer src="./penpa-general.js"></script>
+		<script defer src="./puzzlink.js"></script>
 
 		<div class="app">
 
@@ -39,22 +84,24 @@
 			<div class="penpa">
 				<div">
 					<div>
-						<div>Penpa+ puzzle url:</div>
+						<div><span class="extra">Penpa+</span> or <span class="extra">puzz.link</span> url:</div>
 						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()"></textarea>
 					</div>
 					<button id="importbtn" onclick="openInSudokupad()">Open in SudokuPad</button>
-					<label id="disclaimer">(Beta version, for testing purposes only)</label>
+					<div id="disclaimer">(Beta version, for testing purposes only)</div>
 					<div id="errortext"> </div>
 					<div class="footer2">
-						Created by <a href="https://discordapp.com/users/MarkTekfan#8907" target="_blank">Mark Langezaal</a> and <a href="https://svencodes.com" target="_blank">Sven Neumann</a> (&copy; 2022-2023) | 
-						&nbsp;Please support Sven on <a href="https://patreon.svencodes.com/" target="_blank">Patreon</a>!
+						Created by <a href="https://discordapp.com/users/MarkTekfan#8907" target="_blank">Mark Langezaal</a> and <a href="https://svencodes.com" target="_blank">Sven Neumann</a> (&copy; 2023)
 					</div>
-					<svg id="dummysvg" class="boardsvg" xmlns="http://www.w3.org/2000/svg" version="1.1" draggable="false" style="vector-effect: non-scaling-stroke;"></svg>
-
+					<div class="footer2">
+						Please support Sven on <a href="https://patreon.svencodes.com/" target="_blank">Patreon</a>!
+					</div>
 				</div>
 			</div>
 		</div>
+		<script defer src="./portableevents.js"></script>
 		<script defer src="./utilities.js"></script>
+		<script defer src="./framework.js"></script>
 		<script defer src="./puzzleloader.js"></script>
 		<script defer src="./puzzlezipper.js"></script>
 		<script defer src="./lzipper.js"></script>
@@ -65,6 +112,28 @@
 				urltext.focus();
 			});
 
+			const Swal = {
+				fire: function(opts) {
+					Framework.showDialog({
+						parts: [
+							{tag: 'title', innerHTML: opts.title, style: 'text-align: center'},
+							{tag: 'label', innerHTML: opts.html},
+							{tag: 'options', options: [opts.confirmButtonText], style: 'flex-direction: row; justify-content: center;'},
+						],
+						onButton: this.handleDialogButton,
+						//centerOverBoard: true
+					});
+				}
+			}
+			function onClickTest() {
+				// alert('Test')
+				Swal.fire({
+                    title: 'Swaroop says:',
+                    html: 'Rows/Columns Size must be in the range <h2 class="warn">1- + gridmax[square] + </h2>',
+                    icon: 'error',
+                    confirmButtonText: 'ok 🙂',
+                })
+			}
 			function textOnChange(event) {
 				let errortext = document.querySelector('#errortext');
 				errortext.innerHTML = '';
@@ -73,12 +142,12 @@
 			function openInSudokupad(event)
 			{
 				let urltext = document.querySelector('#penpa-url')
-				let url = urltext.value;
-				let param = url.substring(url.indexOf('&') + 1);
+				let urlstring = urltext.value;
+				let param = urlstring.substring(urlstring.indexOf('&') + 1);
 				if (param.length === 0)
 					return;
 
-				Promise.resolve(param)
+				Promise.resolve(urlstring)
 				.then(penpa => loadPenpaPuzzle(penpa))
 				.then(res => loadFPuzzle.compressPuzzle(res))
 				.then(ctc => {				
@@ -98,6 +167,7 @@
 					}
 				});
 			}
+
 		</script>
 
 	</body>
