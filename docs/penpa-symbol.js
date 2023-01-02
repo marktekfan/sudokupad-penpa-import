@@ -77,7 +77,7 @@ const PenpaSymbol = (() => {
         "bars_W": {fillStyle: Color.WHITE, strokeStyle: Color.BLACK},
     }
 
-	P.draw_symbol = function(ctx, x, y, num, sym) {
+	P.draw_symbol = function(ctx, x, y, num, sym, cc) {
          switch (sym) {
              case "circle_L":
              case "circle_M":
@@ -89,7 +89,7 @@ const PenpaSymbol = (() => {
                     this.draw_circle(ctx, x, y, s1);
                     this.draw_circle(ctx, x, y, s2);
                 } else {
-                    set_circle_style(ctx, num);
+                    set_circle_style(ctx, num, cc);
                     this.draw_circle(ctx, x, y, s1);
                 }
                 this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'draw_polygon');
@@ -101,7 +101,7 @@ const PenpaSymbol = (() => {
             case "square_S":
             case "square_SS": {
                 const {s1} = shape_map1[sym];
-                set_circle_style(ctx, num);
+                set_circle_style(ctx, num, cc);
                 this.draw_polygon(ctx, x, y, s1 * Math.sqrt(2), 4, 45);
                 this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:square');
                 break;
@@ -137,11 +137,18 @@ const PenpaSymbol = (() => {
             case "hexflat_S":
             case "hexflat_SS": {
                 const {s1, s2, r, n, a} = shape_map1[sym];
-                set_circle_style(ctx, num);
+                set_circle_style(ctx, num, cc);
                 this.draw_polygon(ctx, x + s1 * 0.25, y + s2 * 0.25, r, n, a);
                 break;
             }
             case "ox_B":
+                ctx.setLineDash([]);
+                //ctx.lineCap = "butt";//ok
+                ctx.fillStyle = cc || Color.BLACK;
+                ctx.strokeStyle = color_map[sym];
+                ctx.lineWidth = 2;
+                this.draw_ox(ctx, num, x, y);
+                break;
             case "ox_E":
             case "ox_G": {
                 ctx.setLineDash([]);
@@ -153,41 +160,55 @@ const PenpaSymbol = (() => {
                 break;
             }
             case "tri": {
-                this.draw_tri(ctx, num, x, y);
+                this.draw_tri(ctx, num, x, y, cc);
                 break;
             }
             case "cross": {
                 ctx.setLineDash([]);
                 ctx.lineCap = "butt";//ok
                 ctx.fillStyle = Color.TRANSPARENTBLACK;
-                ctx.strokeStyle = Color.BLACK;
+                ctx.strokeStyle = cc || Color.BLACK;
                 ctx.lineWidth = 3;
                 this.draw_cross(ctx, num, x, y);
                 break;
             }
             case "line": {
-                this.draw_linesym(ctx, num, x, y);
+                this.draw_linesym(ctx, num, x, y, cc);
                 break;
             }
             case "frameline":
-                this.draw_framelinesym(ctx, num, x, y);
+                this.draw_framelinesym(ctx, num, x, y, cc);
                 break;
             case "bars_B":
+                ctx.setLineDash([]);
+                // ctx.lineCap = "butt";
+                ctx.fillStyle = cc || Color.BLACK;
+                ctx.strokeStyle = cc || Color.BLACK;
+                ctx.lineWidth = 1;
+                this.draw_bars(ctx, num, x, y);
+                break;
             case "bars_G":
+                ctx.setLineDash([]);
+                // ctx.lineCap = "butt";
+                ctx.fillStyle = cc || Color.GREY_LIGHT;
+                ctx.strokeStyle = Color.BLACK
+                ctx.lineWidth = 1;
+                this.draw_bars(ctx, num, x, y);
+                break;
             case "bars_W":
                 ctx.setLineDash([]);
                 // ctx.lineCap = "butt";
-                ctx.fillStyle = bar_map[sym].fillStyle;
-                ctx.strokeStyle = bar_map[sym].strokeStyle;
+                ctx.fillStyle = Color.WHITE;
+                ctx.strokeStyle = Color.BLACK;
                 ctx.lineWidth = 1;
                 this.draw_bars(ctx, num, x, y);
                 break;
             case "inequality":
                 set_circle_style(ctx, 10);
-                this.draw_inequality(ctx, num, x, y);
+                this.draw_inequality(ctx, num, x, y, cc);
                 break;
             case "math":
-                set_font_style(ctx, 0.8, 1);
+                set_font_style(ctx, 0.8, 1, cc);
                 this.draw_math(ctx, num, x, y + 0.05);
                 break;
             case "math_G":
@@ -196,11 +217,11 @@ const PenpaSymbol = (() => {
                 break;
 
             case "degital":
-                set_circle_style(ctx, 2);
+                set_circle_style(ctx, 2, cc);
                 this.draw_degital(ctx, num, x, y);
                 break;
             case "degital_B":
-                set_circle_style(ctx, 2);
+                set_circle_style(ctx, 2, cc);
                 this.draw_degital(ctx, num, x, y);
                 break;
             case "degital_E":
@@ -212,32 +233,39 @@ const PenpaSymbol = (() => {
                 this.draw_degital(ctx, num, x, y);
                 break;
             case "degital_f":
-                this.draw_degital_f(ctx, num, x, y);
+                this.draw_degital_f(ctx, num, x, y, cc);
                 break;
             case "dice":
-                set_circle_style(ctx, 2);
+                set_circle_style(ctx, 2, cc);
                 this.draw_dice(ctx, num, x, y);
                 break;
             case "pills":
-                this.draw_pills(ctx, num, x, y);
+                this.draw_pills(ctx, num, x, y, cc);
                 break;
-
-            case "arrow_B_B":
-            case "arrow_B_G":
-            case "arrow_B_W":
+                
             case "arrow_N_B":
-            case "arrow_N_G":
-            case "arrow_N_W":
             case "arrow_S":
             case "arrow_GP":
             case "arrow_GP_C":
             case "arrow_Short":
             case "arrow_tri_B":
-            case "arrow_tri_G":
-            case "arrow_tri_W":
+            case "arrow_fourtip":
             case "arrow_cross":
             case "arrow_eight":
-            case "arrow_fourtip":
+            {
+                const style = undefined;
+                const handler = arrow_map1[sym];
+                set_circle_style(ctx, style !== undefined ? style : handler.circle_style, cc);
+                this[handler.fn](ctx, num, x, y);
+                break;
+            }
+            case "arrow_B_B":
+            case "arrow_B_G":
+            case "arrow_B_W":
+            case "arrow_N_G":
+            case "arrow_N_W":
+            case "arrow_tri_G":
+            case "arrow_tri_W":
             {
                 const style = undefined;
                 const handler = arrow_map1[sym];
@@ -246,7 +274,7 @@ const PenpaSymbol = (() => {
                 break;
             }
             case "arrow_fouredge_B":
-                set_circle_style(ctx, 2);
+                set_circle_style(ctx, 2, cc);
                 ctx.strokeStyle = Color.TRANSPARENTBLACK;
                 this.draw_arrowfouredge(ctx, num, x, y);
                 break;
@@ -267,7 +295,6 @@ const PenpaSymbol = (() => {
             case "compass":
             case "star":
             case "tents":
-            case "arc":
             case "angleloop":
             case "firefly":
             case "sun_moon":
@@ -281,15 +308,12 @@ const PenpaSymbol = (() => {
             case "darts":
             case "spans":
             case "neighbors":
-            {
-                const color = undefined;
-                this['draw_' + sym](ctx, num, x, y, color);
+                this['draw_' + sym](ctx, num, x, y, cc);
                 break;
-            }
             case "battleship_B":
                 const color = undefined;
                 var font_style_type = 1;
-                set_circle_style(ctx, 2);
+                set_circle_style(ctx, 2, cc);
                 this.draw_battleship(ctx, num, x, y, font_style_type, color);
                 break;
             case "battleship_G":
@@ -307,7 +331,7 @@ const PenpaSymbol = (() => {
                 this.draw_battleship(ctx, num, x, y);
                 break;
             case "battleship_B+":
-                set_circle_style(ctx, 2);
+                set_circle_style(ctx, 2, cc);
                 this.draw_battleshipplus(ctx, num, x, y);
                 break;
             case "battleship_G+":

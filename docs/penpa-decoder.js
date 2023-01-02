@@ -1,7 +1,7 @@
 
 const loadPenpaPuzzle = (() => {
 
-	const DEBUG = 0;
+	const DEBUG = 0 || document.location.host.startsWith('127.0.0.1');
 
 	const doc = {};
 	const UserSettings = {
@@ -344,7 +344,8 @@ const loadPenpaPuzzle = (() => {
 				//ctx.target = 'arrows';
 				//ctx.target = 'underlay';
 			}
-			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1]);
+			let cc = pu[qa + '_col'][feature][key];
+			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], cc);
 		});
 	}
 	parse.thermo = (qa, pu, puzzle, feature) => {
@@ -373,13 +374,20 @@ const loadPenpaPuzzle = (() => {
 	}
 	parse.nobulbthermo = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature];
-		const {point2RC} = PenpaTools;
+		const {point2RC, RC2k, isCtcCell} = PenpaTools;
 		const reduce_straight = 0.32;
 		const reduce_diagonal = 0.22;
 		list.forEach((line, i) => {
 			if (line.length === 0) return;
 			let cells = line.map(point2RC);
 			if (cells.length >= 2) {
+				//let outside = cells.some(rc => !pu.centerlist[RC2k(rc)] && isCtcCell(rc, parse.bb));
+				// let outside = cells.some(rc => {
+				// 	let cl = pu.centerlist[RC2k(rc)];
+				// 	let onboard = isCtcCell(rc, parse.bb);
+				// 	console.log('onboard && !cl', onboard, !cl, onboard && !cl);
+				// 	return onboard && !cl;
+				// });
 				let end = line[line.length - 1];
 				if (find_common(pu[qa], line, end)) {
 					let rcEnd = cells[cells.length - 1];
@@ -395,14 +403,17 @@ const loadPenpaPuzzle = (() => {
 						rcEnd[1] -= dx * reduce_diagonal;
 					}
 				}
+				let cc = pu[qa + '_col'][feature][i];
+				let color = cc || '#CFCFCF'; 
+				let opts = {
+					color: color,
+					thickness: 21,
+					wayPoints: PenpaTools.reduceWayPoints(cells)
+				}
+				// if (outside)
+				//  	opts.target = 'overlay';
+				puzzleAdd(puzzle, 'lines', opts, 'thermo line');
 			}
-			let cc = pu[qa + '_col'][feature][i];
-			let color = cc || '#CFCFCF'; 
-			puzzleAdd(puzzle, 'lines', {
-				color: color,
-				thickness: 21,
-				wayPoints: PenpaTools.reduceWayPoints(cells)
-			}, 'thermo line');
 		});
 	}
 	parse.squareframe = (qa, pu, puzzle, feature) => {
@@ -492,11 +503,16 @@ const loadPenpaPuzzle = (() => {
 		const {point2RC} = PenpaTools;
 		const keys = Object.keys(list);
 		keys.sort(PenpaTools.comparePenpaLinePoints);
-		Object.keys(list).forEach(k => {
-			if (list[k] !== 98) return;
-			set_line_style(this.ctx, 98);
+		Object.keys(list).forEach(key => {
+			if (list[key] !== 98) return;
+			let ctx = new FakeContext();
+			let cc = pu[qa + '_col'][feature][key];
+			set_line_style(ctx, 98);
+			if (cc) {
+				ctx.strokeStyle = cc;
+			}
 			const r = 0.1414;
-			let [y, x] = point2RC(k);
+			let [y, x] = point2RC(key);
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
 				wayPoints: PenpaTools.reduceWayPoints([[y - r, x - r], [y + r, x + r]])
 			}), 'x1');
@@ -533,16 +549,19 @@ const loadPenpaPuzzle = (() => {
 			wayPoints: PenpaTools.reduceWayPoints([[p1[0] - rx, p1[1] + ry], [p2[0] - rx, p2[1] + ry]])
 		}), 'double line 2');
 	}
-	parse.polygon = (qa, pu, puzzle) => {
-		const list = pu[qa].polygon;
+	parse.polygon = (qa, pu, puzzle, feature) => {
+		const list = pu[qa][feature];
 		const {point2RC} = PenpaTools;
-		list.forEach(line => {
-			let points = line.map(point2RC);
+		Object.keys(list).forEach(key => {
+			let points = list[key].map(point2RC);
 			let ctx = new FakeContext();
-			set_line_style(ctx, 80);
-			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
-		 		fill:   Color.BLACK,
-		 		'fill-rule': 'evenodd',
+			let cc = pu[qa + '_col'][feature][key];
+			ctx.strokeStyle = cc || Color.BLACK;
+			ctx.fillStyle = cc || Color.BLACK;
+			ctx.lineWidth = 1;
+			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
+		 		'fill-rule': 'nonzero',
+				fill: ctx.fillStyle,
 				target: 'underlay',
 				wayPoints: PenpaTools.reduceWayPoints(points),
 			}), 'polygon');
@@ -787,7 +806,7 @@ const loadPenpaPuzzle = (() => {
 			// Inject fake document;
 			PenpaPuzzle.document = new FakeDoc();			
 			let pu =  parsePenpaPuzzle(param);
-			
+
 			return convertPuzzle(pu, doc);
 		}
 		else if (urlstring.match(/\/puzz.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p\.html\?/)) {
