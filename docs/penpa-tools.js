@@ -2,6 +2,7 @@ const PenpaTools = (() => {
     function _constructor() { }
 	const C = _constructor;//, P = Object.assign(C.prototype, {constructor: C});
     C.doc = undefined;
+	//FIXME: ensure cennters are in ascending order
 	C.reduceSurfaces = function(centers, predicate) {
 		const findNext = function(centers, rc, s1) {
 			return centers.find(s2 => s2.center[0] === rc[0] && s2.center[1] === rc[1] && (predicate ? predicate(s1, s2) : true));
@@ -25,8 +26,9 @@ const PenpaTools = (() => {
 			if(s1.value === null) return;
 			let rc = [...s1.center];
 			let height = 1;
+			let width = s1.width || 1;
 			let nextCol = findNext(centers, [rc[0] + height, rc[1]], s1);
-			while (nextCol) {
+			while (nextCol && (nextCol.width || 1) === width) {
 				height++;
 				nextCol.value = null;
 				nextCol = findNext(centers, [rc[0] + height, rc[1]], s1);
