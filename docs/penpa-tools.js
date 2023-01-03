@@ -2,40 +2,46 @@ const PenpaTools = (() => {
     function _constructor() { }
 	const C = _constructor;//, P = Object.assign(C.prototype, {constructor: C});
     C.doc = undefined;
-	//FIXME: ensure cennters are in ascending order
 	C.reduceSurfaces = function(centers, predicate) {
+		//Sort centers, this will give best results.
+		centers.sort((a, b) => C.compareRC(a.center, b.center));
 		const findNext = function(centers, rc, s1) {
 			return centers.find(s2 => s2.center[0] === rc[0] && s2.center[1] === rc[1] && (predicate ? predicate(s1, s2) : true));
 		}
+		// merge right
 		centers.forEach(s1 => {
-			if(s1.value === null) return;
-			let rc = [...s1.center];
-			let width = 1;
-			let nextCol = findNext(centers, [rc[0], rc[1] + width], s1);
-			while (nextCol) {
-				width++;
-				nextCol.value = null;
-				nextCol = findNext(centers, [rc[0], rc[1] + width], s1);
+			if(s1.value === null) return; // 'removed'
+			let [row, col] = s1.center;
+			let height = s1.height || 1;
+			let width = s1.width || 1;
+			let newwidth = width;
+			nextCol = findNext(centers, [row, col + newwidth], s1);
+			while (nextCol && nextCol.value !== null && (nextCol.width || 1) === width && (nextCol.height || 1) === height) {
+				newwidth += width;
+				nextCol.value = null; // mark as 'removed'
+				nextCol = findNext(centers, [row, col + newwidth], s1);
 			}
-			if (width > 1) {
-				s1.center[1] += (width - 1) / 2;
-				s1.width = width;
+			if (newwidth > width) {
+				s1.center[1] += (newwidth - 1) / 2;
+				s1.width = newwidth;
 			}
 		})
+		// merge down
 		centers.forEach(s1 => {
-			if(s1.value === null) return;
-			let rc = [...s1.center];
-			let height = 1;
+			if(s1.value === null) return; // 'removed'
+			let [row, col] = s1.center;
+			let height = s1.height || 1;
 			let width = s1.width || 1;
-			let nextCol = findNext(centers, [rc[0] + height, rc[1]], s1);
-			while (nextCol && (nextCol.width || 1) === width) {
-				height++;
-				nextCol.value = null;
-				nextCol = findNext(centers, [rc[0] + height, rc[1]], s1);
+			let newheight = height;
+			nextCol = findNext(centers, [row + newheight, col], s1);
+			while (nextCol && nextCol.value !== null && (nextCol.width || 1) === width && (nextCol.height || 1) === height) {
+				newheight += height;
+				nextCol.value = null; // mark as 'removed'
+				nextCol = findNext(centers, [row + newheight, col], s1);
 			}
-			if (height > 1) {
-				s1.center[0] += (height - 1) / 2;
-				s1.height = height;
+			if (newheight > height) {
+				s1.center[0] += (newheight - 1) / 2;
+				s1.height = newheight;
 			}
 		})
 		return centers.filter(l => l.value !== null);
@@ -64,6 +70,16 @@ const PenpaTools = (() => {
 			}
 		});
 		return list;
+	}
+
+	C.compareRC = function(r, c) {
+		let [r1, c1] = r;
+		let [r2, c2] = c;
+		if (r1 > r2) return 1;
+		if (r1 < r2) return -1;
+		if (c1 > c2) return 1;
+		if (c1 < c2) return -1;
+		return 0;
 	}
 
 	C.comparePenpaLinePoints = function(a, b) {
