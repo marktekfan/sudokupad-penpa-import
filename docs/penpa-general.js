@@ -1,24 +1,46 @@
-const PenpaGeneral = (() => {    
+const PenpaGeneral = function(doc, userSettings) {  
+    // Inject custom globals
+    const document = doc;
+    const UserSettings = userSettings;
+    PenpaPuzzle.document = doc;
+
+    const penpa_constraints = {
+        'options_groups': []
+    };
     let pu = undefined;
-    let UserSettings = undefined;
-    let document = undefined;
-    let panel_pu = {
-        draw_panel: ()=>{}
+    let panel_pu = undefined;
+    const sw_timer = {
+        isPaused: () => false,
+        start: () => {},
+        reset: () => {},
+        stop: () => {},
+        pause: () => {},
     }
-    if(typeof $ === undefined) {
-        $ = (elem) => ({
-            val: (v) => {return undefined},
-            trigger: (e) => {return undefined},
-            toggleSelect2: (s) => {return undefined},
-        })
+    const md5 = () => {}
+    const localStorage = {
+        getItem: () => null,
     }
-    function _constructor(doc, userSettings) {
-        document = doc;
-        PenpaPuzzle.document = doc;
-        UserSettings = userSettings;
+    class Panel {
+        draw_panel() { }
     }
-    const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
-    
+
+    const $ = (elem) => ({
+        val: (v) => { document[elem] = v; },
+        trigger: (e) => { },
+        toggleSelect2: (s) => { },
+    });
+
+    // Initialize to boot state
+    boot_parameters();
+    //create();
+
+//=====================================
+//
+// Start of verbatim copy of 
+// https://github.com/swaroopg92/penpa-edit/blob/master/docs/js/general.js
+//
+//VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+
 function boot() {
     var obj = document.getElementById("dvique");
     var canvas = document.createElement("canvas");
@@ -155,9 +177,8 @@ function init_genre_tags() {
 }
 
 function set_genre_tags(user_tags) {
-    //ML
-    // $('#genre_tags_opt').val(user_tags);
-    // $('#genre_tags_opt').trigger("change"); // Update selection
+    $('#genre_tags_opt').val(user_tags);
+    $('#genre_tags_opt').trigger("change"); // Update selection
 }
 
 function set_answer_setting_table_to(and_or) {
@@ -4912,8 +4933,27 @@ function hide_element_by_id(s) {
     element.parentElement.style.contentVisibility = 'hidden';
 }
 
-    P.decrypt_data = decrypt_data;
-    P.decode_puzzlink = decode_puzzlink;
-    P.get_pu = () => pu;
-    return C;
-})();
+
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//
+// End of verbatim copy of 
+// https://github.com/swaroopg92/penpa-edit/blob/master/docs/js/general.js
+//
+//===================================
+
+return {
+    boot_parameters: boot_parameters,
+    decrypt_data: decrypt_data,
+    decode_puzzlink: decode_puzzlink,
+    load: load,
+    create: create,
+    
+    // get created pu
+    get_pu: () => pu,
+}
+    // P.decrypt_data = decrypt_data;
+    // P.decode_puzzlink = decode_puzzlink;
+    // P.get_pu = () => pu;
+
+    // return C;
+};

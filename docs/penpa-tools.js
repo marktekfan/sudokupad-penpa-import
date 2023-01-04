@@ -92,7 +92,7 @@ const PenpaTools = (() => {
 		return 0;
 	}
 
-	C.combineStraightPenpaLines = function(lines) {
+	C.combineStraightPenpaLines = function(lines, linesCol) {
 		lines = Object.assign({}, lines);
         const point = C.doc.point;
 		const keys = Object.keys(lines);
@@ -109,6 +109,7 @@ const PenpaTools = (() => {
 				let nextKey = p2 + ',' + nextp;
 				let nextVal = lines[nextKey];
 				if (nextVal === undefined || lines[k] !== nextVal) break; // not found or different line style
+				if (linesCol && linesCol[k] !== linesCol[nextKey]) break // not same custom color
 				delete lines[nextKey];
 				p2 = nextp;
 			} while (true);
@@ -116,25 +117,50 @@ const PenpaTools = (() => {
 			if (k != newKey) {
 				lines[newKey] = lines[k];
 				delete lines[k];
+				if (linesCol && linesCol[k]) {
+					linesCol[newKey] = linesCol[k];
+					delete linesCol[k];
+				}
 			}
 		});
 		return lines;
 	}
 
-	C.reducePenpaLines2WaypointLines = function(list) {
-		let comblist = PenpaTools.combineStraightPenpaLines(list);
-		let wpLines = PenpaTools.penpaLines2WaypointLines(comblist);
+	C.reducePenpaLines2WaypointLines = function(list, listCol) {
+		let comblist = PenpaTools.combineStraightPenpaLines(list, listCol);
+		let wpLines = PenpaTools.penpaLines2WaypointLines(comblist, listCol);
 		let combined = PenpaTools.concatenateEndpoints(wpLines);
 		return combined;
 	}
-	C.penpaLines2WaypointLines = function(list) {
+
+	C.penpaLines2WaypointLines = function(list, listCol) {
 		const keys = Object.keys(list);
 		keys.sort(PenpaTools.comparePenpaLinePoints);
 		let listwp = keys.map(k => {
 			let rcs = k.split(",").map(C.point2RC);
-			return {wayPoints: [...rcs], value: list[k]};
+			let line = {wayPoints: [...rcs], value: list[k]};
+			if (listCol && listCol[k]) line.cc = listCol[k]
+			return line;
 		});
 		return listwp;
+	}
+
+	C.shortenLine = function(wayPoints, l) {
+		if (!Array.isArray(wayPoints) || wayPoints.length < 2) return wayPoints;		
+		const wp = wayPoints;
+		let first = 0;
+		let dx = wp[first + 1][0] - wp[first][0];
+		let dy = wp[first + 1][1] - wp[first][1];
+		let d = Math.sqrt(dx * dx + dy * dy);
+		let x1 = wp[first][0] + dx * (l / d);
+		let y1 = wp[first][1] + dy * (l / d);		
+		let last = wp.length - 1;
+		dx = wp[last][0] - wp[last - 1][0];
+		dy = wp[last][1] - wp[last - 1][1];
+		d = Math.sqrt(dx * dx + dy * dy);
+		let x2 = wp[last][0] - dx * (l / d);
+		let y2 = wp[last][1] - dy * (l / d);
+		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
 	}
 
 	C.concatenateEndpoints = function(listwp) {
@@ -150,6 +176,7 @@ const PenpaTools = (() => {
 				// console.log('line', line.wayPoints);
 				listwp.forEach(line2 => {
 					if(line1 === line2 || line1.value !== line2.value)  return;
+					if(line1.cc !== line2.cc)  return;
 					// console.log('line2', line2.wayPoints);
 					let startpoint2 = line2.wayPoints[0].toString();
 					let endpoint2 = line2.wayPoints[line2.wayPoints.length - 1].toString();
@@ -206,30 +233,130 @@ const PenpaTools = (() => {
 		return line;
 	}
 
-	// C.normalizePath = function(points) {
-	// 	if(points.length <= 2) return points;
-	// 	let prev = points[0];
-	// 	let line = [prev];
-	// 	for (let i = 1; i < points.length - 1; i++) {
-	// 		let curr = points[i + 0];
-	// 		let next = points[i + 1];
-	// 		if(prev[0] !== curr[0] || curr[0] !== next[0])
-	// 			line.push(curr);
-	// 		else if ((prev[1] !== curr[1] || curr[1] !== next[1]) &&
-	// 			(prev[2] !== curr[2] || curr[2] !== next[2])) {
-	// 			line.push(curr);
-	// 		}
-	// 		prev = curr;
-	// 	}
-	// 	line.push(points[points.length - 1]);
-	// 	line.forEach(wp => {
-	// 		wp[1] = round(wp[1]);
-	// 		wp[2] = round(wp[2]);
-	// 	})
-	// 	return line;
-	// }
+	C.normalizePath = function(points) {
+		if(points.length <= 2) return points;
+		let prev = points[0];
+		let line = [prev];
+		for (let i = 1; i < points.length - 1; i++) {
+			let curr = points[i + 0];
+			let next = points[i + 1];
+			if(prev[0] !== curr[0] || curr[0] !== next[0])
+				line.push(curr);
+			else if ((prev[1] !== curr[1] || curr[1] !== next[1]) &&
+				     (prev[2] !== curr[2] || curr[2] !== next[2])) {
+				line.push(curr);
+			}
+			prev = curr;
+		}
+		line.push(points[points.length - 1]);
+		// line.forEach(wp => {
+		// 	wp[1] = round(wp[1]);
+		// 	wp[2] = round(wp[2]);
+		// })
+		return line;
+	}
 
+	C.getAdjacentCellsOfLine = function(pu, line) {
+		let {xy2k} = PenpaTools;
+		let [k1, k2] = line.split(',').map(Number);
+		let p1 = pu.point[k1];
+		let p2 = pu.point[k2];
+		if (p1.x === p2.x) {
+			let y = (p1.y + p2.y) / 2;
+			return [xy2k([p1.x - 0.5, y]), xy2k([p1.x + 0.5, y])]
+		}
+		else if (p1.y === p2.y) {
+			let x = (p1.x + p2.x) / 2;
+			return [xy2k([x, p1.y - 0.5]), xy2k([x, p1.y + 0.5])]
+		}
+		return [0, 0];
+	}
 
+	C.getCellOutline = function(cells, os = 0) {
+		let edgePoints = [], grid = [], segs = [], shapes = [];
+		const checkRC = (r, c) => ((grid[r] !== undefined) && (grid[r][c] !== undefined)) || false;
+		const pointOS = {
+			tl: [os, os], tr: [os, 1-os],
+			bl: [1-os, os], br: [1-os, 1-os],
+			tc: [os, 0.5], rc: [0.5, 1-os],
+			bc: [1-os, 0.5], lc: [0.5, os],
+		};
+		const dirRC = {t: [-1, 0], r: [0, 1], b: [1, 0], l: [0, -1]};
+		const flipDir = {t: 'b', r: 'l', b: 't', l: 'r'};
+		const patterns = [
+			{name: 'otl', bits: '_0_011_1_', enter: 'bl', exit: 'rt', points: 'tl'},
+			{name: 'otr', bits: '_0_110_1_', enter: 'lt', exit: 'br', points: 'tr'},
+			{name: 'obr', bits: '_1_110_0_', enter: 'tr', exit: 'lb', points: 'br'},
+			{name: 'obl', bits: '_1_011_0_', enter: 'rb', exit: 'tl', points: 'bl'},
+			{name: 'itl', bits: '01_11____', enter: 'lt', exit: 'tl', points: 'tl'},
+			{name: 'itr', bits: '_10_11___', enter: 'tr', exit: 'rt', points: 'tr'},
+			{name: 'ibr', bits: '____11_10', enter: 'rb', exit: 'br', points: 'br'},
+			{name: 'ibl', bits: '___11_01_', enter: 'bl', exit: 'lb', points: 'bl'},
+			{name: 'et', bits: '_0_111___', enter: 'lt', exit: 'rt', points: 'tc'},
+			{name: 'er', bits: '_1__10_1_', enter: 'tr', exit: 'br', points: 'rc'},
+			{name: 'eb', bits: '___111_0_', enter: 'rb', exit: 'lb', points: 'bc'},
+			{name: 'el', bits: '_1_01__1_', enter: 'bl', exit: 'tl', points: 'lc'},
+			{name: 'out', bits: '_0_010_1_', enter: 'bl', exit: 'br', points: 'tl,tr'},
+			{name: 'our', bits: '_0_110_0_', enter: 'lt', exit: 'lb', points: 'tr,br'},
+			{name: 'oub', bits: '_1_010_0_', enter: 'tr', exit: 'tl', points: 'br,bl'},
+			{name: 'oul', bits: '_0_011_0_', enter: 'rb', exit: 'rt', points: 'bl,tl'},
+			{name: 'solo', bits: '_0_010_0_', enter: '', exit: '', points: 'tl,tr,br,bl'},
+		];
+		const checkPatterns = (row, col) => patterns
+			.filter(({name, bits}) => {
+				let matches = true;
+				bits.split('').forEach((b, i) => {
+					let r = row + Math.floor(i / 3) - 1, c = col + i % 3 - 1, check = checkRC(r, c);
+					matches = matches && ((b === '_') || (b === '1' && check) || (b === '0' && !check));
+				});
+				return matches;
+			});
+		const getSeg = (segs, rc, enter) => segs.find(([r, c, _, pat]) => r === rc[0] && c === rc[1] && pat.enter === enter);
+		const followShape = segs => {
+			let shape = [], seg = segs[0], nextSeg;
+			const getNext = ([r, c, cell, pat]) => {
+				if(pat.exit === '') return;
+				let [exitDir, exitSide] = pat.exit.split('');
+				let nextRC = [r + dirRC[exitDir][0], c + dirRC[exitDir][1]];
+				let nextEnter = flipDir[exitDir] + exitSide;
+				return getSeg(segs, nextRC, nextEnter);
+			};
+			do {
+				shape.push(seg);
+				segs.splice(segs.indexOf(seg), 1);
+				seg = getNext(seg);
+			} while (seg !== undefined && shape.indexOf(seg) === -1);
+			return shape;
+		};
+		const shapeToPoints = shape => {
+			let points = [];
+			shape.forEach(([r, c, cell, pat]) => pat.points
+				.split(',')
+				.map(point => pointOS[point])
+				.map(([ros, cos]) => [r + ros, c + cos])
+				.forEach(rc => points.push(rc))
+			);
+			return points;
+		};
+		cells.forEach(cell => {
+			let {row, col} = cell;
+			grid[row] = grid[row] || [];
+			grid[row][col] = {cell};
+		});
+		cells.forEach(cell => {
+			let {row, col} = cell, matchedPatterns = checkPatterns(row, col);
+			matchedPatterns.forEach(pat => segs.push([row, col, cell, pat]));
+		});
+		while(segs.length > 0) {
+			let shape = followShape(segs);
+			if(shape.length > 0) shapes.push(shape);
+		}
+		shapes.forEach(shape => {
+			edgePoints = edgePoints.concat(shapeToPoints(shape).map(([r, c], idx) => [idx === 0 ? 'M' : 'L', r, c]));
+			edgePoints.push(['Z']);
+		});
+		return edgePoints;
+	};
 
 	C.round0 = function(num) {
 		if (Array.isArray(num)) return num.map(C.round0);
@@ -272,6 +399,12 @@ const PenpaTools = (() => {
 		else if (c === undefined) ({r, c} = r);
 		const cols = C.doc.cols;
 		return (Math.floor(r) + 2) * cols + Math.floor(c) + 2;
+	}
+	C.xy2k = function(x, y) {
+		if (Array.isArray(x)) [x, y] = x;
+		else if (x === undefined) ({r: y, c: x} = y);
+		const cols = C.doc.cols;
+		return (Math.floor(y)) * cols + Math.floor(x);
 	}
 	C.point2RC = function(p) {
 		const point = C.doc.point[p];

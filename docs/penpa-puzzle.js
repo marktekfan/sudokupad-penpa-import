@@ -14,8 +14,14 @@
 	}
 
 	class Stack {
-		constructor() {}
+		constructor() {}	
+		set(list) {}	
+		push(o) {}
+		pop() {	return null };		
+		size() { return 0 }
+		toString() { return '[]' }
 	}
+
 	class PenpaPuzzle {
 		constructor(gridtype) {
 			this.gridtype = gridtype;	
@@ -50,36 +56,36 @@
 			this.mode = {
 				"qa": "pu_q",
 				"grid": ["1", "2", "1"], //grid,lattice,out
-				// "pu_q": {
-				// 	"edit_mode": "surface",
-				// 	"surface": ["", 1],
-				// 	"line": ["1", 2],
-				// 	"lineE": ["1", 2],
-				// 	"wall": ["", 2],
-				// 	"cage": ["1", 10],
-				// 	"number": ["1", 1],
-				// 	"symbol": ["circle_L", 1],
-				// 	"special": ["thermo", ""],
-				// 	"board": ["", ""],
-				// 	"move": ["1", ""],
-				// 	"combi": ["battleship", ""],
-				// 	"sudoku": ["1", 1]
-				// },
-				// "pu_a": {
-				// 	"edit_mode": "surface",
-				// 	"surface": ["", 1],
-				// 	"line": ["1", 3],
-				// 	"lineE": ["1", 3],
-				// 	"wall": ["", 3],
-				// 	"cage": ["1", 10],
-				// 	"number": ["1", 2],
-				// 	"symbol": ["circle_L", 1],
-				// 	"special": ["thermo", ""],
-				// 	"board": ["", ""],
-				// 	"move": ["1", ""],
-				// 	"combi": ["battleship", ""],
-				// 	"sudoku": ["1", 9]
-				// }
+				"pu_q": {
+					"edit_mode": "surface",
+					"surface": ["", 1],
+					"line": ["1", 2],
+					"lineE": ["1", 2],
+					"wall": ["", 2],
+					"cage": ["1", 10],
+					"number": ["1", 1],
+					"symbol": ["circle_L", 1],
+					"special": ["thermo", ""],
+					"board": ["", ""],
+					"move": ["1", ""],
+					"combi": ["battleship", ""],
+					"sudoku": ["1", 1]
+				},
+				"pu_a": {
+					"edit_mode": "surface",
+					"surface": ["", 1],
+					"line": ["1", 3],
+					"lineE": ["1", 3],
+					"wall": ["", 3],
+					"cage": ["1", 10],
+					"number": ["1", 2],
+					"symbol": ["circle_L", 1],
+					"special": ["thermo", ""],
+					"board": ["", ""],
+					"move": ["1", ""],
+					"combi": ["battleship", ""],
+					"sudoku": ["1", 9]
+				}
 			};
 			this.theta = 0;
 			this.reflect = [1, 1];
@@ -261,15 +267,34 @@
 		mode_qa(mode){this.mode.qa = mode;}
 		subcombimode(v){}
 		redraw(){}
-		make_frameline() {}
+		make_frameline() {
+			// debugger;
+		}
 		submode_check(v) {}
 		search_center() {}
 		canvasxy_update() {}
 		canvas_size_setting() {}
-		point_move(){}
 		record(){}
 		subsymbolmode(mode) {}
+		point_usecheck() {}
+
 		
+		point_move(x, y, theta) {
+			// var x0 = this.canvasx * 0.5 + 0.5; // Rotate the canvas center +0.5, enter x,y +0.5 when moving in parallel
+			// var y0 = this.canvasy * 0.5 + 0.5;
+			// var x1, y1, x2, y2;
+			// theta = theta / 180 * Math.PI;
+			// for (var i in this.point) {
+			// 	x1 = this.point[i].x + x;
+			// 	y1 = this.point[i].y + y;
+			// 	x2 = (x1 - x0) * Math.cos(theta) - (y1 - y0) * Math.sin(theta) + x0;
+			// 	y2 = (x1 - x0) * Math.sin(theta) + (y1 - y0) * Math.cos(theta) + y0;
+			// 	this.point[i].x = x2;
+			// 	this.point[i].y = y2;
+			// }
+			// this.point_usecheck();
+		}
+
 		//ML FIXME: not yet implemented. used by 
 		// resize_top(sign, celltype = 'black') {}
 		// resize_right(sign, celltype = 'black') {}
@@ -1884,13 +1909,13 @@
 			this.height = this.height_c;
 			// this.canvasx = this.width_c * this.size;
 			// this.canvasy = this.height_c * this.size;
-			this.space = [//ML
-				parseInt(PenpaPuzzle.document.getElementById("nb_sudoku1").value),
-				parseInt(PenpaPuzzle.document.getElementById("nb_sudoku2").value),
-				parseInt(PenpaPuzzle.document.getElementById("nb_sudoku3").value),
-				parseInt(PenpaPuzzle.document.getElementById("nb_sudoku4").value)
+			this.sudoku = [
+				Number(PenpaPuzzle.document.getElementById("nb_sudoku1").checked),
+				Number(PenpaPuzzle.document.getElementById("nb_sudoku2").checked),
+				Number(PenpaPuzzle.document.getElementById("nb_sudoku3").checked),
+				Number(PenpaPuzzle.document.getElementById("nb_sudoku4").checked)
 			];
-			this.space = [//ML
+			this.space = [
 				parseInt(PenpaPuzzle.document.getElementById("nb_space1").value),
 				parseInt(PenpaPuzzle.document.getElementById("nb_space2").value),
 				parseInt(PenpaPuzzle.document.getElementById("nb_space3").value),

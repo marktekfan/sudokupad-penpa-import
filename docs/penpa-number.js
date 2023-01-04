@@ -70,6 +70,8 @@ const PenpaNumber = (() => {
 					let wp = this.arrowWaypoints(p_x + arrow.shape[0][0], p_y + arrow.shape[0][1], p_x + arrow.shape[1][0], p_y + arrow.shape[1][1], arrowshape);
 					ctx.strokeStyle = ctx.fillStyle; // Because we use lines, not fill
 					ctx.lineWidth = 2;
+					// ctx.lineJoin = 'miter';
+					 ctx.lineCap = 'butt';
 					if (number[1] === 0) ctx.strokeStyle = Color.BLACK_LIGHT;
 					this.decoder.puzzleAdd(this.puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 						//thickness: 4,

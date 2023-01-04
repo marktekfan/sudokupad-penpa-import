@@ -89,7 +89,8 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()"></textarea>
 					</div>
 					<button id="importbtn" onclick="openInSudokupad()">Open in SudokuPad</button>
-					<button id="text" onclick="test_puzzlink()">Test</button>
+					<button id="test1" onclick="test_puzzlink()">Test</button>
+					<button id="test2" onclick="test2()">Test</button>
 					<div id="disclaimer">(Beta version, for testing purposes only)</div>
 					<div id="errortext"> </div>
 					<div class="footer2">
@@ -108,13 +109,20 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 		<script defer src="./puzzlezipper.js"></script>
 		<script defer src="./lzipper.js"></script>
 		<script defer src="./zlib.js"></script>
-		<script defer>			
+		<script defer>
 			window.addEventListener('DOMContentLoaded', () => {
 				let urltext = document.querySelector('#penpa-url')
 				urltext.focus();
 
 				urltext.value = 'https://swaroopg92.github.io/penpa-edit/#m=solve&p=1VRRb5swEH7nV0x+9gOEtkv91nXNXrpsXTJVlYUik9AGFeLOwBo5Sn57785IzMAeK21y/PHxcfGdzX1UvxplMh6F+IunHK4wzqIpzcn0gmbYjmVeF5n4wK+aeqsNEM6/zWb8URVVFsg2KgkkixhnE5gRS052cZKM8SgJDvaHONiVkMmR258dnXZ0IQ6Ac8KI8IFwRjghXEIotzHhZ8KQ8JzwlmJuCO8JrwnPCC8o5iMmCwIZu+364/z/0+DI4XRZpYtV1ZhHtc6YoJfCSds1ZZoZTyq0finynR+XP+20yUYfoZhtnsbiU202vdVfVVF4gmszT1rnZl34Um1y714Zo189pVT11hNSVUNLVtv8xV8p29V+AbXyS1TPqpet7PZ8DNie0ZQxtHSMrXsp7B23X4TX3NzeQe9+FXaOrevaHFuQgiZAbzp6T8+RXTsxCoHPWw70Aag7ldWtU74LaZecYZ5P9G+krNS/oVBXB96vdZnCViTDt7ZvxarZ6OemDYvQWleu0sVIpXFXKVJXKbKRSnED71fpZXJ0hx/+a1+LfWswbUY9BvKIzUAdtVOrDxwF+sA7mHBoH1BHHARq30QgDX0E4sBKoP3FTbhq31BYVd9TmGpgK0z1p7PgS0XsDQ=='
 				urltext.value = 'https://puzz.link/p?aho/11/7/-14lch-15zw11v-16p'
+
+                // 🎲 🎲 Maff 🎲 🎲#4915
+                // https://discord.com/channels/@me/1059611905825718292/1059612163238543361
+                urltext.value = 'https://swaroopg92.github.io/penpa-edit/#m=edit&p=7Vbfb6NGEH73X4FWqvqyDyzYGHjL5eJrpZxzl/iaRsiysE0SdNikGHoVkf/3mxlwGVjOtA/XqlKFGA/ffswv1jtz+K0Is0i60pO2K02p4LLHFjyYcjKe0G3W1yLOk8g35sVuHWUH4zLc/5gbt9FLFObyosif08w33oePj5LEhyTcREb+HBn7+gVl5KnhGfGe0Kcs3v5gvT1Z25C1rLJ2M5vJxzA5RKOgdr4cvZaeX17I8p0fCCWksOBWYinLj/5r+d4v57K8gyUhFWDXFckC9apR72kdtcsKVCbo81oH9QHUTZxtkmh1XSEf/KBcSIF+3tDbqIpd+nsk6jjweZPu1jEC6zCHGh2e45d65VBs089FzVXLoywvKNzTQk/QdhM0qlXQqPUEjbl856C95fEIxb+FsFd+gBl8alS3Ue/8V5BzkorkA8kZSYvkAqiytEm+JWmSnJC8Js4VyXuSlyTHJB3iTNHZ3wpHWB5mcgeZVBtG2CYCVwxQCPzCAKvLsBGYN8CYXvmZAZMOMKFXfmXAtGPDcRCYMYAYzIbjdgJzKBcW2JRsLBhANu4ZQDZuGsAl4KcG8KgenxpAmYTccoQqwhFFHGZXKaoJS1Cpbh2VNdaQbuGURTm94wglxUJWFiXxZ958zwmFlbck29erN/hX+U6bMbA8OjbxcuWY7hMyrX5NaVXCrZ7hqbqWowBONnFIk9WhyB7hxBQ+HXzwJwSsOjmFn2dFjSRp+pLE+zYtftqnWdS7hGC0ferjr9Nsi8bZwpcwSVpA1R5aUHXUtKA8g3OEPYdZln5pIbswf24B7MxpWYr2eTuAPGyHGH4OO952Tc7HkfhD0B3Y0DXs/7vGv9o18EOY/7HeEcCWgD90q2G8FKtwtUkTAXOIRIJtAoEdYjpBAYGd2zrBGrJgA4GdpRoBBrPWsakRJtMBCw6meS6GMWZx1gUGyVqc7sIBAutwOgGDPOfCcQcqOUXCxyEC61MawcOvydqfRoDuBwzW/HQfmOc5H9Ohj0EWWB/vt8D6uh4ldJjzQUCHHogCOvbAnnCxmqwT9xQLwzhXLBgCBpzAUDCwLWBIAAabEXoYWLCzkVqYy7dr/iCVI8ubPhze/KsL0vagJI3HnvcGQvnHT0hqq2nWO5IAfJpK2mjv+FHj2gQCuDZroEN93AC0Z+IAtDt0AKTPHQBqowdg35g+0Gp3AMGoujMIutLGEHTFJxEY7Ej7Cg==';
+
+                // Arrow Castle test, with removed gridlines between equal surfaces
+                urltext.value = 'https://puzz.link/p?castle/10/10/k14110.10.10.03200.00.00.b10.b10.00.10.10.00.b10.b10.00.10.10.00.b10.10.10.10.00.00.00.00.b01300.00.00.22420.20.20.b00.20.20.00.22.00.00.20.b00.20.a00.22.00.a20.b00.00.00.00.20.20.20.20.k'
 			});
 
 			const Swal = {
@@ -148,7 +156,7 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 			// 			<div>Board size: {dims.width}x{dims.height}</div>
 			// 			<div>Margins (top, bottom, left, right):<br>
 			// 				{dims.marginTop},
-			// 				{dims.marginBottom}, 
+			// 				{dims.marginBottom},
 			// 				{dims.marginLeft},
 			// 				{dims.marginRight}
 			// 			</div>
@@ -170,6 +178,7 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 			{
 				let urltext = document.querySelector('#penpa-url')
 				let urlstring = urltext.value;
+
 				let param = urlstring.substring(urlstring.indexOf('&') + 1);
 				if (param.length === 0)
 					return;
@@ -177,7 +186,7 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 				Promise.resolve(urlstring)
 				.then(penpa => loadPenpaPuzzle(penpa))
 				.then(res => loadFPuzzle.compressPuzzle(res))
-				.then(ctc => {				
+				.then(ctc => {
 					var redirect = 'https://beta.sudokupad.app/ctc' + ctc;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');
@@ -368,7 +377,7 @@ body { background-color: #121212; } /* Avoid flash-of-white */
         // Maxi Loop
         ["Maxi Loop 1", "https://puzz.link/p?maxi/10/10/37e0001tug030kdb00c2d00299pbgg3hg5j44s"],
         ["Maxi Loop 2", "https://puzz.link/p?maxi/24/16/424k150i894l5b98il295aiaa599aakl5ahakla5aikl9aaah995ai92l4abaiki8942i0kh0g4u020i1sjo9s4of43620jpgj68c4pj75001g1g00kspj462cp1jp08co4u347i3p7g9080f4673759b64879768352663589664786467589b685b"],
-        // Meandering Numbers 
+        // Meandering Numbers
         ["Meandering Numbers 1", "https://puzz.link/p?meander/10/10/5k88hh20i142e2c5880g3o03vs0001fs02030g123g4g5"],
         ["Meandering Numbers 2", "https://puzz.link/p?meander/6/6/d01gb04gc6sezv"],
         ["Meandering Numbers 3", "https://puzz.link/p?meander/10/10/0105187060b050g000funo7ivg02fo827s00zzzzz"],
@@ -645,10 +654,62 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 		let pu = loadPenpaPuzzle.parsePuzzLink(puzzlink_url[1]);
         let puzzle = loadPenpaPuzzle.convertPuzzle(pu);
 		console.log(pu, puzzle);
-		
+
     });
 
 			}
+
+    function test2()
+    {
+        function UrlExists(url, callback)
+        {
+            var http = new XMLHttpRequest();
+            http.open('HEAD', url);
+            http.onerror(err=> {
+                console.log('UrlExists Error', err, this)
+            })
+            http.onreadystatechange = function() {
+                console.log('UrlExists', this)
+                // if (this.readyState == this.DONE) {
+                //     callback(this.status != 404);
+                // }
+            };
+            //http.send();
+        }
+
+        let url = 'https://tinyurl.com/wntkd3fh'
+
+        // var url = "https://tinyurl.com/wntkd3fh";
+
+var xhr = new XMLHttpRequest();
+xhr.open("HEAD", url);
+
+xhr.setRequestHeader("Authorization", "Bearer mt0dgHmLJMVQhvjpNXDyA83vA_PxH23Y");
+
+xhr.onreadystatechange = function () {
+    console.log('onreadystatechange', xhr)
+   if (xhr.readyState === 4) {
+      console.log(xhr.status);
+      console.log(xhr.responseText);
+   }};
+
+xhr.send();
+        // UrlExists(url)
+
+        // fetch(url, {
+        //     method: 'HEAD',
+        //     mode: 'cors',
+        //     headers: {
+        //         'Access-Control-Allow-Origin': 'true'
+        //     }
+        // }).
+        // then(res=>{
+        //     console.log(res);
+        // })
+        // .catch(err => {
+        //     console.log('ERROR', err);
+        // })
+    }
 		</script>
 
 	</body>

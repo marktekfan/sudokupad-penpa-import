@@ -163,8 +163,10 @@ function set_line_style(ctx, type, ccolor = "none") {
             ctx.lineWidth = 1;
             break;
         case 110: //cage
-            var b = pu.size * 0.08;
-            var w = pu.size * 0.1;
+            // var b = pu.size * 0.08;
+            // var w = pu.size * 0.1;
+            var b = pu.size * 4/64; //ML
+            var w = pu.size * 4/64;
             ctx.setLineDash([b, w]);
             ctx.lineDashOffset = b * 0.5;
             ctx.lineCap = "round";
@@ -173,7 +175,8 @@ function set_line_style(ctx, type, ccolor = "none") {
             } else {
                 ctx.strokeStyle = Color.BLACK;
             }
-            ctx.lineWidth = 1;
+            // ctx.lineWidth = 1
+            ctx.lineWidth = 0.9; //ML
             break;
         case 11: //grid dash
             var b = pu.size * 0.06;
@@ -221,8 +224,10 @@ function set_line_style(ctx, type, ccolor = "none") {
             ctx.lineWidth = 1;
             break;
         case 115: //cage dash
-            var b = pu.size * 0.08;
-            var w = pu.size * 0.1;
+            // var b = pu.size * 0.08;
+            // var w = pu.size * 0.1;
+            var b = pu.size * 4/64; //ML
+            var w = pu.size * 4/64;
             ctx.setLineDash([b, w]);
             ctx.lineDashOffset = b * 0.5;
             ctx.lineCap = "round";
@@ -231,7 +236,8 @@ function set_line_style(ctx, type, ccolor = "none") {
             } else {
                 ctx.strokeStyle = Color.GREY_DARK;
             }
-            ctx.lineWidth = 1;
+            // ctx.lineWidth = 1;
+            ctx.lineWidth = 0.9; //ML
             break;
         case 16: // cage
         case 116:

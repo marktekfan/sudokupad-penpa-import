@@ -232,6 +232,7 @@ class FakeContext {
                 return p.join(' '); 
             }
         }
+        
         let ctx = this;
         let opts = {};
         if (ctx.lineWidth && ctx.strokeStyle && ctx.strokeStyle !== Color.TRANSPARENTWHITE) {
@@ -285,6 +286,11 @@ class FakeContext {
                 opts.thickness = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
                 opts.color = ctx.strokeStyle;
             }    
+            if (ctx.lineCap && ctx.lineCap !== 'round') {
+                opts['stroke-linecap'] = ctx.lineCap;
+                if (ctx.lineJoin && ctx.lineJoin !== 'round')
+                    opts['stroke-linejoin'] = ctx.lineJoin;
+            }
         }
         else {
             if (ctx.strokeStyle && ctx.strokeStyle !== Color.TRANSPARENTWHITE) {
