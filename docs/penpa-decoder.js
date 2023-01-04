@@ -34,6 +34,9 @@ const loadPenpaPuzzle = (() => {
 			}
 			return elem;
 		}
+		querySelectorAll(selector) {
+			return [];
+		}
 		querySelector(selector) {
 			return undefined;
 		}
@@ -180,7 +183,7 @@ const loadPenpaPuzzle = (() => {
 				puzzleAdd(puzzle, 'lines', opts, 'outside mask');
 			}
 		}
-		
+
 		// Add frame outine
 		let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
 		let outlinePoints = PenpaTools.getCellOutline(gridCells);
@@ -863,7 +866,7 @@ const loadPenpaPuzzle = (() => {
 		doc.point = pu.point;
 		PenpaTools.doc = doc;
 
-		let puzzle = {id: `penpa_unknown`};
+		let puzzle = {id: `penpa${md5Digest(JSON.stringify(pu))}`};
 
 		let fpuzzle = {}
 
