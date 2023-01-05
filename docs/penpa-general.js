@@ -3,6 +3,7 @@ const PenpaGeneral = function(doc, userSettings) {
     const document = doc;
     const UserSettings = userSettings;
     PenpaPuzzle.document = doc;
+    UserSettings.tab_settings = [];
 
     class Panel {
         draw_panel() { }
@@ -11,8 +12,8 @@ const PenpaGeneral = function(doc, userSettings) {
     const penpa_constraints = {
         'options_groups': []
     };
-    let pu = undefined;
     let panel_pu = new Panel();
+    let pu = new Puzzle_square(10, 10, 38);
     const sw_timer = {
         isPaused: () => false,
         start: () => {},

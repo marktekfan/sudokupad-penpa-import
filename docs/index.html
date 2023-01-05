@@ -117,15 +117,17 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 
 			const Swal = {
 				fire: function(opts) {
-					Framework.showDialog({
-						parts: [
-							{tag: 'title', innerHTML: opts.title, style: 'text-align: center'},
-							{tag: 'label', innerHTML: opts.html},
-							{tag: 'options', options: [opts.confirmButtonText], style: 'flex-direction: row; justify-content: center;'},
-						],
-						onButton: this.handleDialogButton,
-						//centerOverBoard: true
-					});
+					let errortext = document.querySelector('#errortext');
+					errortext.innerHTML = opts.html;
+					// Framework.showDialog({
+					// 	parts: [
+					// 		{tag: 'title', innerHTML: opts.title, style: 'text-align: center'},
+					// 		{tag: 'label', innerHTML: opts.html},
+					// 		{tag: 'options', options: [opts.confirmButtonText], style: 'flex-direction: row; justify-content: center;'},
+					// 	],
+					// 	onButton: this.handleDialogButton,
+					// 	//centerOverBoard: true
+					// });
 				}
 			}
 			function onClickTest() {
@@ -145,15 +147,17 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 			function openInSudokupad(event)
 			{
 				let urltext = document.querySelector('#penpa-url')
-				let urlstring = urltext.value;
+				let urlstring = urltext.value.trim();
+
 				let param = urlstring.substring(urlstring.indexOf('&') + 1);
 				if (param.length === 0)
 					return;
 
 				Promise.resolve(urlstring)
 				.then(penpa => loadPenpaPuzzle(penpa))
-				.then(res => loadFPuzzle.compressPuzzle(res))
-				.then(ctc => {				
+				.then(res => res && loadFPuzzle.compressPuzzle(res))
+				.then(ctc => {
+					if (!ctc) return;		
 					var redirect = 'https://beta.sudokupad.app/ctc' + ctc;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');

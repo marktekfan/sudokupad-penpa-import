@@ -947,7 +947,12 @@ const loadPenpaPuzzle = (() => {
 		let fakedoc = new FakeDoc();
 		let usersettings = new UserSettings();
 		let penpaGeneral = PenpaGeneral(fakedoc, usersettings);
+
 		penpaGeneral.decode_puzzlink(url);
+
+		let pu = penpaGeneral.get_pu();
+		if (!pu || (pu.user_tags.length === 0 && pu.mode.qa !== 'pu_a'))
+			return;
 
 		var parts, urldata, type, cols, rows;
 		parts = url.split("?");
@@ -959,7 +964,6 @@ const loadPenpaPuzzle = (() => {
 		cols = parseInt(urldata[1]);
 		rows = parseInt(urldata[2]);
 
-		let pu = penpaGeneral.get_pu();
 		let title = (puzzlinkName[type] || [])[3] || type;
 		
 		let doc = {
@@ -1065,6 +1069,7 @@ const loadPenpaPuzzle = (() => {
 	}
 
 	function convertPuzzle(pu) {
+		if (!pu) return;
 
 		// Convert custom colors to hex
 		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertColorsToHex(pu.pu_q_col[i]);
@@ -1252,7 +1257,7 @@ const loadPenpaPuzzle = (() => {
 		.then(penpaRaw => penpaRaw.replace(/^penpa/, ''))
 		.then(parsePuzzleUrl)
 		.then(convertPuzzle)
-		.then(puzzle => PuzzleZipper.zip(JSON.stringify(puzzle)))
+		.then(puzzle => puzzle && PuzzleZipper.zip(JSON.stringify(puzzle)))
 		.catch(err => (console.error('Error fetching penpa:', err), Promise.reject(err)));
 
 

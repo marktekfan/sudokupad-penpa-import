@@ -89,8 +89,9 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()"></textarea>
 					</div>
 					<button id="importbtn" onclick="openInSudokupad()">Open in SudokuPad</button>
-					<button id="test1" onclick="test_puzzlink()">Test</button>
-					<button id="test2" onclick="test2()">Test</button>
+					<button id="test1" onclick="test_puzzlink()">Test All</button>
+					<button id="test2" onclick="test2()">Test2</button>
+                    <button id="test2" onclick="onClickTest()">Test alert</button>
 					<div id="disclaimer">(Beta version, for testing purposes only)</div>
 					<div id="errortext"> </div>
 					<div class="footer2">
@@ -124,29 +125,31 @@ body { background-color: #121212; } /* Avoid flash-of-white */
                 //urltext.value = 'https://swaroopg92.github.io/penpa-edit/#m=edit&p=7Vbfb6NGEH73X4FWqvqyDyzYGHjL5eJrpZxzl/iaRsiysE0SdNikGHoVkf/3mxlwGVjOtA/XqlKFGA/ffswv1jtz+K0Is0i60pO2K02p4LLHFjyYcjKe0G3W1yLOk8g35sVuHWUH4zLc/5gbt9FLFObyosif08w33oePj5LEhyTcREb+HBn7+gVl5KnhGfGe0Kcs3v5gvT1Z25C1rLJ2M5vJxzA5RKOgdr4cvZaeX17I8p0fCCWksOBWYinLj/5r+d4v57K8gyUhFWDXFckC9apR72kdtcsKVCbo81oH9QHUTZxtkmh1XSEf/KBcSIF+3tDbqIpd+nsk6jjweZPu1jEC6zCHGh2e45d65VBs089FzVXLoywvKNzTQk/QdhM0qlXQqPUEjbl856C95fEIxb+FsFd+gBl8alS3Ue/8V5BzkorkA8kZSYvkAqiytEm+JWmSnJC8Js4VyXuSlyTHJB3iTNHZ3wpHWB5mcgeZVBtG2CYCVwxQCPzCAKvLsBGYN8CYXvmZAZMOMKFXfmXAtGPDcRCYMYAYzIbjdgJzKBcW2JRsLBhANu4ZQDZuGsAl4KcG8KgenxpAmYTccoQqwhFFHGZXKaoJS1Cpbh2VNdaQbuGURTm94wglxUJWFiXxZ958zwmFlbck29erN/hX+U6bMbA8OjbxcuWY7hMyrX5NaVXCrZ7hqbqWowBONnFIk9WhyB7hxBQ+HXzwJwSsOjmFn2dFjSRp+pLE+zYtftqnWdS7hGC0ferjr9Nsi8bZwpcwSVpA1R5aUHXUtKA8g3OEPYdZln5pIbswf24B7MxpWYr2eTuAPGyHGH4OO952Tc7HkfhD0B3Y0DXs/7vGv9o18EOY/7HeEcCWgD90q2G8FKtwtUkTAXOIRIJtAoEdYjpBAYGd2zrBGrJgA4GdpRoBBrPWsakRJtMBCw6meS6GMWZx1gUGyVqc7sIBAutwOgGDPOfCcQcqOUXCxyEC61MawcOvydqfRoDuBwzW/HQfmOc5H9Ohj0EWWB/vt8D6uh4ldJjzQUCHHogCOvbAnnCxmqwT9xQLwzhXLBgCBpzAUDCwLWBIAAabEXoYWLCzkVqYy7dr/iCVI8ubPhze/KsL0vagJI3HnvcGQvnHT0hqq2nWO5IAfJpK2mjv+FHj2gQCuDZroEN93AC0Z+IAtDt0AKTPHQBqowdg35g+0Gp3AMGoujMIutLGEHTFJxEY7Ej7Cg==';
 
                 // Arrow Castle test, with removed gridlines between equal surfaces
-                //urltext.value = 'https://puzz.link/p?castle/10/10/k14110.10.10.03200.00.00.b10.b10.00.10.10.00.b10.b10.00.10.10.00.b10.10.10.10.00.00.00.00.b01300.00.00.22420.20.20.b00.20.20.00.22.00.00.20.b00.20.a00.22.00.a20.b00.00.00.00.20.20.20.20.k'
+                urltext.value = 'https://puzz.link/p?castle/10/10/k14110.10.10.03200.00.00.b10.b10.00.10.10.00.b10.b10.00.10.10.00.b10.10.10.10.00.00.00.00.b01300.00.00.22420.20.20.b00.20.20.00.22.00.00.20.b00.20.a00.22.00.a20.b00.00.00.00.20.20.20.20.k'
 			});
-
 			const Swal = {
 				fire: function(opts) {
-					Framework.showDialog({
-						parts: [
-							{tag: 'title', innerHTML: opts.title, style: 'text-align: center'},
-							{tag: 'label', innerHTML: opts.html},
-							{tag: 'options', options: [opts.confirmButtonText], style: 'flex-direction: row; justify-content: center;'},
-						],
-						onButton: this.handleDialogButton,
-						//centerOverBoard: true
-					});
+					let errortext = document.querySelector('#errortext');
+					errortext.innerHTML = opts.html;
+
+					// Framework.showDialog({
+					// 	parts: [
+					// 		{tag: 'title', innerHTML: opts.title, style: 'text-align: center'},
+					// 		{tag: 'label', innerHTML: opts.html},
+					// 		{tag: 'options', options: [opts.confirmButtonText], style: 'flex-direction: row; justify-content: center;'},
+					// 	],
+					// 	onButton: this.handleDialogButton,
+					// 	//centerOverBoard: true
+					// });
 				}
 			}
 			function onClickTest() {
 				// alert('Test')
 				Swal.fire({
-                    title: 'Swaroop says:',
-                    html: 'Rows/Columns Size must be in the range <h2 class="warn">1- + gridmax[square] + </h2>',
+                    title: 'Penpa import',
+                    html: 'Test message <h2 class="warn">Error occured</h2>',
                     icon: 'error',
-                    confirmButtonText: 'ok 🙂',
+                    confirmButtonText: 'ok',
                 })
 			// 	Framework.showDialog({
 			// 	parts: [
@@ -179,7 +182,7 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 			function openInSudokupad(event)
 			{
 				let urltext = document.querySelector('#penpa-url')
-				let urlstring = urltext.value;
+				let urlstring = urltext.value.trim();
 
 				let param = urlstring.substring(urlstring.indexOf('&') + 1);
 				if (param.length === 0)
@@ -187,8 +190,9 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 
 				Promise.resolve(urlstring)
 				.then(penpa => loadPenpaPuzzle(penpa))
-				.then(res => loadFPuzzle.compressPuzzle(res))
+				.then(res => res && loadFPuzzle.compressPuzzle(res))
 				.then(ctc => {
+					if (!ctc) return;		
 					var redirect = 'https://beta.sudokupad.app/ctc' + ctc;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');
