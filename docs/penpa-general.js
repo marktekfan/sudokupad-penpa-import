@@ -4,11 +4,15 @@ const PenpaGeneral = function(doc, userSettings) {
     const UserSettings = userSettings;
     PenpaPuzzle.document = doc;
 
+    class Panel {
+        draw_panel() { }
+    }
+
     const penpa_constraints = {
         'options_groups': []
     };
     let pu = undefined;
-    let panel_pu = undefined;
+    let panel_pu = new Panel();
     const sw_timer = {
         isPaused: () => false,
         start: () => {},
@@ -20,10 +24,6 @@ const PenpaGeneral = function(doc, userSettings) {
     const localStorage = {
         getItem: () => null,
     }
-    class Panel {
-        draw_panel() { }
-    }
-
     const $ = (elem) => ({
         val: (v) => { document[elem] = v; },
         trigger: (e) => { },

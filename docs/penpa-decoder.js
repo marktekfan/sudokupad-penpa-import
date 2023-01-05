@@ -9,18 +9,14 @@ const loadPenpaPuzzle = (() => {
 	};
 
 	class FakeDoc {
-		constructor() {
-			//this.ids = {}
-		}
+		constructor() { }
 		getElementById(id) {
 			let elem = this[id];
 			if (!elem) {
 				elem = {
 					id: id,
 					value: '',
-					style: {
-						display: 'none'
-					},
+					style: {},
 					classList: {
 						classes: {},
 						add: c => { elem.classList.classes[c] = 1; },
@@ -233,8 +229,8 @@ const loadPenpaPuzzle = (() => {
 
 	const offsetRC = (or, oc) => ([r, c]) => [r + or, c + oc];
 
-	const applyDefaultMeta = (doc, puzzle, metaName, defaultValFunc) => {
-		let metaValue = doc[metaName] || defaultValFunc(doc, puzzle);
+	const applyDefaultMeta = (pu, puzzle, metaName, value, defaultValFunc) => {
+		let metaValue = value || defaultValFunc(pu, puzzle);
 		if(metaValue !== undefined) {
 			puzzle.cages = puzzle.cages || [];
 			if(puzzle.cages.find(cage => (cage.value || '').indexOf(`${metaName}: `) === 0) === undefined) {
@@ -561,7 +557,7 @@ const loadPenpaPuzzle = (() => {
 		list.forEach((cage, i) => {
 			if (cage.length === 0) return;
 			let pCage = {unique: true};
-			const offset = offsetRC(-doc.row0, -doc.col0);
+			const offset = offsetRC(-doc.row0, -doc.col0); // FIXME: ref to doc
 			pCage.cells = cage.map(point2cell).map(offset);
 			if (listCol[i]) {
 				pCage.borderColor = listCol[i];
@@ -745,8 +741,8 @@ const loadPenpaPuzzle = (() => {
 		penpaGeneral.decode_puzzlink(urlstring);
 
 		let pu = penpaGeneral.get_pu();
-		pu.document = fakedoc;
-		pu.UserSettings = usersettings;
+		pu._document = fakedoc;
+		pu._UserSettings = usersettings;
 		return pu;
 	}
 
@@ -784,8 +780,8 @@ const loadPenpaPuzzle = (() => {
 		}
 
 		let pu = penpaGeneral.get_pu();
-		pu.document = fakedoc;
-		pu.UserSettings = usersettings;
+		pu._document = fakedoc;
+		pu._UserSettings = usersettings;
 		return pu;
 	}
 
@@ -833,7 +829,7 @@ const loadPenpaPuzzle = (() => {
 				list[i] = rgba2hex(list[i]);
 			}
 			else {
-				if (Array.isArray(list[i])) 
+				if (Array.isArray(list[i]))
 					delete list[i];
 			}
 		}
@@ -841,8 +837,8 @@ const loadPenpaPuzzle = (() => {
 
 	function convertPuzzle(pu) {
 		Object.keys(doc).forEach(k => delete doc[k]);
-		Object.assign(doc, pu.document);
-		const usersettings = pu.UserSettings;
+		Object.keys(pu._document).forEach(k => { if(pu._document[k].value !== undefined) doc[k] = pu._document[k].value; })
+		const usersettings = pu._UserSettings;
 
 		if (pu.pu_q_col) {
 			for(let i in pu.pu_q_col) {
@@ -854,16 +850,14 @@ const loadPenpaPuzzle = (() => {
 				convertColorsToHex(pu.pu_a_col[i]);
 			}
 		}
-		
-		doc.nb_size1 = pu.nx;
-		doc.nb_size2 = pu.ny;
-		doc.cols0 = doc.nb_size1;
-		doc.rows0 = doc.nb_size2;
+
+		doc.cols0 = pu.nx;
+		doc.rows0 = pu.ny;
 		doc.cols = doc.cols0 + 4;
 		doc.rows = doc.rows0 + 4;
 
-		// FIXME
-		doc.point = pu.point;
+		// Inject doc
+		doc.point = pu.point; // FIXME
 		PenpaTools.doc = doc;
 
 		let puzzle = {id: `penpa${md5Digest(JSON.stringify(pu))}`};
@@ -879,6 +873,9 @@ const loadPenpaPuzzle = (() => {
 		doc.row0 = top;
 
 		FakeContext.offset = [doc.row0, doc.col0]
+		FakeContext.penpaSize = pu._size;
+		FakeContext.ctcSize = 64;
+
 		const width = right - left + 1;
 		const height = bottom - top + 1;
 
@@ -954,10 +951,10 @@ const loadPenpaPuzzle = (() => {
 		// }
 
 		// Custom patch the puzzle
-		if ((doc.rules || '').indexOf('Box 4: Antiknight') !== -1)
+		if ((doc.saveinforules || '').indexOf('Box 4: Antiknight') !== -1)
 		{
 			// Sneeky text substute to supress anti-knight rule, which would otherwise apply to whole board
-			doc.rules = doc.rules.replace('Box 4: Antiknight', 'Box 4: Antik\u0578ight');
+			doc.saveinforules = doc.saveinforules.value.replace('Box 4: Antiknight', 'Box 4: Antik\u0578ight');
 		}
 		// 	// Change color and width of green whisper lines
 		// 	(puzzle.lines || []).forEach(line => {
@@ -981,20 +978,25 @@ const loadPenpaPuzzle = (() => {
 						part.wayPoints = part.wayPoints.map(offset).map(round);
 					}
 					if(part.fontSize) {
-						part.fontSize = round1(part.fontSize - 4); // Fix to compensate for fontSize hack in App.convertPuzzle
+						part.fontSize = round1(part.fontSize - 4); // Fix to compensate for fontSize hack in SP App.convertPuzzle
 					}
 				});
 			}
 		});
 
-		// A fix to compensate for fontSize hack in App.convertPuzzle
-		[].concat(puzzle.underlays || [], puzzle.overlays || []).forEach(part => { if(part.fontSize !== undefined) part.fontSize += 4; });
+		// A fix to compensate for fontSize hack in SP App.convertPuzzle
+		[].concat(puzzle.underlays || [], puzzle.overlays || []).forEach(part => {
+			 if(part.fontSize !== undefined)
+			 	part.fontSize += 4;
+		});
 
-		applyDefaultMeta(doc, puzzle, 'title', loadPuzzle.getDefaultTitle);
-		applyDefaultMeta(doc, puzzle, 'author', loadPuzzle.getDefaultAuthor);
-		applyDefaultMeta(doc, puzzle, 'rules', loadPuzzle.getDefaultRules);
+		// Add puzzle meta data
+		applyDefaultMeta(pu, puzzle, 'title', doc.saveinfotitle, getDefaultTitle);
+		applyDefaultMeta(pu, puzzle, 'author', doc.saveinfoauthor, getDefaultAuthor);
+		applyDefaultMeta(pu, puzzle, 'rules', doc.saveinforules, getDefaultRules);
 
-		// Add solution
+
+		// Add puzzle solution
 		if (pu.solution && !pu.multisolution) {
 			const {point2cell} = PenpaTools;
 			let stext = JSON.parse(pu.solution);
@@ -1037,10 +1039,6 @@ const loadPenpaPuzzle = (() => {
 		.catch(err => (console.error('Error fetching penpa:', err), Promise.reject(err)));
 
 
-	loadPuzzle.logUnsupported = false;
-	loadPuzzle.getDefaultTitle = getDefaultTitle;
-	loadPuzzle.getDefaultAuthor = getDefaultAuthor;
-	loadPuzzle.getDefaultRules = getDefaultRules;
 	loadPuzzle.parsePuzzleUrl = parsePuzzleUrl;
 	loadPuzzle.parsePenpaPuzzle = parsePenpaPuzzle;
 	loadPuzzle.parsePuzzLink = parsePuzzLink;

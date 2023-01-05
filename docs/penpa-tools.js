@@ -109,7 +109,7 @@ const PenpaTools = (() => {
 				let nextKey = p2 + ',' + nextp;
 				let nextVal = lines[nextKey];
 				if (nextVal === undefined || lines[k] !== nextVal) break; // not found or different line style
-				if (linesCol && linesCol[k] !== linesCol[nextKey]) break // not same custom color
+				if (linesCol && linesCol[k] !== linesCol[nextKey]) break // or not same custom color
 				delete lines[nextKey];
 				p2 = nextp;
 			} while (true);
