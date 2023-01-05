@@ -303,9 +303,9 @@ class FakeContext {
             }
             if (ctx.font) {
                 const fontsize = ctx.font.split('px')[0];
-                opts.height = round(fontsize * 1.5);
+                opts.height = round(fontsize * 1.4);
                 opts.width = round(2 / this.ctcSize); //Hack to remove background rect
-                opts.fontSize = fontsize * this.ctcSize * 0.9;
+                opts.fontSize = fontsize * this.ctcSize * 1.0;
                 if (ctx.fillStyle && ctx.fillStyle !== Color.BLACK)
                     opts.color = ctx.fillStyle;
                 if (ctx.fillStyle === Color.WHITE) {

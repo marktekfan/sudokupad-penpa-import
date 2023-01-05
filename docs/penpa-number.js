@@ -162,6 +162,7 @@ const PenpaNumber = (() => {
 				set_font_style(ctx, 0.5, number[1]);
 				//ctx.fillStyle = '#ff0000'
 				p_x += -0.2;
+				p_y -= 0.06;
 				const opts = Object.assign(ctx.toOpts(), {
 					center: [p_y, p_x],
 					text: number[0],

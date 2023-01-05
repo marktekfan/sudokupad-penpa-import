@@ -1198,9 +1198,6 @@ const loadPenpaPuzzle = (() => {
 					if(Array.isArray(part.wayPoints)) {
 						part.wayPoints = part.wayPoints.map(offset).map(round);
 					}
-					if(part.fontSize) {
-						part.fontSize = round1(part.fontSize - 4); // Fix to compensate for fontSize hack in SP App.convertPuzzle
-					}
 				});
 			}
 		});
@@ -1208,7 +1205,7 @@ const loadPenpaPuzzle = (() => {
 		// A fix to compensate for fontSize hack in SP App.convertPuzzle
 		[].concat(puzzle.underlays || [], puzzle.overlays || []).forEach(part => {
 			 if(part.fontSize !== undefined)
-			 	part.fontSize += 4;
+			 	part.fontSize = round1(part.fontSize - 4);;
 		});
 
 		// Add puzzle meta data
