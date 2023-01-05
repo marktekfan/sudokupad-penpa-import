@@ -3,7 +3,7 @@ const loadPenpaPuzzle = (() => {
 
 	const DEBUG = 0 || document.location.host.startsWith('127.0.0.1');
 
-	const doc = {};
+	const doc = {}; // Keep this declaration here
 	class UserSettings {
 		loadFromCookies() {}
 	};
@@ -954,22 +954,24 @@ const loadPenpaPuzzle = (() => {
 		if (!pu || (pu.user_tags.length === 0 && pu.mode.qa !== 'pu_a'))
 			return;
 
+		let variant = false
 		var parts, urldata, type, cols, rows;
 		parts = url.split("?");
 		urldata = parts[1].split("/");
 		if (urldata[1] === 'v:') {
 			urldata.splice(1, 1); // Ignore variant rules
+			variant = true;
 		}	
 		type = urldata[0];
-		cols = parseInt(urldata[1]);
-		rows = parseInt(urldata[2]);
 
-		let title = (puzzlinkName[type] || [])[3] || type;
-		
+		let title = (puzzlinkName[type] || [])[3] || type;		
+		let rules = [`${title} rules apply.`] ;
+		if (variant) rules.push("This puzzle uses variant rules.");
+
 		let doc = {
 			saveinfotitle: title,
-			saveinforules: `${title} rules apply.`,
-			saveinfoauthor: `puzz.link. <a style="color:white" href="https://puzz.link/rules.html?${type}" target="_blank">Rules</a>`
+			saveinforules: rules.join('\n'),
+			saveinfoauthor: `puzz.link`
 		}
 		pu._document = doc;
 		pu._UserSettings = usersettings;
