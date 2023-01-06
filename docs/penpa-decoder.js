@@ -1,9 +1,8 @@
-
+"use strict";
 const loadPenpaPuzzle = (() => {
 
 	const DEBUG = 0 || document.location.host.startsWith('127.0.0.1');
 
-	const doc = {}; // Keep this declaration here
 	class UserSettings {
 		loadFromCookies() {}
 	};
@@ -37,7 +36,6 @@ const loadPenpaPuzzle = (() => {
 			return undefined;
 		}
 	}
-
 
 	const getRegionShape = (size = 9) => {
 		if (size > 10) return [3, 3];
@@ -198,7 +196,7 @@ const loadPenpaPuzzle = (() => {
 				wayPoints.push(wayPoints[0]);
 				let ctx = new FakeContext();
 				set_line_style(ctx, ot); // thick line
-				opts = Object.assign(ctx.toOpts('line'), {
+				let opts = Object.assign(ctx.toOpts('line'), {
 					//color: '#FF0000',
 					wayPoints: PenpaTools.reduceWayPoints(wayPoints),
 					target: 'overlay'
@@ -215,8 +213,8 @@ const loadPenpaPuzzle = (() => {
 
 	function positionBoard(pu, puzzle, doc) {
 		// Add transparant rectangle to position the puzzle
-		ctx = new FakeContext();
-		opts = Object.assign(ctx.toOpts(), {
+		const ctx = new FakeContext();
+		const opts = Object.assign(ctx.toOpts(), {
 			backgroundColor: Color.TRANSPARENTWHITE, //'#cc4440',
 			// thickness: 10,//32,// * line.width,
 			center: [doc.rows0 / 2, doc.cols0 / 2],
@@ -327,7 +325,7 @@ const loadPenpaPuzzle = (() => {
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], listCol[key]);
 		});
 	}
-	draw_freeline = (qa, pu, puzzle, feature) => {
+	const draw_freeline = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
@@ -462,7 +460,7 @@ const loadPenpaPuzzle = (() => {
 			}), 'polygon');
 		});
 	}
-	draw_line = (qa, pu, puzzle, feature) => {
+	const draw_line = (qa, pu, puzzle, feature) => {
 		const list = pu[qa][feature] || [];
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
 		wpList.forEach(line => {
@@ -553,18 +551,17 @@ const loadPenpaPuzzle = (() => {
 	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
-		const {point2cell} = PenpaTools;
+		const {point2cell, point2cell0} = PenpaTools;
 		list.forEach((cage, i) => {
 			if (cage.length === 0) return;
-			let pCage = {unique: true};
-			const offset = offsetRC(-doc.row0, -doc.col0); // FIXME: ref to doc
-			pCage.cells = cage.map(point2cell).map(offset);
+			let cagePart = {unique: true};
+			cagePart.cells = cage.map(point2cell0);
 			if (listCol[i]) {
-				pCage.borderColor = listCol[i];
+				cagePart.borderColor = listCol[i];
 			}
 			// if(cage.value) pCage.value = cage.value;
 			//if(isIntStrict(cage.value)) pCage.sum = parseInt(cage.value);
-			puzzleAdd(puzzle, 'cages', pCage, 'killercages');
+			puzzleAdd(puzzle, 'cages', cagePart, 'killercages');
 		});
 	}
 	parse.deletelineE = (qa, pu, puzzle) => {
@@ -589,6 +586,7 @@ const loadPenpaPuzzle = (() => {
 		wpList.forEach(line => {
 			if (line.value === 0) return;
 			let shortLine = PenpaTools.shortenLine(line.wayPoints, 2/64);
+			let ctx = new FakeContext();
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
 			 	wayPoints: PenpaTools.reduceWayPoints(shortLine),
 				//d: 'M0 0',
@@ -734,213 +732,37 @@ const loadPenpaPuzzle = (() => {
 		return pu;
 	}
 
-	const puzzlinkName = {
-		aho: [0, 0, "アホになり切れ", "Aho-ni-Narikire", "shikaku"],
-		amibo: [0, 0, "あみぼー", "Amibo", "amibo"],
-		angleloop: [0, 0, "鋭直鈍ループ", "Angle Loop", "kouchoku"],
-		anglers: [0, 0, "フィッシング", "Anglers"],
-		antmill: [0, 0, "Ant Mill", "Ant Mill", "scrin"],
-		aqre: [0, 0, "Aqre", "Aqre", "aqre"],
-		aquarium: [0, 0, "アクアプレース", "Aquarium", "aquarium"],
-		araf: [0, 0, "相ダ部屋", "Araf", "araf"],
-		armyants: [0, 0, "ぐんたいあり", "Army Ants", "kaero"],
-		arukone: [0, 0, "アルコネ", "Arukone", "numlin"],
-		ayeheya: [0, 1, "∀人∃ＨＥＹＡ", "ekawayeh", "heyawake"],
-		balance: [0, 0, "Balance Loop", "Balance Loop"],
-		cave: [1, 0, "バッグ", "Cave", "kurodoko", {alias: "bag"}],
-		cbanana: [0, 0, "チョコバナナ", "Choco Banana"],
-		context: [0, 0, "Context", "Context"],
-		crossstitch: [0, 0, "Crossstitch", "Crossstitch"],
-		cts: [0, 0, "Cross the Streams", "Cross the Streams", "nonogram"],
-		barns: [1, 0, "バーンズ", "Barns"],
-		bdblock: [1, 0, "ボーダーブロック", "Border Block"],
-		bdwalk: [0, 0, "ビルウォーク", "Building Walk", "haisu"],
-		bonsan: [1, 0, "ぼんさん", "Bonsan", "bonsan"],
-		bosanowa: [1, 0, "ボサノワ", "Bosanowa", "", {alias: "bossanova"}],
-		box: [0, 0, "ボックス", "Box"],
-		skyscrapers: [0, 0, "ビルディングパズル", "Skyscrapers", "", {alias: "building", alias2: "skyscraper"}],
-		canal: [0, 0, "Canal View", "Canal View", "nurikabe"],
-		castle: [0, 0, "Castle Wall", "Castle Wall"],
-		cbblock: [0, 0, "コンビブロック", "Combi Block"],
-		chainedb: [0, 0, "チェンブロ", "Chained Block"],
-		chocona: [0, 0, "チョコナ", "Chocona", "shimaguni"],
-		coffeemilk: [0, 0, "コーヒー牛乳", "Coffee Milk", "wblink"],
-		cojun: [0, 0, "コージュン", "Cojun", "ripple"],
-		compass: [0, 0, "Compass", "Compass", "compass"],
-		coral: [0, 0, "Coral", "Coral", "nonogram"],
-		country: [1, 0, "カントリーロード", "Country Road"],
-		creek: [1, 0, "クリーク", "Creek"],
-		curvedata: [0, 0, "カーブデータ", "Curve Data"],
-		"curvedata-aux": [0, 0, "図形の編集", "Edit shape"],
-		dbchoco: [0, 0, "ダブルチョコ", "Double Choco", "cbblock"],
-		detour: [0, 0, "Detour", "Detour", "country"],
-		disloop: [0, 0, "Disorderly Loop", "Disorderly Loop", "tapaloop"],
-		dominion: [0, 0, "ドミニオン", "Dominion"],
-		doppelblock: [0, 0, "Doppelblock", "Doppelblock", "doppelblock"],
-		dosufuwa: [0, 0, "ドッスンフワリ", "Dosun-Fuwari"],
-		dotchi: [0, 0, "ドッチループ", "Dotchi-Loop", "country"],
-		doubleback: [0, 0, "Double Back", "Double Back", "country"],
-		easyasabc: [0, 0, "ABCプレース", "Easy as ABC"],
-		factors: [0, 0, "因子の部屋", "Rooms of Factors"],
-		familyphoto: [0, 0, "家族写真", "Family Photo"],
-		fillmat: [1, 0, "フィルマット", "Fillmat", "fillmat"],
-		fillomino: [0, 1, "フィルオミノ", "Fillomino", "", {kanpen2: "fillomino01"}],
-		firefly: [1, 0, "ホタルビーム", "Hotaru Beam"],
-		fivecells: [0, 0, "ファイブセルズ", "FiveCells", "nawabari"],
-		fourcells: [0, 0, "フォーセルズ", "FourCells", "nawabari"],
-		geradeweg: [0, 0, "グラーデヴェグ", "Geradeweg"],
-		goishi: [0, 1, "碁石ひろい", "Goishi"],
-		gokigen: [1, 0, "ごきげんななめ", "Slant", "gokigen"],
-		haisu: [0, 0, "Haisu", "Haisu"],
-		hakoiri: [1, 0, "はこいり○△□", "Hakoiri-masashi"],
-		hanare: [0, 0, "はなれ組", "Hanare-gumi", "hanare"],
-		hashikake: [0, 1, "橋をかけろ", "Hashiwokakero", "", {pzprurl: "hashi", kanpen: "hashi", alias: "bridges"}],
-		hebi: [1, 0, "へびいちご", "Hebi-Ichigo", "", {old: "snakes"}],
-		herugolf: [0, 0, "ヘルゴルフ", "Herugolf"],
-		heteromino: [0, 0, "ヘテロミノ", "Heteromino", "nawabari"],
-		heyablock: [0, 0, "へやブロ", "Heyablock", "shimaguni"],
-		heyabon: [1, 0, "へやぼん", "Heya-Bon", "bonsan"],
-		heyawake: [0, 1, "へやわけ", "Heyawake", "heyawake", {alias: "heyawacky"}],
-		hinge: [0, 0, "ちょうつがい", "Hinge", "shimaguni"],
-		hitori: [0, 1, "ひとりにしてくれ", "Hitori"],
-		icebarn: [1, 0, "アイスバーン", "Icebarn", "icebarn"],
-		icelom: [0, 0, "アイスローム", "Icelom", "icebarn"],
-		icelom2: [0, 0, "アイスローム２", "Icelom 2", "icebarn"],
-		icewalk: [0, 0, "アイスウォーク", "Ice Walk"],
-		ichimaga: [0, 0, "イチマガ", "Ichimaga", "ichimaga"],
-		ichimagam: [0, 0, "磁石イチマガ", "Magnetic Ichimaga", "ichimaga"],
-		ichimagax: [0, 0, "一回曲がって交差もするの", "Crossing Ichimaga", "ichimaga"],
-		interbd: [0, 0, "International Borders", "International Borders"],
-		juosan: [0, 0, "縦横さん", "Juosan"],
-		kaero: [1, 0, "お家に帰ろう", "Return Home"],
-		kaidan: [0, 0, "かいだんしばり", "Stairwell"],
-		kakuro: [0, 1, "カックロ", "Kakuro"],
-		kakuru: [0, 0, "カックル", "Kakuru"],
-		kazunori: [0, 0, "かずのりのへや", "Kazunori Room"],
-		kinkonkan: [1, 0, "キンコンカン", "Kin-Kon-Kan"],
-		koburin: [0, 0, "コブリン", "Koburin", "yajilin"],
-		kouchoku: [0, 0, "交差は直角に限る", "Kouchoku"],
-		kramma: [0, 0, "快刀乱麻", "KaitoRamma", "kramma"],
-		kramman: [0, 0, "新・快刀乱麻", "New KaitoRamma", "kramma"],
-		kropki: [0, 0, "Kropki", "Kropki", "minarism"],
-		kurochute: [0, 1, "クロシュート", "Kurochute"],
-		kurodoko: [0, 1, "黒どこ(黒マスはどこだ)", "Kurodoko"],
-		kurotto: [0, 0, "クロット", "Kurotto"],
-		kusabi: [0, 0, "クサビリンク", "Kusabi"],
-		ladders: [0, 0, "はしごをかけろ", "Ladders"],
-		lapaz: [0, 0, "La Paz", "La Paz"],
-		lightshadow: [0, 0, "Light and Shadow", "Light and Shadow"],
-		lightup: [0, 1, "美術館", "Akari", "", {pzprurl: "akari", kanpen: "bijutsukan"}],
-		lither: [0, 0, "Litherslink", "Litherslink"],
-		lits: [1, 1, "ＬＩＴＳ", "LITS", "lits"],
-		lohkous: [0, 0, "Lohkous", "Lohkous"],
-		lollipops: [0, 0, "ペロペロキャンディ", "Lollipops"],
-		lookair: [0, 0, "るっくえあ", "Look-Air"],
-		loopsp: [1, 0, "環状線スペシャル", "Loop Special", "pipelink"],
-		loute: [0, 0, "エルート", "L-route"],
-		makaro: [0, 0, "マカロ", "Makaro"],
-		mashu: [0, 1, "ましゅ", "Masyu", "", {kanpen: "masyu", alias: "pearl"}],
-		maxi: [0, 0, "Maxi Loop", "Maxi Loop", "country"],
-		meander: [0, 0, "にょろにょろナンバー", "Meandering Numbers", "ripple"],
-		mejilink: [0, 0, "メジリンク", "Mejilink"],
-		minarism: [1, 0, "マイナリズム", "Minarism"],
-		mines: [0, 0, "マインスイーパ", "Minesweeper", "kurotto"],
-		midloop: [0, 0, "ミッドループ", "Mid-loop"],
-		mirrorbk: [0, 0, "ミラーブロック", "Mirror Block", "cbblock"],
-		mochikoro: [1, 0, "モチコロ", "Mochikoro", "nurikabe"],
-		mochinyoro: [1, 0, "モチにょろ", "Mochinyoro", "nurikabe"],
-		moonsun: [0, 0, "月か太陽", "Moon or Sun", "country"],
-		nagare: [0, 0, "流れるループ", "Nagareru-Loop"],
-		nagenawa: [0, 0, "なげなわ", "Nagenawa", "nagenawa"],
-		nanro: [0, 1, "ナンロー", "Nanro"],
-		nawabari: [1, 0, "なわばり", "Territory", "nawabari"],
-		nikoji: [0, 0, "NIKOJI", "NIKOJI", "cbblock"],
-		nondango: [0, 0, "ノンダンゴ", "Nondango"],
-		nonogram: [0, 0, "ののぐらむ", "Nonogram"],
-		norinori: [0, 1, "のりのり", "Norinori", "lits"],
-		nothree: [0, 0, "ノースリー", "No Three"],
-		numlin: [0, 1, "ナンバーリンク", "Numberlink", "", {kanpen: "numberlink"}],
-		numrope: [0, 0, "ナンバーロープ", "Number Rope", "kakuru"],
-		nuribou: [1, 0, "ぬりぼう", "Nuribou", "nurikabe"],
-		nurikabe: [0, 1, "ぬりかべ", "Nurikabe", "nurikabe"],
-		nurimaze: [0, 0, "ぬりめいず", "Nuri-Maze", "nurimaze"],
-		nurimisaki: [0, 0, "ぬりみさき", "Nurimisaki", "kurodoko"],
-		nuriuzu: [0, 0, "ぬりうず", "Nuri-uzu", "tentaisho"],
-		ovotovata: [0, 0, "Ovotovata", "Ovotovata", "country"],
-		oneroom: [0, 0, "ワンルームワンドア", "One Room One Door", "heyawake"],
-		onsen: [0, 0, "温泉めぐり", "Onsen-meguri", "country"],
-		paintarea: [1, 0, "ペイントエリア", "Paintarea"],
-		parquet: [0, 0, "Parquet", "Parquet"],
-		pencils: [0, 0, "ペンシルズ", "Pencils"],
-		pentominous: [0, 0, "Pentominous", "Pentominous", "fillomino"],
-		pentopia: [0, 0, "Pentopia", "Pentopia", "statuepark"],
-		pipelink: [1, 0, "パイプリンク", "Pipelink", "pipelink"],
-		pipelinkr: [1, 0, "帰ってきたパイプリンク", "Pipelink Returns", "pipelink"],
-		putteria: [0, 0, "プッテリア", "Putteria", "hanare"],
-		ququ: [0, 0, "区区", "Ququ"],
-		railpool: [0, 0, "Rail Pool", "Rail Pool"],
-		rassi: [0, 0, "Rassi Silai", "Rassi Silai", "country"],
-		rectslider: [0, 0, "四角スライダー", "Rectangle-Slider", "bonsan"],
-		reflect: [1, 0, "リフレクトリンク", "Reflect Link"],
-		renban: [0, 0, "連番窓口", "Renban-Madoguchi"],
-		ringring: [0, 0, "リングリング", "Ring-ring", "nagenawa"],
-		ripple: [0, 1, "波及効果", "Ripple Effect", "ripple", {kanpen: "hakyukoka"}],
-		roma: [0, 0, "ろーま", "Roma", "", {alias: "rome"}],
-		roundtrip: [0, 0, "Round Trip", "Round Trip"],
-		sashigane: [0, 0, "さしがね", "Sashigane", "loute"],
-		satogaeri: [0, 1, "さとがえり", "Satogaeri", "bonsan", {alias: "sato", kanpen: "satogaeri"}],
-		scrin: [0, 0, "スクリン", "Scrin"],
-		shakashaka: [0, 1, "シャカシャカ", "Shakashaka"],
-		shikaku: [0, 1, "四角に切れ", "Shikaku", "shikaku"],
-		shimaguni: [1, 0, "島国", "Islands", "shimaguni"],
-		shugaku: [1, 0, "修学旅行の夜", "School Trip"],
-		shwolf: [0, 0, "ヤギとオオカミ", "Goats and Wolves", "kramma"],
-		simpleloop: [0, 0, "Simple Loop", "Simple Loop", "country"],
-		slalom: [1, 1, "スラローム", "Slalom", "", {alias: "suraromu"}],
-		slither: [0, 1, "スリザーリンク", "Slitherlink", "", {kanpen: "slitherlink"}],
-		snake: [0, 0, "Snake", "Snake"],
-		snakepit: [0, 0, "Snake Pit", "Snake Pit", "fillomino"],
-		starbattle: [0, 0, "スターバトル", "Star Battle"],
-		squarejam: [0, 0, "Square Jam", "Square Jam"],
-		statuepark: [0, 0, "Statue Park", "Statue Park"],
-		"statuepark-aux": [0, 0, "図形の編集", "Edit shape"],
-		stostone: [0, 0, "ストストーン", "Stostone", "shimaguni"],
-		sudoku: [0, 1, "数独", "Sudoku"],
-		sukoro: [1, 0, "数コロ", "Sukoro", "sukoro"],
-		sukororoom: [0, 0, "数コロ部屋", "Sukoro-room", "sukoro"],
-		symmarea: [0, 0, "シンメトリーエリア", "Symmetry Area", "fillomino"],
-		tajmahal: [0, 0, "タージ・マハル", "Taj Mahal", "kouchoku"],
-		takoyaki: [0, 0, "たこ焼き", "Takoyaki", "kaidan"],
-		tapa: [0, 0, "Tapa", "Tapa"],
-		tapaloop: [0, 0, "Tapa-Like Loop", "Tapa-Like Loop"],
-		tasquare: [0, 0, "たすくえあ", "Tasquare"],
-		tatamibari: [1, 0, "タタミバリ", "Tatamibari"],
-		tateyoko: [1, 0, "タテボーヨコボー", "Tatebo-Yokobo"],
-		tawa: [0, 0, "たわむれんが", "Tawamurenga"],
-		tentaisho: [0, 0, "天体ショー", "Tentaisho"],
-		tents: [0, 0, "Tents", "Tents", "tents"],
-		tilepaint: [1, 0, "タイルペイント", "Tilepaint"],
-		toichika: [0, 0, "遠い誓い", "Toichika"],
-		toichika2: [0, 0, "遠い誓い２", "Toichika 2", "toichika"],
-		tontti: [0, 0, "Tonttiraja", "Tonttiraja"],
-		tren: [0, 0, "パーキング", "Tren"],
-		triplace: [0, 0, "トリプレイス", "Tri-place"],
-		tslither: [0, 0, "Touch Slitherlink", "Touch Slitherlink", "vslither"],
-		usotatami: [0, 0, "ウソタタミ", "Uso-tatami", "fillmat"],
-		usoone: [0, 0, "ウソワン", "Uso-one"],
-		view: [1, 0, "ヴィウ", "View", "sukoro"],
-		voxas: [0, 0, "Voxas", "Voxas"],
-		vslither: [0, 0, "Vertex Slitherlink", "Vertex Slitherlink"],
-		wagiri: [0, 0, "ごきげんななめ・輪切", "Wagiri", "gokigen"],
-		walllogic: [0, 0, "ウォールロジック", "Wall Logic"],
-		wblink: [0, 0, "シロクロリンク", "Shirokuro-link"],
-		yajikazu: [1, 0, "やじさんかずさん", "Yajisan-Kazusan"],
-		yajilin: [0, 1, "ヤジリン", "Yajilin", "", {pzprurl: "yajilin", kanpen: "yajilin",alias: "yajirin"}],
-		"yajilin-regions": [0, 0, "ヘヤジリン", "Regional Yajilin", "yajilin", {alias: "yajirin-regions"}],
-		yajisoko: [0, 0, "やじさん倉庫番", "Yajisan-Sokoban", "yosenabe"],
-		yajitatami: [0, 0, "ヤジタタミ", "Yajitatami"],
-		yinyang: [0, 0, "しろまるくろまる", "Yin-Yang"],
-		yosenabe: [0, 0, "よせなべ", "Yosenabe"]
+	const puzzlinkNames = {
+		"aho": "Aho-ni-Narikire", "amibo": "Amibo", "angleloop": "Angle Loop", "anglers": "Anglers", "antmill": "Ant Mill", "aqre": "Aqre", "aquarium": "Aquarium", "araf": "Araf",
+		"armyants": "Army Ants", "arukone": "Arukone", "ayeheya": "ekawayeh", "balance": "Balance Loop", "cave": "Cave", "cbanana": "Choco Banana", "context": "Context",
+		"crossstitch": "Crossstitch", "cts": "Cross the Streams", "barns": "Barns", "bdblock": "Border Block", "bdwalk": "Building Walk", "bonsan": "Bonsan", "bosanowa": "Bosanowa",
+		"box": "Box", "skyscrapers": "Skyscrapers", "canal": "Canal View", "castle": "Castle Wall", "cbblock": "Combi Block", "chainedb": "Chained Block", "chocona": "Chocona",
+		"coffeemilk":"Coffee Milk", "cojun": "Cojun", "compass": "Compass", "coral": "Coral", "country": "Country Road", "creek": "Creek", "curvedata": "Curve Data", 
+		"curvedata-aux": "Edit shape", "dbchoco": "Double Choco", "detour": "Detour", "disloop": "Disorderly Loop", "dominion": "Dominion", "doppelblock": "Doppelblock", 
+		"dosufuwa": "Dosun-Fuwari", "dotchi": "Dotchi-Loop", "doubleback": "Double Back", "easyasabc": "Easy as ABC", "factors": "Rooms of Factors", "familyphoto": "Family Photo", 
+		"fillmat": "Fillmat", "fillomino": "Fillomino", "firefly": "Hotaru Beam", "fivecells": "FiveCells", "fourcells": "FourCells", "geradeweg": "Geradeweg", "goishi": "Goishi", 
+		"gokigen": "Slant", "haisu": "Haisu", "hakoiri": "Hakoiri-masashi", "hanare": "Hanare-gumi", "hashikake": "Hashiwokakero", "hebi": "Hebi-Ichigo", "herugolf": "Herugolf", 
+		"heteromino": "Heteromino", "heyablock": "Heyablock", "heyabon": "Heya-Bon", "heyawake": "Heyawake", "hinge": "Hinge", "hitori": "Hitori", "icebarn": "Icebarn", "icelom": "Icelom", 
+		"icelom2": "Icelom 2", "icewalk": "Ice Walk", "ichimaga": "Ichimaga", "ichimagam": "Magnetic Ichimaga", "ichimagax": "Crossing Ichimaga", "interbd": "International Borders", 
+		"juosan": "Juosan", "kaero": "Return Home", "kaidan": "Stairwell", "kakuro": "Kakuro", "kakuru": "Kakuru", "kazunori": "Kazunori Room", "kinkonkan": "Kin-Kon-Kan", 
+		"koburin": "Koburin", "kouchoku": "Kouchoku", "kramma": "KaitoRamma", "kramman": "New KaitoRamma", "kropki": "Kropki", "kurochute": "Kurochute", "kurodoko": "Kurodoko", 
+		"kurotto": "Kurotto", "kusabi": "Kusabi", "ladders": "Ladders", "lapaz": "La Paz", "lightshadow": "Light and Shadow", "lightup": "Akari", "lither": "Litherslink", "lits": "LITS", 
+		"lohkous": "Lohkous", "lollipops": "Lollipops", "lookair": "Look-Air", "loopsp": "Loop Special", "loute": "L-route", "makaro": "Makaro", "mashu": "Masyu", "maxi": "Maxi Loop", 
+		"meander": "Meandering Numbers", "mejilink": "Mejilink", "minarism": "Minarism", "mines": "Minesweeper", "midloop": "Mid-loop", "mirrorbk": "Mirror Block", "mochikoro": "Mochikoro", 
+		"mochinyoro": "Mochinyoro", "moonsun": "Moon or Sun", "nagare": "Nagareru-Loop", "nagenawa": "Nagenawa", "nanro": "Nanro", "nawabari": "Territory", "nikoji": "NIKOJI", 
+		"nondango": "Nondango", "nonogram": "Nonogram", "norinori": "Norinori", "nothree": "No Three", "numlin": "Numberlink", "numrope": "Number Rope", "nuribou": "Nuribou", 
+		"nurikabe": "Nurikabe", "nurimaze": "Nuri-Maze", "nurimisaki": "Nurimisaki", "nuriuzu": "Nuri-uzu", "ovotovata": "Ovotovata", "oneroom": "One Room One Door", "onsen": "Onsen-meguri", 
+		"paintarea": "Paintarea", "parquet": "Parquet", "pencils": "Pencils", "pentominous": "Pentominous", "pentopia": "Pentopia", "pipelink": "Pipelink", "pipelinkr": "Pipelink Returns", 
+		"putteria": "Putteria", "ququ": "Ququ", "railpool": "Rail Pool", "rassi": "Rassi Silai", "rectslider": "Rectangle-Slider", "reflect": "Reflect Link", "renban": "Renban-Madoguchi", 
+		"ringring": "Ring-ring", "ripple": "Ripple Effect", "roma": "Roma", "roundtrip": "Round Trip", "sashigane": "Sashigane", "satogaeri": "Satogaeri", "scrin": "Scrin", 
+		"shakashaka": "Shakashaka", "shikaku": "Shikaku", "shimaguni": "Islands", "shugaku": "School Trip", "shwolf": "Goats and Wolves", "simpleloop": "Simple Loop", "slalom": "Slalom", 
+		"slither": "Slitherlink", "snake": "Snake", "snakepit": "Snake Pit", "starbattle": "Star Battle", "squarejam": "Square Jam", "statuepark": "Statue Park", "statuepark-aux": "Edit shape", 
+		"stostone": "Stostone", "sudoku": "Sudoku", "sukoro": "Sukoro", "sukororoom": "Sukoro-room", "symmarea": "Symmetry Area", "tajmahal": "Taj Mahal", "takoyaki": "Takoyaki", 
+		"tapa": "Tapa", "tapaloop": "Tapa-Like Loop", "tasquare": "Tasquare", "tatamibari": "Tatamibari", "tateyoko": "Tatebo-Yokobo", "tawa": "Tawamurenga", "tentaisho": "Tentaisho", 
+		"tents": "Tents", "tilepaint": "Tilepaint", "toichika": "Toichika", "toichika2": "Toichika 2", "tontti": "Tonttiraja", "tren": "Tren", "triplace": "Tri-place", 
+		"tslither": "Touch Slitherlink", "usotatami": "Uso-tatami", "usoone": "Uso-one", "view": "View", "voxas": "Voxas", "vslither": "Vertex Slitherlink", "wagiri": "Wagiri", 
+		"walllogic": "Wall Logic", "wblink": "Shirokuro-link", "yajikazu": "Yajisan-Kazusan", "yajilin": "Yajilin", "yajilin-regions": "Regional Yajilin", "yajisoko": "Yajisan-Sokoban", 
+		"yajitatami": "Yajitatami", "yinyang": "Yin-Yang", "yosenabe": "Yosenabe"
 	}
 
 	const parsePuzzLink = (url) => {
@@ -964,7 +786,7 @@ const loadPenpaPuzzle = (() => {
 		}	
 		type = urldata[0];
 
-		let title = (puzzlinkName[type] || [])[3] || type;		
+		let title = (puzzlinkNames[type] || [])[3] || type;		
 		let rules = [`${title} rules apply.`] ;
 		if (variant) rules.push("This puzzle uses variant rules.");
 
@@ -1064,7 +886,7 @@ const loadPenpaPuzzle = (() => {
 				list[i] = rgba2hex(list[i]);
 			}
 			else {
-				if (Array.isArray(list[i]))
+				if (list[i] === null || Array.isArray(list[i]))
 					delete list[i];
 			}
 		}
@@ -1076,6 +898,8 @@ const loadPenpaPuzzle = (() => {
 		// Convert custom colors to hex
 		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertColorsToHex(pu.pu_q_col[i]);
 		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertColorsToHex(pu.pu_a_col[i]);
+
+		const doc = {};
 
 		doc.cols0 = pu.nx;
 		doc.rows0 = pu.ny;
@@ -1222,7 +1046,7 @@ const loadPenpaPuzzle = (() => {
 
 		// Add puzzle solution
 		if (pu.solution && !pu.multisolution) {
-			const {point2cell} = PenpaTools;
+			const {point2cell0} = PenpaTools;
 			let stext = JSON.parse(pu.solution);
 			let [top, left, bottom, right] = parse.bb;
 			const cols = right - left + 1;
@@ -1230,9 +1054,7 @@ const loadPenpaPuzzle = (() => {
 			let sol = Array(rows * cols).fill('?');
 			stext[4].forEach(s => {
 				let [point, val] = s.split(',');
-				let [r, c] = point2cell(point);
-				r -= doc.row0;
-				c -= doc.col0;
+				let [r, c] = point2cell0(point);
 				let pos = r * cols + c;
 				if (pos >= 0 && pos < sol.length) {
 					sol[pos] = val;

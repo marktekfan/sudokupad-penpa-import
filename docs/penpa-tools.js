@@ -388,6 +388,12 @@ const PenpaTools = (() => {
 		const c = Math.floor(point.x - 2);
 		return [r, c];
 	}
+	C.point2cell0 = function(p) {
+		const point = C.doc.point[p];
+		const r = Math.floor(point.y - 2) - C.doc.row0;
+		const c = Math.floor(point.x - 2) - C.doc.col0;
+		return [r, c];
+	}
 	C.ctcRC2k = function(r, c = undefined) {
 		if (Array.isArray(r)) [r, c] = r;
 		else if (c === undefined) ({r, c} = r);
