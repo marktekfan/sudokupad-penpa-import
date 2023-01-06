@@ -12,8 +12,8 @@ class FakeContext {
         this.lineCap = "round";
         // this.textAlign = "center";
         // this.textBaseline = "alphabetic";
-        this.ctcSize = FakeContext.ctcSize;
-        this.penpaSize = FakeContext.penpaSize;
+        this.ctcSize = Number(FakeContext.ctcSize);
+        this.penpaSize = Number(FakeContext.penpaSize);
         this.offet = FakeContext.offset;
         this.path = []
         this._start = false;
@@ -118,9 +118,13 @@ class FakeContext {
         controlPoints = cp;
         
         if(controlPoints.length === 6 && cp[1] < 0.1) {
-            if (this.fillStyle === this.strokeStyle || this.strokeStyle === Color.TRANSPARENTBLACK || this.strokeStyle === Color.TRANSPARENTWHITE)
-            // simple narrow arrow
-            return this.arrowLine(startX, startY, endX, endY, controlPoints);
+            if (this.fillStyle === this.strokeStyle 
+                || this.strokeStyle === Color.TRANSPARENTBLACK 
+                || this.strokeStyle === Color.TRANSPARENTWHITE 
+                || this.strokeStyle === Color.WHITE) {
+                // simple narrow arrow
+                return this.arrowLine(startX, startY, endX, endY, controlPoints);
+            }
         }
         return this.arrowN(startX, startY, endX, endY, controlPoints);
     }
@@ -131,6 +135,7 @@ class FakeContext {
         var sin = dy / len;
         var cos = dx / len;
         var a = [];
+        // this.strokeStyle = '#00c040'
         a.push(0, 0);
         for (var i = 0; i < controlPoints.length; i += 2) {
             var x = controlPoints[i];
@@ -154,7 +159,8 @@ class FakeContext {
         // console.warn(controlPoints.length, a.length);
     };
     arrowLine(startX, startY, endX, endY, controlPoints) {
-        this.lineWidth = controlPoints[1] * this.ctcSize * 1.8;
+        // Highly tweaked lineWidth cacluation, don't touch!
+        this.lineWidth = (controlPoints[1] * 2.2 * this.penpaSize) - 0.2;
         this.lineJoin = 'miter'
         this.lineCap = 'butt'
         this.strokeStyle = this.fillStyle
@@ -178,7 +184,7 @@ class FakeContext {
         y = headwidth;
         a.push(x < 0 ? len + x : x, y/2);
         // tip
-        a.push(len-0.05, 0);
+        a.push(len - 0.05, 0);
         // arrowhead side 2
         a.push(x < 0 ? len + x : x, -y/2);
         // back of head
@@ -297,10 +303,6 @@ class FakeContext {
                 if (ctx.strokeStyle !== ctx.fillStyle)
                     opts.borderColor = ctx.strokeStyle;
             }
-            if (ctx.lineWidth) {
-                if (ctx.strokeStyle !== ctx.fillStyle)
-                    opts.borderSize = ctx.lineWidth * this.ctcSize / this.penpaSize;
-            }
             if (ctx.font) {
                 const fontsize = ctx.font.split('px')[0];
                 opts.height = round(fontsize * 1.4);
@@ -314,8 +316,10 @@ class FakeContext {
                 if(ctx['stroke-width'] !== undefined) {
                     opts['stroke-width'] = ctx['stroke-width'];
                 }
+                else if (ctx.lineWidth > 0) {
+                    opts['stroke-width'] = ctx.lineWidth * this.ctcSize / this.penpaSize;
+                }
                 //opts.fill = '#ff0000';
-
                 if (ctx.fillStyle === Color.TRANSPARENTWHITE) {
                     opts.textStroke = ctx.strokeStyle;
                     opts.borderColor = Color.TRANSPARENTWHITE;
@@ -327,8 +331,14 @@ class FakeContext {
                 }
             }
             else {
-                if (ctx.fillStyle && ctx.fillStyle !== Color.TRANSPARENTWHITE)
-                opts.backgroundColor = ctx.fillStyle;
+                if (ctx.lineWidth) {
+                    if (ctx.strokeStyle !== ctx.fillStyle) {
+                        opts.borderSize = ctx.lineWidth * this.ctcSize / this.penpaSize;
+                    }
+                }
+                if (ctx.fillStyle && ctx.fillStyle !== Color.TRANSPARENTWHITE) {
+                    opts.backgroundColor = ctx.fillStyle;
+                }
             }
         }
 

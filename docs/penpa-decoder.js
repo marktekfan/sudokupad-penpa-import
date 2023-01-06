@@ -282,7 +282,7 @@ const loadPenpaPuzzle = (() => {
 		});
 	}
 	parse.number = (qa, pu, puzzle, feature = 'number') => {
-		const draw = new PenpaNumber(pu, puzzle, 64, {puzzleAdd});
+		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
 		Object.keys(list).forEach(key => {
             if (key.slice(-1) === 'E') { // Overwriting in Edge Mode
@@ -294,7 +294,7 @@ const loadPenpaPuzzle = (() => {
 		});
 	}
 	parse.numberS = (qa, pu, puzzle, feature = 'numberS') => {
-		const draw = new PenpaNumber(pu, puzzle, 64, {puzzleAdd});
+		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
 		Object.keys(list).forEach(key => {
 			const number = list[key];
