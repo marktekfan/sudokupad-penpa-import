@@ -2,7 +2,8 @@ const PenpaTools = (() => {
     function _constructor() { }
 	const C = _constructor;//, P = Object.assign(C.prototype, {constructor: C});
 
-    C.doc = undefined;
+    C.doc = undefined; // Will be injected
+
 	C.reduceSurfaces = function(centers, predicate) {
 		//Sort centers, this will give best results.
 		centers.sort((a, b) => C.compareRC(a.center, b.center));
@@ -146,21 +147,35 @@ const PenpaTools = (() => {
 		return listwp;
 	}
 
-	C.shortenLine = function(wayPoints, l) {
-		if (!Array.isArray(wayPoints) || wayPoints.length < 2) return wayPoints;		
+	// Shorten line by a fixed amount
+	C.shortenLine = function(wayPoints, shortenStart, shortenEnd) {
+		if (!Array.isArray(wayPoints) || wayPoints.length < 2) return wayPoints;
 		const wp = wayPoints;
 		let first = 0;
 		let dx = wp[first + 1][0] - wp[first][0];
 		let dy = wp[first + 1][1] - wp[first][1];
 		let d = Math.sqrt(dx * dx + dy * dy);
-		let x1 = wp[first][0] + dx * (l / d);
-		let y1 = wp[first][1] + dy * (l / d);		
+		let x1 = wp[first][0] + dx * (shortenStart / d);
+		let y1 = wp[first][1] + dy * (shortenStart / d);
 		let last = wp.length - 1;
 		dx = wp[last][0] - wp[last - 1][0];
 		dy = wp[last][1] - wp[last - 1][1];
 		d = Math.sqrt(dx * dx + dy * dy);
-		let x2 = wp[last][0] - dx * (l / d);
-		let y2 = wp[last][1] - dy * (l / d);
+		let x2 = wp[last][0] - dx * (shortenEnd / d);
+		let y2 = wp[last][1] - dy * (shortenEnd / d);
+		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
+	}
+
+	// Shrink line by a factor
+	C.shrinkLine = function(wayPoints, r) {
+		if (!Array.isArray(wayPoints) || wayPoints.length < 2) return wayPoints;
+		const wp = wayPoints;
+		let first = 0;
+		let last = wp.length - 1;
+		var x1 = r * wp[first][0] + (1 - r) * wp[last][0];
+		var y1 = r * wp[first][1] + (1 - r) * wp[last][1];
+		var x2 = (1 - r) * wp[first][0] + r * wp[last][0];
+		var y2 = (1 - r) * wp[first][1] + r * wp[last][1];
 		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
 	}
 
@@ -378,10 +393,9 @@ const PenpaTools = (() => {
 	C.round = function(num) { return C.round3(num); }
 
 
-	C.isCtcCell = function(rc, bb) {
+	C.isCtcCell = function(rc) {
 		const [r, c] = rc;
-		const {width, height} = bb;
-		return (r >= 0 && r < height & c >= 0 && c <= width);
+		return (r >= 0 && r < C.doc.height && c >= 0 && c <= C.doc.width);
 	}
 	C.point2cell = function(p) {
 		const point = C.doc.point[p];
@@ -389,45 +403,26 @@ const PenpaTools = (() => {
 		const c = Math.floor(point.x - 2) - C.doc.col0;
 		return [r, c];
 	}
-	// C.point2cell0 = function(p) {
-	// 	const point = C.doc.point[p];
-	// 	const r = Math.floor(point.y - 2);
-	// 	const c = Math.floor(point.x - 2);
-	// 	return [r, c];
-	// }
-	// C.ctcRC2k = function(r, c = undefined) {
-	// 	return C.RC2k(r, c);
-	// 	if (Array.isArray(r)) [r, c] = r;
-	// 	else if (c === undefined) ({r, c} = r);
-	// 	const cols = C.doc.cols;
-	// 	return (Math.floor(r) + 2 + C.doc.row0) * cols + Math.floor(c) + 2 + C.doc.col0;
-	// }
 	C.RC2k = function(r, c = undefined) {
 		if (Array.isArray(r)) [r, c] = r;
 		else if (c === undefined) ({r, c} = r);
-		const cols = C.doc.cols;
-		return (Math.floor(r) + 2 + C.doc.row0) * cols + Math.floor(c) + 2 + C.doc.col0;
+		const rowsize = C.doc.nx + 4;
+		return (Math.floor(r) + 2 + C.doc.row0) * rowsize + Math.floor(c) + 2 + C.doc.col0;
 	}
 	C.xy2k = function(x, y) {
 		if (Array.isArray(x)) [x, y] = x;
 		else if (x === undefined) ({r: y, c: x} = y);
-		const cols = C.doc.cols;
-		return (Math.floor(y)) * cols + Math.floor(x);
+		const rowsize = C.doc.nx + 4;
+		return (Math.floor(y)) * rowsize + Math.floor(x);
 	}
 	C.point2RC = function(p) {
 		const point = C.doc.point[p];
-		const r = point.y - 2 - C.doc.row0;		
+		const r = point.y - 2 - C.doc.row0;
 		const c = point.x - 2 - C.doc.col0;
 		return [r, c];
 	}
 	C.point = function(p) {
 		return C.doc.point[p];
-	}
-	C.toCtcX = function(x) {
-		return x;// - C.doc.col0;
-	}
-	C.toCtcY = function(y) {
-		return y;// - C.doc.row0;
 	}
 
 	return C;

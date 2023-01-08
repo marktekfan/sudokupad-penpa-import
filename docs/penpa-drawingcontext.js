@@ -38,7 +38,7 @@ const DrawingContext = (() => {
     }
     //helper function to map canvas-textBaseline to svg-dominantBaseline
     function getDominantBaseline(textBaseline) {
-        const mapping = { "alphabetic": "alphabetic", "hanging": "hanging", "top": "text-before-edge", "bottom": "text-after-edge", "middle": "central" };
+        const mapping = { "alphabetic": "alphabetic", "hanging": "hanging", "top": "text-before-edge", "bottom": "text-after-edge", "middle": "middle" };
         return mapping[textBaseline] || mapping.alphabetic;
     }
 
@@ -168,7 +168,7 @@ const DrawingContext = (() => {
         this.closePath();
     }
     P._arrowLine = function(startX, startY, endX, endY, controlPoints) {
-        // Highly tweaked lineWidth calcuation, don't touch!
+        // Highly tweaked lineWidth calculation, don't touch!
         this.lineWidth = (controlPoints[1] * 2.2 * this.penpaSize) - 0.2;
         this.lineJoin = 'miter'
         this.lineCap = 'butt'
@@ -207,109 +207,27 @@ const DrawingContext = (() => {
         }
     }
 
-    // P._pathToOpts = function() {
-    //     const mapPathToPuzzle = p => {
-    //         const {round, round1, round2, toCtcX, toCtcY} = PenpaTools;
-    //         const mapX = (d) => round1(toCtcX(d) * this.ctcSize);
-    //         const mapY = (d) => round1(toCtcY(d) * this.ctcSize);
-    //         const scale = (d) => round1(d * this.ctcSize);
-    //         const scale2 = (d) => round2(d * this.ctcSize);
-    //             if(p.length === 1) {
-    //             return p[0];
-    //         }
-    //         else if('ML'.includes(p[0])) {
-    //             return `${p[0]}${mapX(p[1])} ${mapY(p[2])}`;
-    //         }
-    //         else if('ml'.includes(p[0])) {
-    //             return `${p[0]}${scale(p[1])} ${scale(p[2])}`;
-    //         }
-    //         else if('A'.includes(p[0])) {
-    //             return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${mapX(p[6])} ${mapY(p[7])}`;
-    //         }
-    //         else if('a'.includes(p[0])) {
-    //             if (Math.max(p[1], p[2]) > 0.5) // Large radius should round with more decimals for better precision
-    //                 return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`;
-    //             else
-    //                 return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale(p[6])} ${scale(p[7])}`;
-    //         }
-    //         else if('Q'.includes(p[0])) {
-    //             return `${p[0]}${mapX(p[1])} ${mapY(p[2])} ${mapX(p[3])} ${mapY(p[4])}`;
-    //         }
-    //         else if('q'.includes(p[0])) {
-    //             return `${p[0]}${scale(p[1])} ${scale(p[2])} ${scale(p[3])} ${scale(p[4])}`;
-    //         }
-    //         else {
-    //             console.error('UNEXPECTED PATH COMMAND: ', p);
-    //             debugger;
-    //             return p.join(' ');
-    //         }
-    //     }
-    //     let ctx = this;
-    //     let opts = {};
-    //     if (ctx.lineWidth && ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
-    //         opts.thickness = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
-    //         opts.color = ctx.strokeStyle;
-    //     }
-    //     opts.d = this.path.map(mapPathToPuzzle).join('');
-    //     if (this._fill) {
-    //         opts.fill = ctx.fillStyle;
-    //     }
-
-    //     if (ctx.lineDash.length > 0) {
-    //         opts['stroke-dasharray'] = ctx.lineDash.map(scale).map(round).join(',');
-    //         if (ctx.lineDashOffset) {
-    //             opts['stroke-dashoffset'] = scale(ctx.lineDashOffset);
-    //         }
-    //     }
-
-    //     if (ctx.target) {
-    //         opts.target = ctx.target;
-    //     }
-    //     if (ctx.lineCap && ctx.lineCap !== 'round') {
-    //         opts['stroke-linecap'] = ctx.lineCap;
-    //         if (ctx.lineJoin && ctx.lineJoin !== 'round')
-    //             opts['stroke-linejoin'] = ctx.lineJoin;
-    //     }
-
-    //     // opts.color = '#0080ff'
-    //     this.path.length = 0;
-    //     return opts;
-    // }
-
-    // P.pathToOpts = function() {
-    //     // return this._pathToOpts();
-    //     return this.toOpts();
-    // }
-
     P._mapPathToPuzzle = function(p, size) {
-        const {round, round1, round2, toCtcX, toCtcY} = PenpaTools;
-        const mapX = (d) => round1(toCtcX(d) * size);
-        const mapY = (d) => round1(toCtcY(d) * size);
-        const scale = (d) => round1(d * size);
+        const {round1, round2} = PenpaTools;
+        const scale1 = (d) => round1(d * size);
         const scale2 = (d) => round2(d * size);
             if(p.length === 1) {
             return p[0];
         }
-        else if('ML'.includes(p[0])) {
-            return `${p[0]}${mapX(p[1])} ${mapY(p[2])}`;
-        }
-        else if('ml'.includes(p[0])) {
-            return `${p[0]}${scale(p[1])} ${scale(p[2])}`;
+        else if('MmLl'.includes(p[0])) {
+            return `${p[0]}${scale1(p[1])} ${scale1(p[2])}`;
         }
         else if('A'.includes(p[0])) {
-            return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${mapX(p[6])} ${mapY(p[7])}`;
+            return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale1(p[6])} ${scale1(p[7])}`;
         }
         else if('a'.includes(p[0])) {
             if (Math.max(p[1], p[2]) > 0.5) // Large radius should round with more decimals for better precision
                 return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`;
             else
-                return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale(p[6])} ${scale(p[7])}`;
+                return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale1(p[6])} ${scale1(p[7])}`;
         }
-        else if('Q'.includes(p[0])) {
-            return `${p[0]}${mapX(p[1])} ${mapY(p[2])} ${mapX(p[3])} ${mapY(p[4])}`;
-        }
-        else if('q'.includes(p[0])) {
-            return `${p[0]}${scale(p[1])} ${scale(p[2])} ${scale(p[3])} ${scale(p[4])}`;
+        else if('Qq'.includes(p[0])) {
+            return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${scale1(p[3])} ${scale1(p[4])}`;
         }
         else {
             console.error('UNEXPECTED PATH COMMAND: ', p);
@@ -318,79 +236,77 @@ const DrawingContext = (() => {
         }
     }
 
+    P.getIntent = function() {
+        if (this.path.length > 0)
+            return 'line';
+        else if (this._text)// || this.font)
+            return 'text';
+        else if (this.fillStyle && !isTransparent(this.fillStyle))
+            return  'surface';
+        else if (this.lineWidth)
+            return 'line';
+
+        return undefined;
+    }
+
     P.toOpts = function(intent) {
         const {round, round1} = PenpaTools;
-        let ctx = this;
         let opts = {};
-        if (!intent) {
-            if (ctx.path.length > 0)
-                intent = 'path';
-            else if (ctx.font || ctx._text)
-                intent = 'text';
-            else if (ctx.fillStyle && !isTransparent(ctx.fillStyle))
-                intent = 'surface';
-            else if (ctx.lineWidth)
-                intent = 'line';
-            else
-                intent = 'Should not come here';
-        }
-
-        // if (intent === 'path') {
-        //     return this._pathToOpts();
-        // }
-        // else
-        if (intent === 'line' || intent === 'path') {
-            if (ctx.lineWidth && ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
-                opts.thickness = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
-                opts.color = ctx.strokeStyle;
+        intent = intent || this.getIntent()
+        if (intent === 'line') {
+            if (this.lineWidth && this.strokeStyle && !isTransparent(this.strokeStyle)) {
+                opts.thickness = round1(this.lineWidth * this.ctcSize / this.penpaSize);
+                opts.color = this.strokeStyle;
             }
-            if (ctx.lineCap && ctx.lineCap !== 'round') {
-                opts['stroke-linecap'] = ctx.lineCap;
-                if (ctx.lineJoin && ctx.lineJoin !== 'round')
-                    opts['stroke-linejoin'] = ctx.lineJoin;
+            if (this.lineCap && this.lineCap !== 'round') {
+                opts['stroke-linecap'] = this.lineCap;
+                if (this.lineJoin && this.lineJoin !== 'round')
+                    opts['stroke-linejoin'] = this.lineJoin;
             }
-            if (ctx.path.length > 0) {
-                opts.d = ctx.path.map(d => this._mapPathToPuzzle(d, this.ctcSize)).join('');
-                ctx.path.length = 0;
+            if (this.path.length > 0) {
+                opts.d = this.path.map(d => this._mapPathToPuzzle(d, this.ctcSize)).join('');
+                this.path.length = 0;
             }
-            if (ctx._fill) {
-                opts.fill = ctx.fillStyle;
+            if (this._fill) {
+                opts.fill = this.fillStyle;
             }
         }
         else {
-            if (ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
-                if (ctx.strokeStyle !== ctx.fillStyle)
-                    opts.borderColor = ctx.strokeStyle;
+            if (this.strokeStyle && !isTransparent(this.strokeStyle)) {
+                if (this.strokeStyle !== this.fillStyle) {
+                    opts.borderColor = this.strokeStyle;
+                }
             }
-            if (ctx.font) {
-                const fontsize = ctx.font.split('px')[0];
-                opts.fontSize = round1(fontsize * this.ctcSize)
-                if (ctx.fillStyle && ctx.fillStyle !== Color.BLACK) {
-                    opts.color = ctx.fillStyle;
+            if (this.font) {
+                const fontsize = this.font.split('px')[0];
+                opts.fontSize = round1(fontsize * this.ctcSize - 4);// -4 to compensate for fontSize calculation in SP App.convertPuzzle
+                if (this.fillStyle && this.fillStyle !== Color.BLACK) {
+                    opts.color = this.fillStyle;
                 }
-                if (ctx.fillStyle === Color.WHITE) {
-                    ctx['stroke-width'] = 0;
+                if (this.fillStyle === Color.WHITE) {
+                    this['stroke-width'] = 0;
                 }
-                if(ctx['stroke-width'] !== undefined) {
-                    opts['stroke-width'] = round1(ctx['stroke-width']);
+                if(this['stroke-width'] !== undefined) {
+                    opts['stroke-width'] = round1(this['stroke-width']);
                 }
-                else if (ctx.lineWidth > 0) {
-                    opts['stroke-width'] = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
+                else if (this.lineWidth > 0) {
+                    opts['stroke-width'] = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                 }
                 //opts.fill = '#ff0000';
-                if (ctx._text) {
-                    if (ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
-                         opts.textStroke = ctx.strokeStyle;
+                if (this._text) {
+                    if (this.strokeStyle && !isTransparent(this.strokeStyle)) {
+                         opts.textStroke = this.strokeStyle;
                     }
-                    opts.text = ctx._text;
-                    opts.center = [ctx.y, ctx.x];
-                    ctx._text = undefined;
+                    opts.text = this._text;
+                    opts.center = [this.y, this.x];
+                    this._text = undefined;
+                    //Don't set font-family
                     // opts["font-family"] = font.family
-                    if (ctx.textBaseline && ctx.textBaseline !== 'middle') {
+                    if (this.textBaseline && this.textBaseline !== 'middle') {
                         opts["dominant-baseline"] = getDominantBaseline(this.textBaseline);
                     }
-                    if (ctx.textAlign && ctx.textAlign !== 'middle') {
-                        opts['text-anchor'] = getTextAnchor(ctx.textAlign)
+                    if (this.textAlign && this.textAlign !== 'center') {
+                        opts['text-anchor'] = getTextAnchor(this.textAlign)
                     }
 
                     // FIXME: Remove when Sudokupad has optional width and height
@@ -399,27 +315,28 @@ const DrawingContext = (() => {
                 }
             }
             else {
-                if (ctx.lineWidth) {
-                    if (ctx.strokeStyle !== ctx.fillStyle) {
-                        opts.borderSize = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
+                if (this.lineWidth) {
+                    if (this.strokeStyle !== this.fillStyle) {
+                        opts.borderSize = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                     }
                 }
-                if (ctx.fillStyle && !isTransparent(ctx.fillStyle)) {
-                    opts.backgroundColor = ctx.fillStyle;
+                if (this.fillStyle && !isTransparent(this.fillStyle)) {
+                    opts.backgroundColor = this.fillStyle;
                 }
             }
         }
 
-        if (ctx.lineDash.length > 0) {
+        if (this.lineDash.length > 0) {
             const scale = (d) => round1(d * this.ctcSize);
-            opts['stroke-dasharray'] = ctx.lineDash.map(scale).map(round).join(',');
-            if (ctx.lineDashOffset) {
-                opts['stroke-dashoffset'] = scale(ctx.lineDashOffset);
+            opts['stroke-dasharray'] = this.lineDash.map(scale).map(round).join(',');
+            if (this.lineDashOffset) {
+                opts['stroke-dashoffset'] = scale(this.lineDashOffset);
             }
         }
 
-        if (ctx.target)
-            opts.target = ctx.target;
+        if (this.target) {
+            opts.target = this.target;
+        }
 
         return opts;
     }

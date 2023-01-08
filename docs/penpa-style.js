@@ -154,8 +154,10 @@ function set_line_style(ctx, type, ccolor = "none") {
             ctx.lineWidth = 3;
             break;
         case 10: //cage
-            var b = pu.size * 0.1;
-            var w = pu.size * 0.1;
+            // var b = pu.size * 0.1;
+            // var w = pu.size * 0.1;
+            var b = pu.size * 4/64; //ML
+            var w = pu.size * 4/64;
             ctx.setLineDash([b, w]);
             ctx.lineDashOffset = b * 0.5;
             ctx.lineCap = "round";
@@ -211,8 +213,10 @@ function set_line_style(ctx, type, ccolor = "none") {
             ctx.lineWidth = 2;
             break;
         case 15: //cage dash
-            var b = pu.size * 0.1;
-            var w = pu.size * 0.1;
+            // var b = pu.size * 0.1;
+            // var w = pu.size * 0.1;
+            var b = pu.size * 4/64; //ML
+            var w = pu.size * 4/64;
             ctx.setLineDash([b, w]);
             ctx.lineDashOffset = b * 0.5;
             ctx.lineCap = "round";

@@ -11,3 +11,6 @@
 * Fill killercage values. (Only when reasonable/readable)
 * Add custom solve message
   
+## NOT IMPLEMENTED
+* White background on long text
+
