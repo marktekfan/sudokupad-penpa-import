@@ -380,8 +380,8 @@ const PenpaTools = (() => {
 
 	C.isCtcCell = function(rc, bb) {
 		const [r, c] = rc;
-		const [top, left, bottom, right] = bb;
-		return (r >= top && r <= bottom & c >= left && c <= right);
+		const {width, height} = bb;
+		return (r >= 0 && r < height & c >= 0 && c <= width);
 	}
 	C.point2cell = function(p) {
 		const point = C.doc.point[p];
@@ -389,24 +389,24 @@ const PenpaTools = (() => {
 		const c = Math.floor(point.x - 2) - C.doc.col0;
 		return [r, c];
 	}
-	C.point2cell0 = function(p) {
-		return C.point2cell(p);
-		const point = C.doc.point[p];
-		const r = Math.floor(point.y - 2) - C.doc.row0;
-		const c = Math.floor(point.x - 2) - C.doc.col0;
-		return [r, c];
-	}
-	C.ctcRC2k = function(r, c = undefined) {
-		if (Array.isArray(r)) [r, c] = r;
-		else if (c === undefined) ({r, c} = r);
-		const cols = C.doc.cols;
-		return (Math.floor(r) + 2 + C.doc.row0) * cols + Math.floor(c) + 2 + C.doc.col0;
-	}
+	// C.point2cell0 = function(p) {
+	// 	const point = C.doc.point[p];
+	// 	const r = Math.floor(point.y - 2);
+	// 	const c = Math.floor(point.x - 2);
+	// 	return [r, c];
+	// }
+	// C.ctcRC2k = function(r, c = undefined) {
+	// 	return C.RC2k(r, c);
+	// 	if (Array.isArray(r)) [r, c] = r;
+	// 	else if (c === undefined) ({r, c} = r);
+	// 	const cols = C.doc.cols;
+	// 	return (Math.floor(r) + 2 + C.doc.row0) * cols + Math.floor(c) + 2 + C.doc.col0;
+	// }
 	C.RC2k = function(r, c = undefined) {
 		if (Array.isArray(r)) [r, c] = r;
 		else if (c === undefined) ({r, c} = r);
 		const cols = C.doc.cols;
-		return (Math.floor(r) + 2) * cols + Math.floor(c) + 2;
+		return (Math.floor(r) + 2 + C.doc.row0) * cols + Math.floor(c) + 2 + C.doc.col0;
 	}
 	C.xy2k = function(x, y) {
 		if (Array.isArray(x)) [x, y] = x;
@@ -424,10 +424,10 @@ const PenpaTools = (() => {
 		return C.doc.point[p];
 	}
 	C.toCtcX = function(x) {
-		return x - C.doc.col0;
+		return x;// - C.doc.col0;
 	}
 	C.toCtcY = function(y) {
-		return y - C.doc.row0;
+		return y;// - C.doc.row0;
 	}
 
 	return C;

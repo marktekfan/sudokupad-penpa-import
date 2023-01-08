@@ -353,9 +353,8 @@ const PenpaSymbol = (() => {
                 return;
         }
 
-        if (ctx._text || ctx.path.length > 0) {
-            this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), `symbol ${sym} ${JSON.stringify(num)}`);
-        }
+        let feature = (ctx.lineWidth > 0 || ctx.path && ctx.path.length > 0) ? 'lines' : 'overlays';
+        this.decoder.puzzleAdd(this.puzzle, feature, ctx.toOpts(), `symbol ${sym} ${JSON.stringify(num)}`);
     }
 
     
@@ -555,11 +554,12 @@ const PenpaSymbol = (() => {
 			let [r, c] = point2RC(p);
 			if (c - Math.floor(c) === 0.25 && r - Math.floor(r) === 0.25) {
 				let rc = point2cell(p);
-				let cellRC = [rc[0] - doc.row0, rc[1] - doc.col0];
+				// let cellRC = [rc[0] - doc.row0, rc[1] - doc.col0];
+				let cellRC = [rc[0], rc[1]];
 				if (cellRC[0] >= 0 && cellRC[1] >= 0 &&
-					cellRC[0] < puzzle.cells.length &&
-					cellRC[1] < puzzle.cells[0].length) {
-					let cell = puzzle.cells[cellRC[0]][cellRC[1]];
+					cellRC[0] < this.puzzle.cells.length &&
+					cellRC[1] < this.puzzle.cells[0].length) {
+					let cell = this.puzzle.cells[cellRC[0]][cellRC[1]];
 					cell.pencilMarks = [' '];
 				}
 			}

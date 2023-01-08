@@ -1,5 +1,6 @@
 "use strict";
 const loadPenpaPuzzle = (() => {
+	let _rnd = 0;
 
 	const DEBUG = 0 || document.location.host.startsWith('127.0.0.1');
 
@@ -81,7 +82,8 @@ const loadPenpaPuzzle = (() => {
 	}
 
 	function createRegions(fpuzzle, puzzle) {
-		const {ctcRC2k} = PenpaTools;
+		// const {ctcRC2k} = PenpaTools;
+		const {RC2k} = PenpaTools;
 		let rows = fpuzzle.grid.length;
 		let cols = fpuzzle.grid[0].length;
 		let regRC = getRegionShape(Math.min(rows, cols));
@@ -96,7 +98,7 @@ const loadPenpaPuzzle = (() => {
 		fpuzzle.grid.forEach((frow, r) => {
 			frow.forEach((fcell, c) => {
 				let region = convRegion(r, c, fcell.region);
-				if (fpuzzle.centerlist.includes(ctcRC2k([r, c]))) { //region = 'null';
+				if (fpuzzle.centerlist.includes(RC2k([r, c]))) { //region = 'null';
 					if(regions[region] === undefined) regions[region] = [];
 					regions[region].push([r, c]);
 				}
@@ -118,7 +120,7 @@ const loadPenpaPuzzle = (() => {
 	}
 
 	function drawOutsideFrame(pu, puzzle, doc) {
-		const {point2cell, RC2k} = PenpaTools;
+		const {point2cell} = PenpaTools;
 		const {centerlist} = pu;
 
 		// gr = grid line style
@@ -157,11 +159,11 @@ const loadPenpaPuzzle = (() => {
 				let edgePoints = PenpaTools.normalizePath(outlinePoints).map(l => (l.length === 3) ? [l[0], l[2], l[1]] : l);
 
 				const margin = 0.06;
-				let [top, left, bottom, right] = parse.bb;
-				left -= margin;
-				top -= margin;
-				right += 1 + margin;
-				bottom += 1 + margin;
+				let {width, height} = parse.bb;
+				let left = 0 - margin;
+				let top = 0 - margin;
+				let right = width + margin;
+				let bottom = height + margin;
 				ctx.path = edgePoints;
 				ctx.moveTo(left, top);
 				ctx.lineTo(left, bottom);
@@ -170,7 +172,8 @@ const loadPenpaPuzzle = (() => {
 				ctx.closePath();
 				let opts = Object.assign(ctx.toOpts(), {
 					fill:  '#FFFFFF',
-					// fill: '#ff0000',//Color[Object.keys(Color)[Math.floor(this._rnd = ((this._rnd|0) + 1) % 24)]],
+					// fill: '#ff0000',
+					//  fill: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
 					'fill-rule': 'evenodd',
 					target: 'overlay'
 				});
@@ -197,7 +200,7 @@ const loadPenpaPuzzle = (() => {
 				let ctx = new DrawingContext();
 				set_line_style(ctx, ot); // thick line
 				let opts = Object.assign(ctx.toOpts('line'), {
-					//color: '#FF0000',
+					// color: '#FF0000',
 					wayPoints: PenpaTools.reduceWayPoints(wayPoints),
 					target: 'overlay'
 				});
@@ -217,7 +220,7 @@ const loadPenpaPuzzle = (() => {
 		const opts = Object.assign(ctx.toOpts(), {
 			backgroundColor: Color.TRANSPARENTWHITE, //'#cc4440',
 			// thickness: 10,//32,// * line.width,
-			center: [doc.rows0 / 2, doc.cols0 / 2],
+			center: [doc.rows0 / 2 - doc.row0, doc.cols0 / 2 - doc.col0],
 			width: doc.cols0,
 			height: doc.rows0,
 			//target: 'overlay'
@@ -249,9 +252,11 @@ const loadPenpaPuzzle = (() => {
 		const keys = Object.keys(list); //keys.sort();
 		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: k}));
 		const predicate = (s1, s2) => {
+			if (s1.value == 4 && s2.value == 4)
+				s1=s1;
 			return s1.value === s2.value
 			&& pu.centerlist.includes(RC2k(s1.center)) === pu.centerlist.includes(RC2k(s2.center))
-			&& s1.layer === s2.layer
+			//FIXME: make cc aware.
 			// When there is an auto generated white outside mask
 			// and a colored surface on the outside of the board and attached to the square board boundary
 			// then this extra condition can create white patches on colored outside surfaces. Very rare.
@@ -275,7 +280,7 @@ const loadPenpaPuzzle = (() => {
 				center: surface.center,
 				width: surface.width || 1,
 				height: surface.height || 1,
-				//backgroundColor: Color[Object.keys(Color)[Math.floor(this._rnd = ((this._rnd|0) + 1) % 24)]],
+				//backgroundColor: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
 			}), 'surface');
 		});
 	}
@@ -551,11 +556,11 @@ const loadPenpaPuzzle = (() => {
 	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
-		const {point2cell, point2cell0} = PenpaTools;
+		const {point2cell} = PenpaTools;
 		list.forEach((cage, i) => {
 			if (cage.length === 0) return;
 			let cagePart = {unique: true};
-			cagePart.cells = cage.map(point2cell0);
+			cagePart.cells = cage.map(point2cell);
 			if (listCol[i]) {
 				cagePart.borderColor = listCol[i];
 			}
@@ -912,40 +917,45 @@ const loadPenpaPuzzle = (() => {
 		fpuzzle.centerlist = pu.centerlist;
         fpuzzle.grid = [];
 
-		// Determine cell grid bounding box
-		parse.bb = getMinMaxRC(pu.centerlist);
-		let [top, left, bottom, right] = parse.bb;
-		// Update with calculated top-left position
-		doc.col0 = left;
-		doc.row0 = top;
+		{
+			// Determine cell grid bounding box
+			const bb = getMinMaxRC(pu.centerlist);
+			let [top, left, bottom, right] = bb;
+			parse.bb = {top, left, bottom, right, width: right - left + 1, height: bottom - top + 1};
+			// Update with calculated top-left position
+			doc.col0 = left;
+			doc.row0 = top;
+		}
 
 		// Inject puzzle metrics
 		DrawingContext.penpaSize = pu._size;
 		DrawingContext.ctcSize = 64;
 
-		const width = right - left + 1;
-		const height = bottom - top + 1;
+		{
+			const {width, height} = parse.bb;
 
-		// Create grid and place 'Givens'
-        const {number} = pu.pu_q;
-		const {ctcRC2k} = PenpaTools;
-        for (let r = 0; r < height; r++) {
-            let row = [];
-            fpuzzle.grid.push(row);
+			// Create grid and place 'Givens'
+			const {number} = pu.pu_q;
+			// const {ctcRC2k} = PenpaTools;
+			const {RC2k} = PenpaTools;
+			for (let r = 0; r < height; r++) {
+				let row = [];
+				fpuzzle.grid.push(row);
 
-            for (let c = 0; c < width; c++) {
-                let cell = {};
-                row.push(cell);
+				for (let c = 0; c < width; c++) {
+					let cell = {};
+					row.push(cell);
 
-                let pos = ctcRC2k([r, c]);
-                const num = number[pos];
-                if (num && num[1] == 1 && (num[2] === '1')) { //Black Normal or Big number
-                    cell.given = true;
-                    cell.value = num[0];
-					num.role = 'given';
-                }
-            }
-        }
+					let pos = RC2k([r, c]);
+					const num = number[pos];
+					if (num && num[1] == 1 && (num[2] === '1')) { //Black Normal or Big number
+						cell.given = true;
+						cell.value = num[0];
+						num.role = 'given';
+					}
+				}
+			}
+		}
 
 		createBlankPuzzle(pu, fpuzzle, puzzle);
 
@@ -977,8 +987,8 @@ const loadPenpaPuzzle = (() => {
 		parse.killercages(qa, pu, puzzle);
 
 		if(puzzle.regions.length === 0) {
-			let [top, left, bottom, right] = parse.bb;
-			puzzleAdd(puzzle, 'cages', {cells: [[0, 0], [bottom - top, right - left]], unique: false, hidden: true});
+			const {width, height} = parse.bb;
+			puzzleAdd(puzzle, 'cages', {cells: [[0, 0], [height - 1, width - 1]], unique: false, hidden: true});
 		}
 		// if(puzzle.regions.length === 0 && puzzle.cages.length > 0) {
 		// 	let [top, left, bottom, right] = parse.bb;
@@ -1013,7 +1023,8 @@ const loadPenpaPuzzle = (() => {
 		// }
 
 		const {round, round1} = PenpaTools;
-		const offset = offsetRC(-doc.row0, -doc.col0);
+		// const offset = offsetRC(-doc.row0, -doc.col0);
+		const offset = offsetRC(0, 0);
 		Object.keys(puzzle).forEach(featureName => {
 			let feature = puzzle[featureName];
 			if (Array.isArray(feature)) {
@@ -1041,15 +1052,13 @@ const loadPenpaPuzzle = (() => {
 
 		// Add puzzle solution
 		if (pu.solution && !pu.multisolution) {
-			const {point2cell0} = PenpaTools;
+			const {point2cell} = PenpaTools;
 			let stext = JSON.parse(pu.solution);
-			let [top, left, bottom, right] = parse.bb;
-			const cols = right - left + 1;
-			const rows = bottom - top + 1;
-			let sol = Array(rows * cols).fill('?');
+			const {width, height} = parse.bb;
+			let sol = Array(height * width).fill('?');
 			stext[4].forEach(s => {
 				let [point, val] = s.split(',');
-				let [r, c] = point2cell0(point);
+				let [r, c] = point2cell(point);
 				let pos = r * cols + c;
 				if (pos >= 0 && pos < sol.length) {
 					sol[pos] = val;
