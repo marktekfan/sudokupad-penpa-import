@@ -1,6 +1,7 @@
 const PenpaTools = (() => {
     function _constructor() { }
 	const C = _constructor;//, P = Object.assign(C.prototype, {constructor: C});
+
     C.doc = undefined;
 	C.reduceSurfaces = function(centers, predicate) {
 		//Sort centers, this will give best results.
@@ -384,11 +385,12 @@ const PenpaTools = (() => {
 	}
 	C.point2cell = function(p) {
 		const point = C.doc.point[p];
-		const r = Math.floor(point.y - 2);
-		const c = Math.floor(point.x - 2);
+		const r = Math.floor(point.y - 2) - C.doc.row0;
+		const c = Math.floor(point.x - 2) - C.doc.col0;
 		return [r, c];
 	}
 	C.point2cell0 = function(p) {
+		return C.point2cell(p);
 		const point = C.doc.point[p];
 		const r = Math.floor(point.y - 2) - C.doc.row0;
 		const c = Math.floor(point.x - 2) - C.doc.col0;
@@ -414,12 +416,18 @@ const PenpaTools = (() => {
 	}
 	C.point2RC = function(p) {
 		const point = C.doc.point[p];
-		const r = point.y - 2;
-		const c = point.x - 2;
+		const r = point.y - 2 - C.doc.row0;		
+		const c = point.x - 2 - C.doc.col0;
 		return [r, c];
 	}
 	C.point = function(p) {
 		return C.doc.point[p];
+	}
+	C.toCtcX = function(x) {
+		return x - C.doc.col0;
+	}
+	C.toCtcY = function(y) {
+		return y - C.doc.row0;
 	}
 
 	return C;

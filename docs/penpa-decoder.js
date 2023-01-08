@@ -135,25 +135,25 @@ const loadPenpaPuzzle = (() => {
         }
 
 
-		// Mask off non-grid grid lines
-		let outsideCells = [];
-		{
-			let [top, left, bottom, right] = parse.bb;
-			for (let r = top; r <= bottom; r++) {
-				for (let c = left; c <= right; c++) {
-					if(!centerlist.includes(RC2k(r, c))) {
-						outsideCells.push({center: [r + 0.5, c + 0.5], value: 0});
-					}
-				}
-			}
-		}
+		// // Mask off non-grid grid lines
+		// let outsideCells = [];
+		// {
+		// 	let [top, left, bottom, right] = parse.bb;
+		// 	for (let r = top; r <= bottom; r++) {
+		// 		for (let c = left; c <= right; c++) {
+		// 			if(!centerlist.includes(RC2k(r, c))) {
+		// 				outsideCells.push({center: [r + 0.5, c + 0.5], value: 0});
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		{
 			let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
 			let outlinePoints = PenpaTools.getCellOutline(gridCells);
 			if (outlinePoints.length > 0) {
 				// Outside mask
-				let ctx = new FakeContext();
+				let ctx = new DrawingContext();
 				let edgePoints = PenpaTools.normalizePath(outlinePoints).map(l => (l.length === 3) ? [l[0], l[2], l[1]] : l);
 
 				const margin = 0.06;
@@ -168,7 +168,7 @@ const loadPenpaPuzzle = (() => {
 				ctx.lineTo(right, bottom);
 				ctx.lineTo(right, top);
 				ctx.closePath();
-				let opts = Object.assign(ctx.pathToOpts(), {
+				let opts = Object.assign(ctx.toOpts(), {
 					fill:  '#FFFFFF',
 					// fill: '#ff0000',//Color[Object.keys(Color)[Math.floor(this._rnd = ((this._rnd|0) + 1) % 24)]],
 					'fill-rule': 'evenodd',
@@ -194,7 +194,7 @@ const loadPenpaPuzzle = (() => {
 		outlinePoints.forEach(([t, r, c]) => {
 			if (t === 'Z') {
 				wayPoints.push(wayPoints[0]);
-				let ctx = new FakeContext();
+				let ctx = new DrawingContext();
 				set_line_style(ctx, ot); // thick line
 				let opts = Object.assign(ctx.toOpts('line'), {
 					//color: '#FF0000',
@@ -213,7 +213,7 @@ const loadPenpaPuzzle = (() => {
 
 	function positionBoard(pu, puzzle, doc) {
 		// Add transparant rectangle to position the puzzle
-		const ctx = new FakeContext();
+		const ctx = new DrawingContext();
 		const opts = Object.assign(ctx.toOpts(), {
 			backgroundColor: Color.TRANSPARENTWHITE, //'#cc4440',
 			// thickness: 10,//32,// * line.width,
@@ -258,7 +258,7 @@ const loadPenpaPuzzle = (() => {
 			&& isCtcCell(s1.center, parse.bb) === isCtcCell(s2.center, parse.bb) // Note 1
 		}
 		PenpaTools.reduceSurfaces(centers, predicate).forEach(surface => {
-			let ctx = new FakeContext();
+			let ctx = new DrawingContext();
 			set_surface_style(ctx, surface.value);
 			if(listCol[surface.key]) {
 				ctx.fillStyle = listCol[surface.key];
@@ -309,7 +309,7 @@ const loadPenpaPuzzle = (() => {
 		Object.keys(list).forEach(key => {
 			const symbol = list[key];
 			if (symbol[2] !== layer) return;
-			const ctx = new FakeContext();
+			const ctx = new DrawingContext();
             if (key.slice(-1) === 'E') { // Overwriting in Edge Mode
                 key = key.slice(0, -1);
             }
@@ -331,7 +331,7 @@ const loadPenpaPuzzle = (() => {
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
-			let ctx = new FakeContext();
+			let ctx = new DrawingContext();
 			// TODO: Implement custom color
 			set_line_style(ctx, line.value);
 			if(listCol[line.key]) {
@@ -448,7 +448,7 @@ const loadPenpaPuzzle = (() => {
 		const {point2RC} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			let points = list[key].map(point2RC);
-			let ctx = new FakeContext();
+			let ctx = new DrawingContext();
 			ctx.strokeStyle = listCol[key] || Color.BLACK;
 			ctx.fillStyle = listCol[key] || Color.BLACK;
 			ctx.lineWidth = 1;
@@ -465,7 +465,7 @@ const loadPenpaPuzzle = (() => {
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
-			let ctx = new FakeContext();
+			let ctx = new DrawingContext();
 			set_line_style(ctx, line.value);
 			if (line.value === 30) {
 				drawDoubleLine(ctx, line, puzzle);
@@ -536,7 +536,7 @@ const loadPenpaPuzzle = (() => {
         });
 		let cageLines = PenpaTools.concatenateEndpoints(wpLines);
 		cageLines.forEach(line => {
-			let ctx = new FakeContext();
+			let ctx = new DrawingContext();
 			// if (i1 % 4 === 3 || i2 % 4 === 0) ... + 100
 			set_line_style(ctx, line.value + 100, line.cc);
 			if (line.cc) {
@@ -571,7 +571,7 @@ const loadPenpaPuzzle = (() => {
 			let s1 = pu[qa].surface[p1];
 			let s2 = pu[qa].surface[p2];
 			if (s1 && s1 === s2) {
-				let ctx = new FakeContext();
+				let ctx = new DrawingContext();
 				set_surface_style(ctx, s1);
 				if (ctx.fillStyle === Color.BLACK || ctx.fillStyle === Color.BLACK_LIGHT || ctx.fillStyle === Color.GREY_DARK_VERY) {
 					list[l] = 0;
@@ -586,7 +586,7 @@ const loadPenpaPuzzle = (() => {
 		wpList.forEach(line => {
 			if (line.value === 0) return;
 			let shortLine = PenpaTools.shortenLine(line.wayPoints, 2/64);
-			let ctx = new FakeContext();
+			let ctx = new DrawingContext();
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
 			 	wayPoints: PenpaTools.reduceWayPoints(shortLine),
 				//d: 'M0 0',
@@ -655,7 +655,7 @@ const loadPenpaPuzzle = (() => {
 		keys.sort(PenpaTools.comparePenpaLinePoints);
 		Object.keys(list).forEach(key => {
 			if (list[key] !== 98) return;
-			let ctx = new FakeContext();
+			let ctx = new DrawingContext();
 			set_line_style(ctx, 98);
 			if (listCol[key]) {
 				ctx.strokeStyle = listCol[key];
@@ -801,25 +801,18 @@ const loadPenpaPuzzle = (() => {
 	}
 
 	const parsePenpaPuzzle = urlstring => {
-		let param = urlstring.split('&');
-		let paramArray = [];
-
-		for (var i = 0; i < param.length; i++) {
-			let paramItem = param[i].split('=');
-			paramArray[paramItem[0]] = paramItem[1];
-		}
-		if (urlstring.includes("#")) {
-			urlstring = urlstring.split("/penpa-edit/#")[1];
-		} else {
-			urlstring = urlstring.split("/penpa-edit/?")[1];
-		}
+		let paramMatch = urlstring.match(/[^\?#]+[\?#]([^#]+)/)
+		if (!paramMatch)
+			return;
+		
+		let urlParam = paramMatch[1];
 
 		let fakedoc = new FakeDoc();
 		let usersettings = new UserSettings();
 		let penpaGeneral = PenpaGeneral(fakedoc, usersettings);
 
 		try {
-			penpaGeneral.load(urlstring, 'local');
+			penpaGeneral.load(urlParam, 'local');
 		}
 		catch(err) {
 			let gridtype = err.message.match(/Puzzle_(\w+) is not defined/);
@@ -905,6 +898,8 @@ const loadPenpaPuzzle = (() => {
 		doc.rows0 = pu.ny;
 		doc.cols = doc.cols0 + 4;
 		doc.rows = doc.rows0 + 4;
+		doc.col0 = 0;
+		doc.row0 = 0;
 
 		// Inject doc
 		doc.point = pu.point;
@@ -920,13 +915,13 @@ const loadPenpaPuzzle = (() => {
 		// Determine cell grid bounding box
 		parse.bb = getMinMaxRC(pu.centerlist);
 		let [top, left, bottom, right] = parse.bb;
+		// Update with calculated top-left position
 		doc.col0 = left;
 		doc.row0 = top;
 
 		// Inject puzzle metrics
-		FakeContext.offset = [doc.row0, doc.col0]
-		FakeContext.penpaSize = pu._size;
-		FakeContext.ctcSize = 64;
+		DrawingContext.penpaSize = pu._size;
+		DrawingContext.ctcSize = 64;
 
 		const width = right - left + 1;
 		const height = bottom - top + 1;
@@ -1019,10 +1014,10 @@ const loadPenpaPuzzle = (() => {
 
 		const {round, round1} = PenpaTools;
 		const offset = offsetRC(-doc.row0, -doc.col0);
-		Object.keys(puzzle).forEach(key => {
-			let prop = puzzle[key];
-			if (Array.isArray(prop)) {
-				prop.forEach(part => {
+		Object.keys(puzzle).forEach(featureName => {
+			let feature = puzzle[featureName];
+			if (Array.isArray(feature)) {
+				feature.forEach(part => {
 					if(Array.isArray(part.center)) {
 						part.center = offset(part.center).map(round);
 					}

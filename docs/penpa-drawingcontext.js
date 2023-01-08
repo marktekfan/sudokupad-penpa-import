@@ -1,8 +1,11 @@
-class FakeContext {
-    constructor() {
+const DrawingContext = (() => {
+    "use strict";
+    function _constructor() {
         this.reset();
     }
-    reset() {
+    const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
+
+    P.reset = function() {
         this.lineDash = [];
         this.lineDashOffset = 0;
         this.lineWidth = 0;
@@ -10,11 +13,10 @@ class FakeContext {
         this.strokeStyle = Color.TRANSPARENTWHITE;
         this.font = undefined;
         this.lineCap = "round";
-        // this.textAlign = "center";
-        // this.textBaseline = "alphabetic";
-        this.ctcSize = Number(FakeContext.ctcSize);
-        this.penpaSize = Number(FakeContext.penpaSize);
-        this.offet = FakeContext.offset;
+        this.textAlign = "center";
+        this.textBaseline = "middle";
+        this.ctcSize = Number(C.ctcSize);
+        this.penpaSize = Number(C.penpaSize);
         this.path = []
         this._start = false;
         this._fill = false;
@@ -22,32 +24,44 @@ class FakeContext {
         this.x = 0;
         this.y = 0;
     }
-    static offset = [0, 0];
-    static ctcSize = 64;
-    static penpaSize = 38;
+    C.ctcSize = 64;
+    C.penpaSize = 38;
 
-    setLineDash(dash) {
+    function isTransparent(color) {
+        return color.slice(7) === '00';
+    }
+
+    //helper function to map canvas-textAlign to svg-textAnchor
+    function getTextAnchor(textAlign) {
+        const mapping = { "left": "start", "right": "end", "center": "middle", "start": "start", "end": "end" };
+        return mapping[textAlign] || mapping.start;
+    }
+    //helper function to map canvas-textBaseline to svg-dominantBaseline
+    function getDominantBaseline(textBaseline) {
+        const mapping = { "alphabetic": "alphabetic", "hanging": "hanging", "top": "text-before-edge", "bottom": "text-after-edge", "middle": "central" };
+        return mapping[textBaseline] || mapping.alphabetic;
+    }
+
+    P.setLineDash = function(dash) {
         this.lineDash = dash;
     }
 
-    beginPath() {
-        this._start = false;        
+    P.beginPath = function() {
+        this._start = false;
     }
-    moveTo(x, y) {
+    P.moveTo = function(x, y) {
         this._start = true;
         this.path.push(['M', x, y]);
         this.x = x;
         this.y = y;
     }
-    lineTo(x, y) {
+    P.lineTo = function(x, y) {
         //this.path.push(['L', x, y]);
-        // 16436 bytes before relative compression
-        // 14036 bytes after relative compression = 17% improvement
         this.path.push(['l', x - this.x, y - this.y]);
         this.x = x;
         this.y = y;
     }
-    arc(x, y, radius, startAngle, endAngle, ccw = false) {
+    P.arc = function(x, y, radius, startAngle, endAngle, ccw = false) {
         function polarToCartesian(centerX, centerY, radius, angle) {
             return {
                 x: centerX + (radius * Math.cos(angle)),
@@ -60,7 +74,7 @@ class FakeContext {
             this.arc(x, y, radius, Math.PI, 0, ccw)
             this.path.push(['z']);
             return;
-        } 
+        }
         let start = polarToCartesian(x, y, radius, endAngle);
         let end = polarToCartesian(x, y, radius, startAngle);
 
@@ -74,61 +88,57 @@ class FakeContext {
         this.x = end.x;
         this.y = end.y;
     }
-    arcTo(x1, y1, x2, y2, radius) {
-        // const {round} = PenpaTools;
-        // startAngle = round(startAngle * 180 / Math.PI);
-        // endAngle = round(endAngle * 180 / Math.PI);
-        //const fullCircle = endAngle - startAngle === 360;
+    P.arcTo = function(x1, y1, x2, y2, radius) {
         var start = {x: x1, y: y1};
         var end = {x: x2, y: y2};
 
         var largeArcFlag = 0;//endAngle - startAngle <= 180 ? "0" : "1";
 
-        if (start.x !== this.x || start.y != this.y)
-            //this.path.push(['M', start.x, start.y]);
+        // if (start.x !== this.x || start.y != this.y)
+        //     this.path.push(['M', start.x, start.y]);
         //this.path.push(['A', radius, radius, 0, largeArcFlag, 1, end.x, end.y]);
         this.path.push(['a', radius, radius, 0, largeArcFlag, 1, end.x - this.x, end.y - this.y]);
         this.x = end.x;
         this.y = end.y;
     }
-    quadraticCurveTo(cpx, cpy, x, y) {
+    P.quadraticCurveTo = function(cpx, cpy, x, y) {
         //this.path.push(['Q', cpx, cpy, x, y]);
         this.path.push(['q', cpx - this.x, cpy - this.y, x - this.x, y - this.y]);
         this.x = x;
         this.y = y;
     }
-    closePath() {
+    P.closePath = function() {
         this.path.push(['z']);
     }
-    stroke() {
+    P.stroke = function() {
     }
-    fill() {
+    P.fill = function() {
         this._fill = true;
     }
-    text(text, x, y) {
+    P.text = function(text, x, y) {
+        const fontsize = Number(this.font.split('px')[0]);
         this._text = text;
         this.x = x;
-        this.y = y;
+        this.y = y + 0.28 * fontsize;
     }
 
-    arrow(startX, startY, endX, endY, controlPoints) {
+    P.arrow = function(startX, startY, endX, endY, controlPoints) {
         let cp = [...controlPoints];
         while (cp[0] === 0 && cp[1] === 0) cp.splice(0, 2);
         while (cp.length >= 4 && cp[0] === cp[2] && cp[1] === cp[3]) cp.splice(0, 2);
         controlPoints = cp;
-        
+
         if(controlPoints.length === 6 && cp[1] < 0.1) {
-            if (this.fillStyle === this.strokeStyle 
-                || this.strokeStyle === Color.TRANSPARENTBLACK 
-                || this.strokeStyle === Color.TRANSPARENTWHITE 
+            if (this.fillStyle === this.strokeStyle
+                || isTransparent(this.strokeStyle)
                 || this.strokeStyle === Color.WHITE) {
                 // simple narrow arrow
-                return this.arrowLine(startX, startY, endX, endY, controlPoints);
+                return this._arrowLine(startX, startY, endX, endY, controlPoints);
             }
         }
-        return this.arrowN(startX, startY, endX, endY, controlPoints);
+        return this._arrowN(startX, startY, endX, endY, controlPoints);
     }
-    arrowN(startX, startY, endX, endY, controlPoints) {
+    P._arrowN = function(startX, startY, endX, endY, controlPoints) {
         var dx = endX - startX;
         var dy = endY - startY;
         var len = Math.sqrt(dx * dx + dy * dy);
@@ -156,10 +166,9 @@ class FakeContext {
             else this.lineTo(x, y);
         }
         this.closePath();
-        // console.warn(controlPoints.length, a.length);
-    };
-    arrowLine(startX, startY, endX, endY, controlPoints) {
-        // Highly tweaked lineWidth cacluation, don't touch!
+    }
+    P._arrowLine = function(startX, startY, endX, endY, controlPoints) {
+        // Highly tweaked lineWidth calcuation, don't touch!
         this.lineWidth = (controlPoints[1] * 2.2 * this.penpaSize) - 0.2;
         this.lineJoin = 'miter'
         this.lineCap = 'butt'
@@ -178,7 +187,7 @@ class FakeContext {
         // Butt
         a.push(0, 0);
         // back of head
-        x = taillength;        
+        x = taillength;
         a.push(x < 0 ? len + x : x, 0);
         // arrowhead side 1
         y = headwidth;
@@ -196,90 +205,129 @@ class FakeContext {
             if (i === 0) this.moveTo(x, y);
             else this.lineTo(x, y);
         }
-    };
-
-
-
-
-    pathToOpts() {
-        const {round, round1, round2} = PenpaTools;
-        const mapX = (d) => round1((d - FakeContext.offset[1]) * this.ctcSize);
-        const mapY = (d) => round1((d - FakeContext.offset[0]) * this.ctcSize);
-        const scale = (d) => round1(d * this.ctcSize);
-        const scale2 = (d) => round2(d * this.ctcSize);
-        const mapPathToPuzzle = p => {
-            if('ML'.includes(p[0])) {
-                return `${p[0]}${mapX(p[1])} ${mapY(p[2])}`
-            }
-            else if('ml'.includes(p[0])) {
-                return `${p[0]}${scale(p[1])} ${scale(p[2])}`
-            }
-            else if('A'.includes(p[0])) {
-                return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${mapX(p[6])} ${mapY(p[7])}`
-            }
-            else if('a'.includes(p[0])) {
-                if (Math.max(p[1], p[2]) > 0.5) // Large radius should round with more decimals for better precision
-                    return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`
-                else
-                    return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale(p[6])} ${scale(p[7])}`
-            }
-            else if('Q'.includes(p[0])) {
-                return `${p[0]}${mapX(p[1])} ${mapY(p[2])} ${mapX(p[3])} ${mapY(p[4])}`
-            }
-            else if('q'.includes(p[0])) {
-                return `${p[0]}${scale(p[1])} ${scale(p[2])} ${scale(p[3])} ${scale(p[4])}`
-            }
-            else if(p.length === 1) {
-                return p[0]
-            }
-            else {
-                console.error('UNEXPECTED PATH COMMAND: ', p);
-                debugger;
-                return p.join(' '); 
-            }
-        }
-        
-        let ctx = this;
-        let opts = {};
-        if (ctx.lineWidth && ctx.strokeStyle && ctx.strokeStyle !== Color.TRANSPARENTWHITE) {
-            opts.thickness = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
-            opts.color = ctx.strokeStyle;
-        }
-        opts.d = this.path.map(mapPathToPuzzle).join('');
-        if (this._fill) {            
-            opts.fill = ctx.fillStyle;
-            //opts['fill-rule'] = 'evenodd';
-        }
-
-        if (ctx.lineDash.length > 0) {
-            opts['stroke-dasharray'] = ctx.lineDash.map(scale).map(round).join(',');
-            if (ctx.lineDashOffset) {
-                opts['stroke-dashoffset'] = scale(ctx.lineDashOffset);
-            }
-        }
-
-        if (ctx.target) {
-            opts.target = ctx.target;
-        }
-        if (ctx.lineCap && ctx.lineCap !== 'round') {
-            opts['stroke-linecap'] = ctx.lineCap;
-            if (ctx.lineJoin && ctx.lineJoin !== 'round')
-                opts['stroke-linejoin'] = ctx.lineJoin;
-        }
-
-        // opts.color = '#0080ff'
-        this.path.length = 0;
-        return opts;
     }
 
-    toOpts(intent) {
+    // P._pathToOpts = function() {
+    //     const mapPathToPuzzle = p => {
+    //         const {round, round1, round2, toCtcX, toCtcY} = PenpaTools;
+    //         const mapX = (d) => round1(toCtcX(d) * this.ctcSize);
+    //         const mapY = (d) => round1(toCtcY(d) * this.ctcSize);
+    //         const scale = (d) => round1(d * this.ctcSize);
+    //         const scale2 = (d) => round2(d * this.ctcSize);
+    //             if(p.length === 1) {
+    //             return p[0];
+    //         }
+    //         else if('ML'.includes(p[0])) {
+    //             return `${p[0]}${mapX(p[1])} ${mapY(p[2])}`;
+    //         }
+    //         else if('ml'.includes(p[0])) {
+    //             return `${p[0]}${scale(p[1])} ${scale(p[2])}`;
+    //         }
+    //         else if('A'.includes(p[0])) {
+    //             return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${mapX(p[6])} ${mapY(p[7])}`;
+    //         }
+    //         else if('a'.includes(p[0])) {
+    //             if (Math.max(p[1], p[2]) > 0.5) // Large radius should round with more decimals for better precision
+    //                 return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`;
+    //             else
+    //                 return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale(p[6])} ${scale(p[7])}`;
+    //         }
+    //         else if('Q'.includes(p[0])) {
+    //             return `${p[0]}${mapX(p[1])} ${mapY(p[2])} ${mapX(p[3])} ${mapY(p[4])}`;
+    //         }
+    //         else if('q'.includes(p[0])) {
+    //             return `${p[0]}${scale(p[1])} ${scale(p[2])} ${scale(p[3])} ${scale(p[4])}`;
+    //         }
+    //         else {
+    //             console.error('UNEXPECTED PATH COMMAND: ', p);
+    //             debugger;
+    //             return p.join(' ');
+    //         }
+    //     }
+    //     let ctx = this;
+    //     let opts = {};
+    //     if (ctx.lineWidth && ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
+    //         opts.thickness = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
+    //         opts.color = ctx.strokeStyle;
+    //     }
+    //     opts.d = this.path.map(mapPathToPuzzle).join('');
+    //     if (this._fill) {
+    //         opts.fill = ctx.fillStyle;
+    //     }
+
+    //     if (ctx.lineDash.length > 0) {
+    //         opts['stroke-dasharray'] = ctx.lineDash.map(scale).map(round).join(',');
+    //         if (ctx.lineDashOffset) {
+    //             opts['stroke-dashoffset'] = scale(ctx.lineDashOffset);
+    //         }
+    //     }
+
+    //     if (ctx.target) {
+    //         opts.target = ctx.target;
+    //     }
+    //     if (ctx.lineCap && ctx.lineCap !== 'round') {
+    //         opts['stroke-linecap'] = ctx.lineCap;
+    //         if (ctx.lineJoin && ctx.lineJoin !== 'round')
+    //             opts['stroke-linejoin'] = ctx.lineJoin;
+    //     }
+
+    //     // opts.color = '#0080ff'
+    //     this.path.length = 0;
+    //     return opts;
+    // }
+
+    // P.pathToOpts = function() {
+    //     // return this._pathToOpts();
+    //     return this.toOpts();
+    // }
+
+    P._mapPathToPuzzle = function(p, size) {
+        const {round, round1, round2, toCtcX, toCtcY} = PenpaTools;
+        const mapX = (d) => round1(toCtcX(d) * size);
+        const mapY = (d) => round1(toCtcY(d) * size);
+        const scale = (d) => round1(d * size);
+        const scale2 = (d) => round2(d * size);
+            if(p.length === 1) {
+            return p[0];
+        }
+        else if('ML'.includes(p[0])) {
+            return `${p[0]}${mapX(p[1])} ${mapY(p[2])}`;
+        }
+        else if('ml'.includes(p[0])) {
+            return `${p[0]}${scale(p[1])} ${scale(p[2])}`;
+        }
+        else if('A'.includes(p[0])) {
+            return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${mapX(p[6])} ${mapY(p[7])}`;
+        }
+        else if('a'.includes(p[0])) {
+            if (Math.max(p[1], p[2]) > 0.5) // Large radius should round with more decimals for better precision
+                return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`;
+            else
+                return `${p[0]}${scale(p[1])} ${scale(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale(p[6])} ${scale(p[7])}`;
+        }
+        else if('Q'.includes(p[0])) {
+            return `${p[0]}${mapX(p[1])} ${mapY(p[2])} ${mapX(p[3])} ${mapY(p[4])}`;
+        }
+        else if('q'.includes(p[0])) {
+            return `${p[0]}${scale(p[1])} ${scale(p[2])} ${scale(p[3])} ${scale(p[4])}`;
+        }
+        else {
+            console.error('UNEXPECTED PATH COMMAND: ', p);
+            debugger;
+            return p.join(' ');
+        }
+    }
+
+    P.toOpts = function(intent) {
         const {round, round1} = PenpaTools;
         let ctx = this;
         let opts = {};
         if (!intent) {
-            if (ctx.font || ctx._text)
+            if (ctx.path.length > 0)
+                intent = 'path';
+            else if (ctx.font || ctx._text)
                 intent = 'text';
-            else if (ctx.fillStyle && ctx.fillStyle !== Color.TRANSPARENTWHITE)
+            else if (ctx.fillStyle && !isTransparent(ctx.fillStyle))
                 intent = 'surface';
             else if (ctx.lineWidth)
                 intent = 'line';
@@ -287,56 +335,76 @@ class FakeContext {
                 intent = 'Should not come here';
         }
 
-        if (intent === 'line') {
-            if (ctx.lineWidth && ctx.strokeStyle && ctx.strokeStyle !== Color.TRANSPARENTWHITE) {
+        // if (intent === 'path') {
+        //     return this._pathToOpts();
+        // }
+        // else
+        if (intent === 'line' || intent === 'path') {
+            if (ctx.lineWidth && ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
                 opts.thickness = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
                 opts.color = ctx.strokeStyle;
-            }    
+            }
             if (ctx.lineCap && ctx.lineCap !== 'round') {
                 opts['stroke-linecap'] = ctx.lineCap;
                 if (ctx.lineJoin && ctx.lineJoin !== 'round')
                     opts['stroke-linejoin'] = ctx.lineJoin;
             }
+            if (ctx.path.length > 0) {
+                opts.d = ctx.path.map(d => this._mapPathToPuzzle(d, this.ctcSize)).join('');
+                ctx.path.length = 0;
+            }
+            if (ctx._fill) {
+                opts.fill = ctx.fillStyle;
+            }
         }
         else {
-            if (ctx.strokeStyle && ctx.strokeStyle !== Color.TRANSPARENTWHITE) {
+            if (ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
                 if (ctx.strokeStyle !== ctx.fillStyle)
                     opts.borderColor = ctx.strokeStyle;
             }
             if (ctx.font) {
                 const fontsize = ctx.font.split('px')[0];
-                opts.height = round(fontsize * 1.4);
-                opts.width = round(2 / this.ctcSize); //Hack to remove background rect
-                opts.fontSize = fontsize * this.ctcSize * 1.0;
-                if (ctx.fillStyle && ctx.fillStyle !== Color.BLACK)
+                opts.fontSize = round1(fontsize * this.ctcSize)
+                if (ctx.fillStyle && ctx.fillStyle !== Color.BLACK) {
                     opts.color = ctx.fillStyle;
+                }
                 if (ctx.fillStyle === Color.WHITE) {
                     ctx['stroke-width'] = 0;
                 }
                 if(ctx['stroke-width'] !== undefined) {
-                    opts['stroke-width'] = ctx['stroke-width'];
+                    opts['stroke-width'] = round1(ctx['stroke-width']);
                 }
                 else if (ctx.lineWidth > 0) {
-                    opts['stroke-width'] = ctx.lineWidth * this.ctcSize / this.penpaSize;
+                    opts['stroke-width'] = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
                 }
                 //opts.fill = '#ff0000';
-                if (ctx.fillStyle === Color.TRANSPARENTWHITE) {
-                    opts.textStroke = ctx.strokeStyle;
-                    opts.borderColor = Color.TRANSPARENTWHITE;
-                }
                 if (ctx._text) {
+                    if (ctx.strokeStyle && !isTransparent(ctx.strokeStyle)) {
+                         opts.textStroke = ctx.strokeStyle;
+                    }
                     opts.text = ctx._text;
                     opts.center = [ctx.y, ctx.x];
                     ctx._text = undefined;
+                    // opts["font-family"] = font.family
+                    if (ctx.textBaseline && ctx.textBaseline !== 'middle') {
+                        opts["dominant-baseline"] = getDominantBaseline(this.textBaseline);
+                    }
+                    if (ctx.textAlign && ctx.textAlign !== 'middle') {
+                        opts['text-anchor'] = getTextAnchor(ctx.textAlign)
+                    }
+
+                    // FIXME: Remove when Sudokupad has optional width and height
+                    opts.height = 0;
+                    opts.width = 0;
                 }
             }
             else {
                 if (ctx.lineWidth) {
                     if (ctx.strokeStyle !== ctx.fillStyle) {
-                        opts.borderSize = ctx.lineWidth * this.ctcSize / this.penpaSize;
+                        opts.borderSize = round1(ctx.lineWidth * this.ctcSize / this.penpaSize);
                     }
                 }
-                if (ctx.fillStyle && ctx.fillStyle !== Color.TRANSPARENTWHITE) {
+                if (ctx.fillStyle && !isTransparent(ctx.fillStyle)) {
                     opts.backgroundColor = ctx.fillStyle;
                 }
             }
@@ -356,4 +424,5 @@ class FakeContext {
         return opts;
     }
 
-}
+    return C;
+})();
