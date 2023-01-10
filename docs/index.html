@@ -2,16 +2,27 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Sudokupad penpa+ importer 0.1.2</title>
+		<title>Sudokupad penpa+ importer 0.1.3</title>
 		<meta name="author" content="Mark Langezaal, MarkTekfan#8907">
 		<meta name="copyright"content="Mark Langezaal">
-		<meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no, minimal-ui" />
-		<meta name="HandheldFriendly" content="true" />
-		<meta name="apple-mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABXFBMVEX////aGk0daJs8fakaZpnhOmfcIVRFg67+/f5nmLvjRG7cI1XbHlDnaovkRnAuc6LhPGjdJ1g0d6Ynb6DgNmP7/P3++vvw9fj3zdhUjrQ5e6gjbZ4gap3qfZrfMmD2+fv+9vj98/XM3emxy92Ut9DztMTwnbNEgq1AgKswdaQqcqHob4/iQWveLl3n7/T87/Pj7PPd6PD75+zC1uS40OD40tyiwdWZutKCrMh/qcd8qMZtnr/xo7ddkrdOiLBIhrChh6iqep7mZYflVXviT3fiS3Tq8PX64uj63+bF2Oanxdn2yNT2xNGHpMHzrsBwn8Dyrb95lribl7Xuk6zukartj6jMiaZFeqaEgKVifKXuiaNveKHNgaBHc6B7dp5Sb53peZbnd5aOa5ReZJLcb5HpcJCiZ4+yZo2eYYukXojcYIW1WIHLWIC9T3rRR3LVQm3lPmrSPGnTM2LXMF5v7Cm9AAABh0lEQVQ4y72S51PCQBDFs5dLciQxjQBSBRGRZu+CdHvvvfde/v8ZwUkAB/KNcb/97r3budt9VJtrvpOQkUFrfUPQ9zI4tmhp8EPOi73uKSvdWYDzqAfHpxzNWihEkRUeUsfYzsmYGyGUa65R7y3rkQIIUkDI0zjGeZFtXLOHGwxKQBIgqYC6HezqsWO6D2E5467rRAHQeVG8Ha5S/zrycWfvpbzT1IfcXyqvQqnTPOiexa8sA+Uxg6ezTzroa6Te0hF+YRmRTRg4g0+fH1f/fquDZRRp1wDXJKKRrdlwNFBDupWBr8E/GBxLWiuDkDYn1UPLTYbLh6tv8Btgi/todGjO0ZxlfFO6MGhUwzS6FhPDptw/U9mGZ/+jdsd1EJXvFFB3glUy9xkN1TvyN5/VNAATISTswVolEZzMNQZGFPwSpCQVilvoN1MTWt9k46PGFihnOgVMJRT3Hhwbd1CDQ83BHEiwYpJ5Q26XZeyLAqgnaJqyqkgAkrmsb4KyrOXeYNdoN6HaWj9O3CwsngKXCwAAAABJRU5ErkJggg==" />
-		<style>
-body { background-color: #121212; } /* Avoid flash-of-white */
+		<script defer src="./fpuzzlesdecoder.js"></script>
+		<script defer src="./penpa-style.js"></script>
+		<script defer src="./penpa-puzzle.js"></script>
+		<script defer src="./penpa-drawingcontext.js"></script>
+		<script defer src="./penpa-tools.js"></script>
+		<script defer src="./penpa-decoder.js"></script>
+		<script defer src="./penpa-symbol.js"></script>
+		<script defer src="./penpa-general.js"></script>
+		<script defer src="./puzzlink.js"></script>
+		<script defer src="./portableevents.js"></script>
+		<script defer src="./utilities.js"></script>
+		<script defer src="./framework.js"></script>
+		<script defer src="./puzzlezipper.js"></script>
+		<script defer src="./lzipper.js"></script>
+		<script defer src="./zlib.js"></script>
+<style>
+body { background-color: #121212; }
 .penpa {
 	display:flex;
 	font-size: 1.2rem;
@@ -58,21 +69,10 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 .extra.footer2 {
 	font-size: 100%;
 }
-
 		</style>
 		<link rel="stylesheet" href="./style.css">
 	</head>
 	<body>
-
-		<script defer src="./fpuzzlesdecoder.js"></script>
-		<script defer src="./penpa-style.js"></script>
-		<script defer src="./penpa-puzzle.js"></script>
-		<script defer src="./penpa-drawingcontext.js"></script>
-		<script defer src="./penpa-tools.js"></script>
-		<script defer src="./penpa-decoder.js"></script>
-		<script defer src="./penpa-symbol.js"></script>
-		<script defer src="./penpa-general.js"></script>
-		<script defer src="./puzzlink.js"></script>
 
 		<div class="app">
 
@@ -89,7 +89,9 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 						<div><span class="extra">Penpa+</span> or <span class="extra">puzz.link</span> url:</div>
 						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()"></textarea>
 					</div>
-					<button id="importbtn" onclick="openInSudokupad()">Open in SudokuPad</button>
+                    <div>
+                        <button id="importbtn" onclick="openInSudokupad()">Open in SudokuPad</button>
+                    </div>
 					<div id="disclaimer">(Beta version, for testing purposes only)</div>
 					<div id="errortext"> </div>
 					<div class="footer2">
@@ -101,46 +103,22 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 				</div>
 			</div>
 		</div>
-		<script defer src="./portableevents.js"></script>
-		<script defer src="./utilities.js"></script>
-		<script defer src="./framework.js"></script>
-		<script defer src="./puzzleloader.js"></script>
-		<script defer src="./puzzlezipper.js"></script>
-		<script defer src="./lzipper.js"></script>
-		<script defer src="./zlib.js"></script>
-		<script defer>			
+		<!-- <script defer src="./test.js"></script> -->
+		<script defer>
 			window.addEventListener('DOMContentLoaded', () => {
 				let urltext = document.querySelector('#penpa-url')
 				urltext.focus();
 			});
+			function textOnChange(event) {
+				let errortext = document.querySelector('#errortext');
+				errortext.innerHTML = '';
+			}
 
 			const Swal = {
 				fire: function(opts) {
 					let errortext = document.querySelector('#errortext');
 					errortext.innerHTML = opts.html;
-					// Framework.showDialog({
-					// 	parts: [
-					// 		{tag: 'title', innerHTML: opts.title, style: 'text-align: center'},
-					// 		{tag: 'label', innerHTML: opts.html},
-					// 		{tag: 'options', options: [opts.confirmButtonText], style: 'flex-direction: row; justify-content: center;'},
-					// 	],
-					// 	onButton: this.handleDialogButton,
-					// 	//centerOverBoard: true
-					// });
 				}
-			}
-			function onClickTest() {
-				// alert('Test')
-				Swal.fire({
-                    title: 'Swaroop says:',
-                    html: 'Rows/Columns Size must be in the range <h2 class="warn">1- + gridmax[square] + </h2>',
-                    icon: 'error',
-                    confirmButtonText: 'ok 🙂',
-                })
-			}
-			function textOnChange(event) {
-				let errortext = document.querySelector('#errortext');
-				errortext.innerHTML = '';
 			}
 
 			function openInSudokupad(event)
@@ -156,7 +134,7 @@ body { background-color: #121212; } /* Avoid flash-of-white */
 				.then(penpa => loadPenpaPuzzle(penpa))
 				.then(res => res && loadFPuzzle.compressPuzzle(res))
 				.then(ctc => {
-					if (!ctc) return;		
+					if (!ctc) return;
 					var redirect = 'https://beta.sudokupad.app/ctc' + ctc;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');

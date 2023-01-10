@@ -116,6 +116,7 @@ const DrawingContext = (() => {
         this._fill = true;
     }
     P.text = function(text, x, y) {
+        if (!text || text.length === 0) return;
         const fontsize = Number(this.font.split('px')[0]);
         this._text = text;
         this.x = x;

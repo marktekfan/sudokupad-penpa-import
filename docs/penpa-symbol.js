@@ -404,7 +404,9 @@ const PenpaSymbol = (() => {
 				};
 				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.42);
                 set_font_style(ctx, 0.7, number[1]);
-				let direction = directionMap[text.slice(-2)];
+                var direction = (directionMap[text.slice(-2)] - this.pu.theta + 360) % 360;
+                if (this.pu.reflect[0] === -1) { direction = (180 - direction + 360) % 360; }
+                if (this.pu.reflect[1] === -1) { direction = (360 - direction + 360) % 360; }
 				let arrow = arrowMap[direction];
 				if (arrow !== undefined) {
 					text = text.slice(0, -2);
@@ -417,13 +419,15 @@ const PenpaSymbol = (() => {
                     var w1 = 1 / ctx.penpaSize; // head width
                     var w2 = 3 / ctx.penpaSize; // tail width
                     var ri = -0.22; // head length
-                    this.draw_arrow(ctx, arrow.dir, p_x + arrow.midarrow[0], p_y + arrow.midarrow[1], len1, len2, w1, w2, ri);
+                    this.draw_arrow(ctx, arrow.dir, p_x + arrow.midarrow[0], p_y + arrow.midarrow[1], len1, len2, w1, w2, ri, 0);
                     ctx.target = 'cell-grids'; // This is the correct z-order for number arrows
                     this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), 'number arrow:' + JSON.stringify(number));
 				}
                 else {
-                    ctx.text(text, p_x, p_y + 0.06, 0.8);
-                    this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));    
+                    if (text.length > 0) {
+                        ctx.text(text, p_x, p_y + 0.06, 0.8);
+                        this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));    
+                    }
                 }
 				break;
 			case "4": //tapa
@@ -525,17 +529,6 @@ const PenpaSymbol = (() => {
 			let [y, x] = point2RC(p);
             ctx.text(number[0], x, y + 0.03, 0.48);
 			this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'numberS:' + JSON.stringify(number));
-
-            // Place blank pencilmarks under top-left number
-			if (x - Math.floor(x) === 0.25 && y - Math.floor(y) === 0.25) {
-				let cellRC = point2cell(p);
-				if (cellRC[0] >= 0 && cellRC[1] >= 0 &&
-					cellRC[0] < this.puzzle.cells.length &&
-					cellRC[1] < this.puzzle.cells[0].length) {
-					let cell = this.puzzle.cells[cellRC[0]][cellRC[1]];
-					cell.pencilMarks = [' '];
-				}
-			}
 		}
 	}
 
@@ -623,23 +616,23 @@ const PenpaSymbol = (() => {
         ctx.stroke();
     }
 
-    P.draw_slash = function(ctx, x, y, r) {
+    P.draw_ast = function(ctx, x, y, r) {
         var th;
-        th = 45 ;//+ this.theta % 180;
+        th = 45 + this.pu.theta % 180;
+        ctx.beginPath();
+        ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
+        ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
+        ctx.stroke();
+        th = 135 + this.pu.theta % 180;
         ctx.beginPath();
         ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
         ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
         ctx.stroke();
     }
 
-    P.draw_ast = function(ctx, x, y, r) {
+    P.draw_slash = function(ctx, x, y, r) {
         var th;
-        th = 45 ;//+ this.theta % 180;
-        ctx.beginPath();
-        ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
-        ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
-        ctx.stroke();
-        th = 135 ;//+ this.theta % 180;
+        th = 45 + this.pu.theta % 180;
         ctx.beginPath();
         ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
         ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
@@ -1200,10 +1193,10 @@ const PenpaSymbol = (() => {
         this.draw_arrow(ctx, num, x, y, len1, len2, w1, w2, ri);
     }
 
-    P.draw_arrow = function(ctx, num, x, y, len1, len2, w1, w2, ri) {
+    P.draw_arrow = function(ctx, num, x, y, len1, len2, w1, w2, ri, useTheta = 1) {
         var th;
         if (num > 0 && num <= 8) {
-            th = this.rotate_theta((num - 1) * 45 - 180);
+            th = this.rotate_theta((num - 1) * 45 - 180, useTheta);
             ctx.beginPath();
             ctx.arrow(x - len1 * Math.cos(th), y - len1 * Math.sin(th), x + len2 * Math.cos(th), y + len2 * Math.sin(th),
                 [0, w1, ri, w1, ri, w2]);
@@ -2376,11 +2369,12 @@ const PenpaSymbol = (() => {
         }
     }
 
-    P.rotate_theta = function(th) {
-        // FIXME
-        //th = (th + this.theta);
-        // if (this.reflect[0] === -1) { th = (180 - th + 360) % 360; }
-        // if (this.reflect[1] === -1) { th = (360 - th + 360) % 360; }
+    P.rotate_theta = function(th, useTheta = 1) {
+        if (useTheta) {
+            th = (th + this.pu.theta);
+            if (this.pu.reflect[0] === -1) { th = (180 - th + 360) % 360; }
+            if (this.pu.reflect[1] === -1) { th = (360 - th + 360) % 360; }
+        }
         th = th / 180 * Math.PI;
         return th;
     }

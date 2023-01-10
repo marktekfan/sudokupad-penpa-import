@@ -76,14 +76,12 @@ const loadPenpaPuzzle = (() => {
 	function addGivens(pu, puzzle) {
 		// Place 'Givens'
 		const {number} = pu.pu_q;
-		const {RC2k} = PenpaTools;
-		const height = puzzle.cells.length;
-		const width = puzzle.cells[0].length;
-		for (let r = 0; r < height; r++) {
-			for (let c = 0; c < width; c++) {
-				let pos = RC2k([r, c]);
+		const {point2cell} = PenpaTools;
+		for (let pos in number) {
+			if (pu.centerlist.includes(Number(pos))) {
 				const num = number[pos];
-				if (num && num[1] == 1 && (num[2] === '1')) { //Black Normal or Big number
+				if (num && !isNaN(num[0]) && num[1] == 1 && (num[2] === '1')) { //Black Normal or Big number
+					let [r, c] = point2cell(pos);
 					let cell = puzzle.cells[r][c];
 					cell.given = true;
 					cell.value = num[0];
@@ -94,25 +92,22 @@ const loadPenpaPuzzle = (() => {
 	}
 
 	function createSudokuRegions(pu, puzzle) {
-		const {RC2k} = PenpaTools;
+		const {point2cell} = PenpaTools;
 		let rows = puzzle.cells.length;
 		let cols = puzzle.cells[0].length;
 		let regRC = getRegionShape(Math.min(rows, cols));
 		const rowRegions = Math.ceil(cols / regRC[1]);
 		let regions = {};
 		const convRegion = (r, c, region) => {
-			if(region === null) return 'null';
 			if(region === undefined) return Math.floor(r / regRC[0]) * rowRegions + Math.floor(c / regRC[1]);
 			return Number(region);
 		};
-		puzzle.cells.forEach((frow, r) => {
-			frow.forEach((fcell, c) => {
-				let region = convRegion(r, c, fcell.region);
-				if (pu.centerlist.includes(RC2k([r, c]))) { //region = 'null';
-					if(regions[region] === undefined) regions[region] = [];
-					regions[region].push([r, c]);
-				}
-			});
+		pu.centerlist.forEach(pos => {
+			let [r, c] = point2cell(pos);
+			let cell = puzzle.cells[r][c];
+			let region = convRegion(r, c, cell.region);
+			if(regions[region] === undefined) regions[region] = [];
+			regions[region].push([r, c]);
 		});
 		if(regions['null'] !== undefined) { // Handle "null" region
 			puzzleAdd(puzzle, 'cages', {cells: regions['null'], unique: false, hidden: true}, 'region');
@@ -129,7 +124,7 @@ const loadPenpaPuzzle = (() => {
 		}
 	}
 
-	function addSolution(pu, puzzle) {
+	function addSolution(pu, puzzle, doc) {
 		// Add puzzle solution
 		if (pu.solution && !pu.multisolution) {
 			const {point2cell} = PenpaTools;
@@ -139,34 +134,21 @@ const loadPenpaPuzzle = (() => {
 			stext[4].forEach(s => {
 				let [point, val] = s.split(',');
 				let [r, c] = point2cell(point);
-				let pos = r * cols + c;
+				let pos = r * width + c;
 				if (pos >= 0 && pos < sol.length) {
 					sol[pos] = val;
 				}
 				else
 					val=val;
 			});
-			solString = sol.join('');
+			let solString = sol.join('');
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
 		}
 	}
 
-	function drawOutsideFrame(pu, puzzle, doc) {
+	function createCellMask(pu, puzzle, doc) {
 		const {point2cell} = PenpaTools;
 		const {centerlist} = pu;
-
-		// gr = grid line style
-		// ot = outline style
-		var gridStyle = 1; // Solid line
-        var outlineStyle = 2; // Thick line
-        if (pu.mode.grid[0] === "2") {
-            gridStyle = 11; // Dotted line
-        } else if (pu.mode.grid[0] === "3") {
-            gridStyle = 0; // No line
-        }
-        if (pu.mode.grid[2] === "2") { // No Frame
-            outlineStyle = gridStyle; // The line frame is the same line as the inside
-        }
 
 		// Create 'outside cell mask' only when cells are removed
 		if (centerlist.length !== doc.width * doc.height) {
@@ -188,13 +170,30 @@ const loadPenpaPuzzle = (() => {
 			ctx.closePath();
 			let opts = Object.assign(ctx.toOpts(), {
 				fill:  '#FFFFFF',
-				//fill: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
+				// fill: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
 				'fill-rule': 'evenodd',
 				target: 'overlay'
 			});
 			puzzleAdd(puzzle, 'lines', opts, 'outside mask');
 		}
+	}
+	function drawBoardOutline(pu, puzzle, doc) {
+		const {point2cell} = PenpaTools;
+		const {centerlist} = pu;
 
+		// gr = grid line style
+		// ot = outline style
+		var gridStyle = 1; // Solid line
+        var outlineStyle = 2; // Thick line
+        if (pu.mode.grid[0] === "2") {
+            gridStyle = 11; // Dotted line
+        } else if (pu.mode.grid[0] === "3") {
+            gridStyle = 0; // No line
+        }
+        if (pu.mode.grid[2] === "2") { // No Frame
+            outlineStyle = gridStyle; // The line frame is the same line as the inside
+        }
+		
 		// Add frame outine
 		let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
 		let outlinePoints = PenpaTools.getCellOutline(gridCells);
@@ -231,12 +230,19 @@ const loadPenpaPuzzle = (() => {
 	function positionBoard(pu, puzzle, doc) {
 		// Add transparant rectangle to position the puzzle
 		const ctx = new DrawingContext();
+		// const opts = Object.assign(ctx.toOpts(), {
+		// 	backgroundColor: Color.TRANSPARENTWHITE,
+		// 	//   backgroundColor: '#cc4440',
+		// 	center: [doc.ny / 2 - doc.row0, doc.nx / 2 - doc.col0],
+		// 	width: doc.nx,
+		// 	height: doc.ny,
+		// });
 		const opts = Object.assign(ctx.toOpts(), {
 			backgroundColor: Color.TRANSPARENTWHITE,
-			//backgroundColor: '#cc4440',
-			center: [doc.ny / 2 - doc.row0, doc.nx / 2 - doc.col0],
-			width: doc.nx,
-			height: doc.ny,
+			// backgroundColor: '#cc4440',
+			center: PenpaTools.point2RC(doc.center_n),
+			width: doc.width_c - 1,
+			height: doc.height_c - 1,
 		});
 		puzzleAdd(puzzle, 'underlays', opts, 'board position');
 	}
@@ -259,19 +265,13 @@ const loadPenpaPuzzle = (() => {
 	parse.surface = (qa, pu, puzzle) => {
 		const list = pu[qa].surface || [];
 		const listCol = pu[qa + '_col'].surface || [];
-		const {point2RC, RC2k, isCtcCell} = PenpaTools;
+		const {point2RC, isBoardCell} = PenpaTools;
 		const keys = Object.keys(list); //keys.sort();
-		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: k}));
-		const predicate = (s1, s2) => {
-			if (s1.value == 4 && s2.value == 4)
-				s1=s1;
-			return s1.value === s2.value
-			&& pu.centerlist.includes(RC2k(s1.center)) === pu.centerlist.includes(RC2k(s2.center))
-			//FIXME: make cc aware.
-			// When there is an auto generated white outside mask
-			// and a colored surface on the outside of the board and attached to the square board boundary
-			// then this extra condition can (as a side effect) create white patches on colored outside surfaces. Very rare.
-			&& isCtcCell(s1.center) === isCtcCell(s2.center) // Note 1
+		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: Number(k)}));
+		const predicate = (s1, s2) => { return true 
+			&& s1.value === s2.value
+			&& pu.centerlist.includes(s1.key) === pu.centerlist.includes(s2.key)
+			&& isBoardCell(s1.center) === isBoardCell(s2.center)
 		}
 		PenpaTools.reduceSurfaces(centers, predicate).forEach(surface => {
 			let ctx = new DrawingContext();
@@ -280,7 +280,7 @@ const loadPenpaPuzzle = (() => {
 				ctx.fillStyle = listCol[surface.key];
 				ctx.strokeStyle = listCol[surface.key];
 			}
-			if (isCtcCell(surface.center) && !pu.centerlist.includes(RC2k(surface.center))) {
+			if (!pu.centerlist.includes(surface.key)) {
 				ctx.target = 'overlay';
 			}
 			if (ctx.fillStyle === Color.GREY_DARK_VERY) {
@@ -311,11 +311,20 @@ const loadPenpaPuzzle = (() => {
 	parse.numberS = (qa, pu, puzzle, feature = 'numberS') => {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
+		const {point2cell, point2cellPoint} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			const number = list[key];
 			if (number.role !== undefined) return;
 			let ctx = new DrawingContext();
 			draw.draw_numberS(ctx, number, key);
+
+			if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
+				if(pu.centerlist.includes(point2cellPoint(key))) { // top-left cell corner
+					let rc = point2cell(key);
+					let cell = puzzle.cells[rc[0]][rc[1]];
+					cell.pencilMarks = [' '];
+				}
+			}
 		});
 	}
 	parse.symbol = (qa, pu, puzzle, layer = 1) => {
@@ -323,7 +332,7 @@ const loadPenpaPuzzle = (() => {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC} = PenpaTools;
+		const {point2RC, isBoardCell} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			const symbol = list[key];
 			if (symbol[2] !== layer) return;
@@ -331,10 +340,11 @@ const loadPenpaPuzzle = (() => {
             if (key.slice(-1) === 'E') {
                 key = key.slice(0, -1);
             }
-			const [r, c] = point2RC(key);
-			if (symbol[2] === 2) {
+			let isMaskedCell = !pu.centerlist.includes(key) && isBoardCell(point2RC(key));
+			if (symbol[2] === 2 || isMaskedCell) {
 				ctx.target = 'overlay';
 			}
+			const [r, c] = point2RC(key);
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], listCol[key]);
 		});
 	}
@@ -507,25 +517,15 @@ const loadPenpaPuzzle = (() => {
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
 		let wpLinesCol = PenpaTools.penpaLines2WaypointLines(listCol);
 		const cages = pu[qa].killercages || [];
+		const {point2cellPoint} = PenpaTools;
 		// Filter out cage lines which are on killer cages.
 		wpLines = wpLines.filter(line => {
 			if (line.value === 16) return true; // always keep solid cage lines
-			const {RC2k} = PenpaTools;
-			let k1 = RC2k(line.wayPoints[0]);
-			let k2 = RC2k(line.wayPoints[1]);
-			let ndx1 = cages.findIndex(c => c.includes(k1));
-			let ndx2 = cages.findIndex(c => c.includes(k2));
-			if (ndx1 !== -1 && ndx2 !== -1 && ndx1 === ndx2) {
-				function equalWaypoints(wp1, wp2) {
-					if (wp1.length !== wp2.length) return false;
-					for (let i = 0; i < wp1.length; i++) {
-						if (wp1[i][0] != wp2[i][0] || wp1[i][1] != wp2[i][1])
-						return false;
-					}
-					return true;
-				}
+			let ndx1 = cages.findIndex(c => c.includes(point2cellPoint(line.keys[0])));
+			let ndx2 = cages.findIndex(c => c.includes(point2cellPoint(line.keys[1])));
+			if (ndx1 === ndx2 && ndx1 !== -1) {
 				// Copy custom color to killercage
-				let cc = wpLinesCol.find(col => equalWaypoints(col.wayPoints, line.wayPoints));
+				let cc = wpLinesCol.find(col => col.keys[0] === line.keys[0] && col.keys[1] === line.keys[1]);
 				if (cc) {
 					pu[qa + '_col']['killercages'][ndx1] = cc.value;
 				}
@@ -534,8 +534,7 @@ const loadPenpaPuzzle = (() => {
 			return true;
 		});
 		// Align cage lines with SudokuPad cages lines
-		// FIXME: Implement board rotation
-		const r = 0.17; //space between grid
+		const r = 0.17;
 		wpLines.forEach(list => {
 			list.wayPoints.forEach(wp => {
 				let dy = Math.sign(wp[0] - Math.floor(wp[0]) - 0.5);
@@ -561,7 +560,8 @@ const loadPenpaPuzzle = (() => {
 	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
-		const {point2cell} = PenpaTools;
+		const {point2cell, point2cellPoint} = PenpaTools;
+		const {numberS} = pu[qa];
 		list.forEach((cage, i) => {
 			if (cage.length === 0) return;
 			let cagePart = {unique: true};
@@ -569,14 +569,32 @@ const loadPenpaPuzzle = (() => {
 			if (listCol[i]) {
 				cagePart.borderColor = listCol[i];
 			}
-			// FIXME: Add kliller cage value
+
+			let valueKey = null;
+			for(let k in numberS) {
+				if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left cell corner
+					if (cage.includes(point2cellPoint(k))) {
+						let num = numberS[k];
+						if (!isNaN(num[0])) {
+							valueKey = k;
+							break;
+						}
+					}
+				}
+			}
+			if (valueKey) {
+				let rc = point2cell(valueKey);
+				cagePart.cageValue = `r${rc[0] + 1}c${rc[1] + 1}=${numberS[valueKey][0].trim()}`;
+				numberS[valueKey].role = 'killer';
+			}				
+				
 			puzzleAdd(puzzle, 'cages', cagePart, 'killercages');
 		});
 	}
 	parse.deletelineE = (qa, pu, puzzle) => {
 		const list = pu[qa].deletelineE || [];
 		Object.keys(list).forEach(l => {
-			let [p1, p2] = PenpaTools.getAdjacentCellsOfLine(pu, l);
+			let [p1, p2] = PenpaTools.getAdjacentCellsOfELine(pu, l);
 			let s1 = pu[qa].surface[p1];
 			let s2 = pu[qa].surface[p2];
 			if (s1 && s1 === s2) {
@@ -621,13 +639,6 @@ const loadPenpaPuzzle = (() => {
 			if (line.length === 0) return;
 			let cells = line.map(point2RC);
 			if (cells.length >= 2) {
-				//let outside = cells.some(rc => !pu.centerlist[RC2k(rc)] && isCtcCell(rc));
-				// let outside = cells.some(rc => {
-				// 	let cl = pu.centerlist[RC2k(rc)];
-				// 	let onboard = isCtcCell(rc);
-				// 	console.log('onboard && !cl', onboard, !cl, onboard && !cl);
-				// 	return onboard && !cl;
-				// });
 				let end = line[line.length - 1];
 				if (find_common(pu[qa], line, end)) {
 					let rcEnd = cells[cells.length - 1];
@@ -756,7 +767,7 @@ const loadPenpaPuzzle = (() => {
 		}	
 		type = urldata[0];
 
-		let title = (puzzlinkNames[type] || [])[3] || type;		
+		let title = puzzlinkNames[type] || type;		
 		let rules = [`${title} rules apply.`] ;
 		if (variant) rules.push("This puzzle uses variant rules.");
 
@@ -867,10 +878,17 @@ const loadPenpaPuzzle = (() => {
 			point: pu.point,
 			nx: pu.nx,
 			ny: pu.ny,
+			nx0: pu.nx0,
+			ny0: pu.ny0,
 			col0: 0,
 			row0: 0,
 			width: 0,
 			height: 0,
+			theta: pu.theta,
+			reflect: pu.reflect,
+			width_c: pu.width_c,
+			height_c: pu.height_c,
+			center_n: pu.center_n,
 		};
 
 		// Inject puzzle/doc metrics into helper classes
@@ -899,7 +917,7 @@ const loadPenpaPuzzle = (() => {
 		}
 
 		positionBoard(pu, puzzle, doc);
-		drawOutsideFrame(pu, puzzle, doc);
+		createCellMask(pu, puzzle, doc);
 
 		let qa = 'pu_q'
 		parse.surface(qa, pu, puzzle);
@@ -919,24 +937,25 @@ const loadPenpaPuzzle = (() => {
 		// draw_lattice();
 		parse.symbol(qa, pu, puzzle, 2);
 		parse.cage(qa, pu, puzzle);
+		parse.killercages(qa, pu, puzzle);
 		parse.number(qa, pu, puzzle);
 		parse.numberS(qa, pu, puzzle);
 
+		drawBoardOutline(pu, puzzle, doc);
+
 		parse.deletelineE(qa, pu, puzzle);
-		parse.killercages(qa, pu, puzzle);
 
 		if(puzzle.regions.length === 0) {
 			// Create cage to defined the board bounds
 			const {width, height} = doc;
 			puzzleAdd(puzzle, 'cages', {cells: [[0, 0], [height - 1, width - 1]], unique: false, hidden: true});
 		}
-
 		
 		// Custom patch the puzzle
 		if ((pu._document.saveinforules || '').indexOf('Box 4: Antiknight') !== -1)
 		{
 			// Sneeky text substute to supress anti-knight rule, which would otherwise apply to whole board
-			pu._document.saveinforules = pu._document.saveinforules.value.replace('Box 4: Antiknight', 'Box 4: Antik\u0578ight');
+			pu._document.saveinforules = pu._document.saveinforules.replace('Box 4: Antiknight', 'Box 4: Antik\u0578ight');
 		}
 		// 	// Change color and width of green whisper lines
 		// 	(puzzle.lines || []).forEach(line => {
@@ -947,12 +966,15 @@ const loadPenpaPuzzle = (() => {
 		// 	});
 		// }
 
-		addSolution(pu, puzzle);
-
+		addSolution(pu, puzzle, doc);
+		
 		// Add puzzle meta data
 		applyDefaultMeta(pu, puzzle, 'title', pu._document.saveinfotitle, getDefaultTitle);
 		applyDefaultMeta(pu, puzzle, 'author', pu._document.saveinfoauthor, getDefaultAuthor);
 		applyDefaultMeta(pu, puzzle, 'rules', pu._document.saveinforules, getDefaultRules);
+		if (pu._document.custom_message) {
+			applyDefaultMeta(pu, puzzle, 'msgcorrect', pu._document.custom_message);
+		}
 
 		console.log(pu, puzzle);
 		return puzzle;
