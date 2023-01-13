@@ -1,12 +1,14 @@
 const PenpaTools = (() => {
     function _constructor() { }
 	const C = _constructor;//, P = Object.assign(C.prototype, {constructor: C});
-    C.doc = undefined;
-	C.reduceSurfaces = function(centers, predicate) {
+
+    C.doc = undefined; // Will be injected
+
+	C.reduceSurfaces = function(centers, predicate = () => true) {
 		//Sort centers, this will give best results.
 		centers.sort((a, b) => C.compareRC(a.center, b.center));
 		const findNext = function(centers, rc, s1) {
-			return centers.find(s2 => s2.center[0] === rc[0] && s2.center[1] === rc[1] && (predicate ? predicate(s1, s2) : true));
+			return centers.find(s2 => s2.center[0] === rc[0] && s2.center[1] === rc[1] && predicate(s1, s2));
 		}
 		// merge right
 		centers.forEach(s1 => {
@@ -138,28 +140,42 @@ const PenpaTools = (() => {
 		keys.sort(PenpaTools.comparePenpaLinePoints);
 		let listwp = keys.map(k => {
 			let rcs = k.split(",").map(C.point2RC);
-			let line = {wayPoints: [...rcs], value: list[k]};
+			let line = {wayPoints: [...rcs], value: list[k], keys: k.split(",").map(Number)};
 			if (listCol && listCol[k]) line.cc = listCol[k]
 			return line;
 		});
 		return listwp;
 	}
 
-	C.shortenLine = function(wayPoints, l) {
-		if (!Array.isArray(wayPoints) || wayPoints.length < 2) return wayPoints;		
+	// Shorten line by a fixed amount
+	C.shortenLine = function(wayPoints, shortenStart, shortenEnd) {
+		if (!Array.isArray(wayPoints) || wayPoints.length < 2) return wayPoints;
 		const wp = wayPoints;
 		let first = 0;
 		let dx = wp[first + 1][0] - wp[first][0];
 		let dy = wp[first + 1][1] - wp[first][1];
 		let d = Math.sqrt(dx * dx + dy * dy);
-		let x1 = wp[first][0] + dx * (l / d);
-		let y1 = wp[first][1] + dy * (l / d);		
+		let x1 = wp[first][0] + dx * (shortenStart / d);
+		let y1 = wp[first][1] + dy * (shortenStart / d);
 		let last = wp.length - 1;
 		dx = wp[last][0] - wp[last - 1][0];
 		dy = wp[last][1] - wp[last - 1][1];
 		d = Math.sqrt(dx * dx + dy * dy);
-		let x2 = wp[last][0] - dx * (l / d);
-		let y2 = wp[last][1] - dy * (l / d);
+		let x2 = wp[last][0] - dx * (shortenEnd / d);
+		let y2 = wp[last][1] - dy * (shortenEnd / d);
+		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
+	}
+
+	// Shrink line by a factor
+	C.shrinkLine = function(wayPoints, r) {
+		if (!Array.isArray(wayPoints) || wayPoints.length < 2) return wayPoints;
+		const wp = wayPoints;
+		let first = 0;
+		let last = wp.length - 1;
+		let x1 = r * wp[first][0] + (1 - r) * wp[last][0];
+		let y1 = r * wp[first][1] + (1 - r) * wp[last][1];
+		let x2 = (1 - r) * wp[first][0] + r * wp[last][0];
+		let y2 = (1 - r) * wp[first][1] + r * wp[last][1];
 		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
 	}
 
@@ -256,20 +272,16 @@ const PenpaTools = (() => {
 		return line;
 	}
 
-	C.getAdjacentCellsOfLine = function(pu, line) {
-		let {xy2k} = PenpaTools;
-		let [k1, k2] = line.split(',').map(Number);
+	C.getAdjacentCellsOfELine = function(pu, eline) {
+		const {point2cellPoint} = C;
+		let [k1, k2] = eline.split(',').map(Number);
 		let p1 = pu.point[k1];
 		let p2 = pu.point[k2];
-		if (p1.x === p2.x) {
-			let y = (p1.y + p2.y) / 2;
-			return [xy2k([p1.x - 0.5, y]), xy2k([p1.x + 0.5, y])]
-		}
-		else if (p1.y === p2.y) {
-			let x = (p1.x + p2.x) / 2;
-			return [xy2k([x, p1.y - 0.5]), xy2k([x, p1.y + 0.5])]
-		}
-		return [0, 0];
+		// Find common surrounding cells
+		let adjacent1 = [k1, p1.adjacent[2], p1.adjacent[3], p1.adjacent_dia[3]].map(point2cellPoint);
+		let adjacent2 = [k2, p2.adjacent[2], p2.adjacent[3], p2.adjacent_dia[3]].map(point2cellPoint);
+		let commonCells = adjacent1.filter(k => adjacent2.includes(k));
+		return commonCells;
 	}
 
 	C.getCellOutline = function(cells, os = 0) {
@@ -377,43 +389,39 @@ const PenpaTools = (() => {
 	C.round = function(num) { return C.round3(num); }
 
 
-	C.isCtcCell = function(rc, bb) {
+	C.isBoardCell = function(rc) {
 		const [r, c] = rc;
-		const [top, left, bottom, right] = bb;
-		return (r >= top && r <= bottom & c >= left && c <= right);
+		return (r >= 0 && r < C.doc.height && c >= 0 && c <= C.doc.width);
 	}
+
 	C.point2cell = function(p) {
 		const point = C.doc.point[p];
-		const r = Math.floor(point.y - 2);
-		const c = Math.floor(point.x - 2);
+		const r = Math.floor(point.y) - 2 - C.doc.row0;
+		const c = Math.floor(point.x) - 2 - C.doc.col0;
 		return [r, c];
-	}
-	C.ctcRC2k = function(r, c = undefined) {
-		if (Array.isArray(r)) [r, c] = r;
-		else if (c === undefined) ({r, c} = r);
-		const cols = C.doc.cols;
-		return (Math.floor(r) + 2 + C.doc.row0) * cols + Math.floor(c) + 2 + C.doc.col0;
-	}
-	C.RC2k = function(r, c = undefined) {
-		if (Array.isArray(r)) [r, c] = r;
-		else if (c === undefined) ({r, c} = r);
-		const cols = C.doc.cols;
-		return (Math.floor(r) + 2) * cols + Math.floor(c) + 2;
-	}
-	C.xy2k = function(x, y) {
-		if (Array.isArray(x)) [x, y] = x;
-		else if (x === undefined) ({r: y, c: x} = y);
-		const cols = C.doc.cols;
-		return (Math.floor(y)) * cols + Math.floor(x);
 	}
 	C.point2RC = function(p) {
 		const point = C.doc.point[p];
-		const r = point.y - 2;
-		const c = point.x - 2;
+		const r = point.y - 2 - C.doc.row0;
+		const c = point.x - 2 - C.doc.col0;
 		return [r, c];
 	}
 	C.point = function(p) {
 		return C.doc.point[p];
+	}
+
+	C.point2cellPoint = function(p) {
+		const point = C.doc.point[p];
+		switch(point.type) {
+			case 0:
+			case 1:
+			case 2:
+			case 3:
+				return p - point.type * C.doc.nx0 * C.doc.ny0;		
+			case 4:			
+			case 5:			
+				return Math.floor((p - 4 * C.doc.nx0 * C.doc.ny0) / 4) - (point.type - 4) * C.doc.nx0 * C.doc.ny0;			
+		}
 	}
 
 	return C;
