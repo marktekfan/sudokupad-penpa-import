@@ -14,28 +14,28 @@
 	}
 
 	class Stack {
-		constructor() {}	
-		set(list) {}	
+		constructor() {}
+		set(list) {}
 		push(o) {}
-		pop() {	return null };		
+		pop() {	return null };
 		size() { return 0 }
 		toString() { return '[]' }
 	}
 
 	class PenpaPuzzle {
 		constructor(gridtype) {
-			this.gridtype = gridtype;	
+			this.gridtype = gridtype;
 			// this.resol = 2.5; //window.devicePixelRatio || 1;
 			this.canvasx = 0; //predefine
 			this.canvasy = 0; //predefine
 			this.center_n = 0;
 			this.center_n0 = 0;
 			this.margin = 6;
-	
+
 			// this.canvas = document.getElementById("canvas");
 			this.ctx = {};
 			// this.obj = document.getElementById("dvique");
-	
+
 			// Drawing position
 			// this.mouse_mode = "";
 			// this.mouse_click = 0; // 0 for left, 2 for right
@@ -164,7 +164,7 @@
 		reset() {
 			let pu_qa = ["pu_q", "pu_a"],
 				pu_qa_col = ["pu_q_col", "pu_a_col"];
-	
+
 			// Object and Array initialization
 			for (var i of pu_qa) {
 				this[i] = {};
@@ -190,7 +190,7 @@
 				this[i].killercages = [];
 				this[i].nobulbthermo = [];
 			}
-	
+
 			// Object and Array initialization for custom colors
 			for (var i of pu_qa_col) {
 				this[i] = {};
@@ -216,7 +216,7 @@
 				this[i].killercages = [];
 				this[i].nobulbthermo = [];
 			}
-	
+
 			// this.frame = {};
 			// this.freelinecircle_g = [-1, -1];
 			this.point = [];
@@ -230,26 +230,26 @@
 				parseInt(PenpaPuzzle.document.getElementById("nb_space3").value),
 				parseInt(PenpaPuzzle.document.getElementById("nb_space4").value)
 			];
-	
+
 			this.centerlist = []
-			// for (var j = 2; j < this.ny0 - 2; j++) {
-			// 	for (var i = 2; i < this.nx0 - 2; i++) { // the top and left edges are unused
-			// 		this.centerlist.push(i + j * (this.nx0));
-			// 	}
-			// }
-			// this.search_center();
-			// this.center_n0 = this.center_n;
-			// this.canvasxy_update();
-			// this.canvas_size_setting();
-			// this.point_move((this.canvasx * 0.5 - this.point[this.center_n].x + 0.5), (this.canvasy * 0.5 - this.point[this.center_n].y + 0.5), this.theta);
-	
+			for (var j = 2; j < this.ny0 - 2; j++) {
+				for (var i = 2; i < this.nx0 - 2; i++) { // the top and left edges are unused
+					this.centerlist.push(i + j * (this.nx0));
+				}
+			}
+			this.search_center();
+			this.center_n0 = this.center_n;
+			this.canvasxy_update();
+			this.canvas_size_setting();
+			this.point_move((this.canvasx * 0.5 - this.point[this.center_n].x + 0.5), (this.canvasy * 0.5 - this.point[this.center_n].y + 0.5), this.theta);
+
 			this.centerlist = [] //reset centerlist to match the margins
 			for (var j = 2 + this.space[0]; j < this.ny0 - 2 - this.space[1]; j++) {
 				for (var i = 2 + this.space[2]; i < this.nx0 - 2 - this.space[3]; i++) { // the top and left edges are unused
 					this.centerlist.push(i + j * (this.nx0));
 				}
 			}
-	
+
 			this.make_frameline();
 			// this.cursol = this.centerlist[0];
 			// this.cursolS = 4 * (this.nx0) * (this.ny0) + 4 + 4 * (this.nx0);
@@ -261,7 +261,8 @@
 				this.mode.grid[1] = mode.slice(-1);
 			} else if (mode.slice(0, -1) === "nb_out") {
 				this.mode.grid[2] = mode.slice(-1);
-			}		}
+			}		
+		}
 		draw_panel(){}
 		mode_set(v){}
 		mode_qa(mode){this.mode.qa = mode;}
@@ -271,39 +272,110 @@
 			// debugger;
 		}
 		submode_check(v) {}
-		search_center() {}
-		canvasxy_update() {}
 		canvas_size_setting() {}
 		record(){}
 		subsymbolmode(mode) {}
 		point_usecheck() {}
 
-		
-		point_move(x, y, theta) {
-			// var x0 = this.canvasx * 0.5 + 0.5; // Rotate the canvas center +0.5, enter x,y +0.5 when moving in parallel
-			// var y0 = this.canvasy * 0.5 + 0.5;
-			// var x1, y1, x2, y2;
-			// theta = theta / 180 * Math.PI;
-			// for (var i in this.point) {
-			// 	x1 = this.point[i].x + x;
-			// 	y1 = this.point[i].y + y;
-			// 	x2 = (x1 - x0) * Math.cos(theta) - (y1 - y0) * Math.sin(theta) + x0;
-			// 	y2 = (x1 - x0) * Math.sin(theta) + (y1 - y0) * Math.cos(theta) + y0;
-			// 	this.point[i].x = x2;
-			// 	this.point[i].y = y2;
-			// }
-			// this.point_usecheck();
+		canvasxy_update() {
+			// this.size = UserSettings.displaysize;
+			this.canvasx = (this.width_c) * this.size;
+			this.canvasy = (this.height_c) * this.size;
 		}
 
-		//ML FIXME: not yet implemented. used by 
-		// resize_top(sign, celltype = 'black') {}
-		// resize_right(sign, celltype = 'black') {}
-		// resize_bottom(sign, celltype = 'black') {}
-		// resize_left(sign, celltype = 'black') {}
+		point_move(x, y, theta) {
+			var x0 = this.canvasx * 0.5 + 0.5; // Rotate the canvas center +0.5, enter x,y +0.5 when moving in parallel
+			var y0 = this.canvasy * 0.5 + 0.5;
+			//ML Never shift cells, 0,0 
+			//x = 0;
+			//y = 0;
+			// var x0 = this.nx0 * 0.5;
+			// var y0 = this.ny0 * 0.5;
+
+			var x1, y1, x2, y2;
+			theta = theta / 180 * Math.PI;
+			for (var i in this.point) {
+				x1 = this.point[i].x + x;
+				y1 = this.point[i].y + y;
+				x2 = (x1 - x0) * Math.cos(theta) - (y1 - y0) * Math.sin(theta) + x0;
+				y2 = (x1 - x0) * Math.sin(theta) + (y1 - y0) * Math.cos(theta) + y0;
+				this.point[i].x = x2;
+				this.point[i].y = y2;
+			}
+
+			//ML
+			// this.search_center();
+			let center = this.point[0];
+			let dx = 0.5 - (center.x - Math.floor(center.x));
+			let dy = 0.5 - (center.y - Math.floor(center.y));
+			if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+				this.point_move(dy, dx, 0);
+			}
+
+			this.point_usecheck();
+		}
+
+		search_center() {
+			var xmax = 0,
+				xmin = 1e5;
+			var ymax = 0,
+				ymin = 1e5;
+			for (var i of this.centerlist) {
+				if (this.point[i].x > xmax) { xmax = this.point[i].x; }
+				if (this.point[i].x < xmin) { xmin = this.point[i].x; }
+				if (this.point[i].y > ymax) { ymax = this.point[i].y; }
+				if (this.point[i].y < ymin) { ymin = this.point[i].y; }
+			}
+			var x = (xmax + xmin) / 2;
+			var y = (ymax + ymin) / 2;
+			this.width = (xmax - xmin) / this.size + 2;
+			this.height = (ymax - ymin) / this.size + 2;
+	
+			var min0, min = 10e6;
+			var num = 0;
+			for (var i in this.point) {
+				min0 = (x - this.point[i].x) ** 2 + (y - this.point[i].y) ** 2;
+				if (min0 < min) {
+					min = min0;
+					num = i;
+				}
+			}
+			this.center_n = parseInt(num);
+		}
+
+		point_reflect_LR() {
+			//ML var x0 = this.canvasx * 0.5 + 0.5;
+			//var x0 = Math.floor(this.nx0 * 0.5) + 0.5;
+			var x0 = this.nx0 * 0.5;
+			for (var i in this.point) {
+				this.point[i].x = 2 * x0 - this.point[i].x;
+			}
+			this.point_usecheck();
+		}
+
+		point_reflect_UD() {
+			// var y0 = this.canvasy * 0.5 + 0.5;
+			//var y0 = Math.floor(this.ny0 * 0.5) + 0.5;
+			var y0 = this.ny0 * 0.5;
+			for (var i in this.point) {
+				this.point[i].y = 2 * y0 - this.point[i].y;
+			}
+			this.point_usecheck();
+		}
+
+		//ML used by puzz.link
+		// starbattle:
+		// 	pu.resize_top(1, "white");
+		// 	pu.resize_right(1, "white");
+		// 	pu.resize_bottom(1, "white");
+		// 	pu.resize_left(1, "white");
+		// easyasabc:
+		// 	pu.resize_top(1, "white");
+
 		resize_top(sign, celltype = 'black') {
 			// reset the selection while resizing the grid
 			this.selection = [];
-	
+
 			sign = parseInt(sign);
 			// if ((this.ny + 1 * sign) <= this.gridmax['square'] && (this.ny + 1 * sign) > 0) {
 				let originalspace = [...this.space];
@@ -325,7 +397,7 @@
 				}
 				let originalnx0 = this.nx0;
 				let originalny0 = this.ny0;
-	
+
 				// this.nx = nx; // Columns
 				this.ny = this.ny + (1 * sign); // Rows, Adding/Subtracting 1 row
 				// this.nx0 = this.nx + 4;
@@ -338,7 +410,7 @@
 				this.height = this.height_c;
 				// this.canvasx = this.width_c * this.size;
 				this.canvasy = this.height_c * this.size;
-	
+
 				// Find the missing boxes
 				var old_centerlist = this.centerlist;
 				var old_idealcenterlist = []; // If no box was missing
@@ -349,7 +421,7 @@
 					}
 				}
 				var boxremove = old_idealcenterlist.filter(x => old_centerlist.indexOf(x) === -1);
-	
+
 				this.create_point();
 				this.centerlist = []
 				for (var j = 2; j < this.ny0 - 2; j++) {
@@ -374,7 +446,7 @@
 						this.centerlist.push(i + j * (this.nx0));
 					}
 				}
-	
+
 				// Remove Box elements
 				if (boxremove) {
 					for (let n = 0; n < boxremove.length; n++) {
@@ -386,17 +458,17 @@
 						}
 					}
 				}
-	
+
 				this.make_frameline();
 				this.cursol = this.centerlist[0];
 				this.cursolS = 4 * (this.nx0) * (this.ny0) + 4 + 4 * (this.nx0);
 				let pu_qa = ["pu_q", "pu_a", "pu_q_col", "pu_a_col"];
-	
+
 				for (var i of pu_qa) {
 					this[i].command_redo = new Stack();
 					this[i].command_undo = new Stack();
 					this[i].command_replay = new Stack();
-	
+
 					// shift Surface elements to next row
 					if (this[i].surface) {
 						let temp = this[i].surface;
@@ -408,7 +480,7 @@
 							this[i].surface[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift Number elements to next row
 					if (this[i].number) {
 						let temp = this[i].number;
@@ -421,7 +493,7 @@
 							this[i].number[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift Number elements to next row
 					if (this[i].numberS) {
 						let m;
@@ -439,7 +511,7 @@
 							this[i].numberS[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift Symbol elements to next row
 					if (this[i].symbol) {
 						let m;
@@ -453,7 +525,7 @@
 							this[i].symbol[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift Line elements to next row
 					if (this[i].line) {
 						let m;
@@ -475,7 +547,7 @@
 							}
 						}
 					}
-	
+
 					// shift Edge elements to next row
 					if (this[i].lineE) {
 						let m;
@@ -496,9 +568,9 @@
 							}
 						}
 					}
-	
-	
-					// shift DeleteEdge elements to next row            
+
+
+					// shift DeleteEdge elements to next row
 					if (this[i].deletelineE) {
 						let temp = this[i].deletelineE;
 						this[i].deletelineE = {};
@@ -510,7 +582,7 @@
 							this[i].deletelineE[key] = temp[k];
 						}
 					}
-	
+
 					// shift FreeLine elements to next row
 					if (this[i].freeline) {
 						let temp = this[i].freeline;
@@ -523,7 +595,7 @@
 							this[i].freeline[key] = temp[k];
 						}
 					}
-	
+
 					// shift FreeEdge elements to next row
 					if (this[i].freelineE) {
 						let temp = this[i].freelineE;
@@ -536,7 +608,7 @@
 							this[i].freelineE[key] = temp[k];
 						}
 					}
-	
+
 					// shift Thermo elements to next row
 					if (this[i].thermo) {
 						let temp = this[i].thermo;
@@ -550,7 +622,7 @@
 							this[i].thermo[k] = temp[k];
 						}
 					}
-	
+
 					// shift No Bulb Thermo elements to next row
 					if (this[i].nobulbthermo) {
 						let temp = this[i].nobulbthermo;
@@ -564,7 +636,7 @@
 							this[i].nobulbthermo[k] = temp[k];
 						}
 					}
-	
+
 					// shift Arrow elements to next row
 					if (this[i].arrows) {
 						let temp = this[i].arrows;
@@ -578,7 +650,7 @@
 							this[i].arrows[k] = temp[k];
 						}
 					}
-	
+
 					// shift Direction elements to next row
 					if (this[i].direction) {
 						let temp = this[i].direction;
@@ -592,7 +664,7 @@
 							this[i].direction[k] = temp[k];
 						}
 					}
-	
+
 					// shift RectangleFrame elements to next row
 					if (this[i].squareframe) {
 						let temp = this[i].squareframe;
@@ -606,7 +678,7 @@
 							this[i].squareframe[k] = temp[k];
 						}
 					}
-	
+
 					// shift Wall elements to next row
 					if (this[i].wall) {
 						let temp = this[i].wall;
@@ -620,7 +692,7 @@
 							this[i].wall[key] = temp[k];
 						}
 					}
-	
+
 					// shift Cage elements to next row
 					if (this[i].cage) {
 						let temp = this[i].cage;
@@ -633,7 +705,7 @@
 							this[i].cage[key] = temp[k];
 						}
 					}
-	
+
 					// shift Killer Cages to next row
 					if (this[i].killercages) {
 						let temp = this[i].killercages;
@@ -647,7 +719,7 @@
 							this[i].killercages[k] = temp[k];
 						}
 					}
-	
+
 					// shift Polygon elements to next row
 					if (this[i].polygon) {
 						let temp = this[i].polygon;
@@ -681,11 +753,11 @@
 			// 	}
 			// }
 		}
-	
+
 		resize_bottom(sign, celltype = 'black') {
 			// reset the selection while resizing the grid
 			this.selection = [];
-	
+
 			sign = parseInt(sign);
 			// if ((this.ny + 1 * sign) <= this.gridmax['square'] && (this.ny + 1 * sign) > 0) {
 				let originalspace = [...this.space];
@@ -707,7 +779,7 @@
 				}
 				let originalnx0 = this.nx0;
 				let originalny0 = this.ny0;
-	
+
 				// this.nx = nx; // Columns
 				this.ny = this.ny + (1 * sign); // Rows, Adding/Removing 1 row
 				// this.nx0 = this.nx + 4;
@@ -720,7 +792,7 @@
 				this.height = this.height_c;
 				// this.canvasx = this.width_c * this.size;
 				this.canvasy = this.height_c * this.size;
-	
+
 				// Find the missing boxes
 				var old_centerlist = this.centerlist;
 				var old_idealcenterlist = []; // If no box was missing
@@ -754,7 +826,7 @@
 						this.centerlist.push(i + j * (this.nx0));
 					}
 				}
-	
+
 				// Remove Box elements
 				if (boxremove) {
 					for (let n = 0; n < boxremove.length; n++) {
@@ -765,17 +837,17 @@
 						}
 					}
 				}
-	
+
 				this.make_frameline();
 				this.cursol = this.centerlist[0];
 				this.cursolS = 4 * (this.nx0) * (this.ny0) + 4 + 4 * (this.nx0);
 				let pu_qa = ["pu_q", "pu_a", "pu_q_col", "pu_a_col"];
-	
+
 				for (var i of pu_qa) {
 					this[i].command_redo = new Stack();
 					this[i].command_undo = new Stack();
 					this[i].command_replay = new Stack();
-	
+
 					// shift Number elements to next row
 					if (this[i].number) {
 						let temp = this[i].number;
@@ -788,7 +860,7 @@
 							this[i].number[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// Maintain NumberS elements to be in the same row
 					if (this[i].numberS) {
 						let m;
@@ -806,7 +878,7 @@
 							this[i].numberS[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// Maintain Symbol elements to be in the same row
 					if (this[i].symbol) {
 						let m;
@@ -820,7 +892,7 @@
 							this[i].symbol[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// Maintain cross elements to be in the same row
 					if (this[i].line) {
 						let m;
@@ -842,7 +914,7 @@
 							}
 						}
 					}
-	
+
 					// Maintain Edge elements in the same row
 					if (this[i].lineE) {
 						let m;
@@ -863,8 +935,8 @@
 							}
 						}
 					}
-	
-					// Maintain DeleteEdge elements in the same row     
+
+					// Maintain DeleteEdge elements in the same row
 					if (this[i].deletelineE) {
 						let m;
 						let temp = this[i].deletelineE;
@@ -877,7 +949,7 @@
 							this[i].deletelineE[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain FreeEdge elements in the same place
 					if (this[i].freelineE) {
 						let m;
@@ -891,7 +963,7 @@
 							this[i].freelineE[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain Wall elements in the same row
 					if (this[i].wall) {
 						let temp = this[i].wall;
@@ -905,7 +977,7 @@
 							this[i].wall[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain Cage elements in the same row
 					if (this[i].cage) {
 						let temp = this[i].cage;
@@ -918,7 +990,7 @@
 							this[i].cage[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain Polygon elements in the same row
 					if (this[i].polygon) {
 						let temp = this[i].polygon;
@@ -952,11 +1024,11 @@
 			// 	}
 			// }
 		}
-	
+
 		resize_left(sign, celltype = 'black') {
 			// reset the selection while resizing the grid
 			this.selection = [];
-	
+
 			sign = parseInt(sign);
 			// if ((this.nx + 1 * sign) <= this.gridmax['square'] && (this.nx + 1 * sign) > 0) {
 				let originalspace = [...this.space];
@@ -978,7 +1050,7 @@
 				}
 				let originalnx0 = this.nx0;
 				let originalny0 = this.ny0;
-	
+
 				this.nx = this.nx + (1 * sign); // Columns, Adding/Removing 1 column
 				// this.ny = this.ny; // Rows
 				this.nx0 = this.nx + 4;
@@ -991,7 +1063,7 @@
 				// this.height = this.height_c;
 				this.canvasx = this.width_c * this.size;
 				// this.canvasy = this.height_c * this.size;
-	
+
 				// Find the missing boxes
 				var old_centerlist = this.centerlist;
 				var old_idealcenterlist = []; // If no box was missing
@@ -1001,7 +1073,7 @@
 					}
 				}
 				var boxremove = old_idealcenterlist.filter(x => old_centerlist.indexOf(x) === -1);
-	
+
 				this.create_point();
 				this.centerlist = []
 				for (var j = 2; j < this.ny0 - 2; j++) {
@@ -1026,7 +1098,7 @@
 						this.centerlist.push(i + j * (this.nx0));
 					}
 				}
-	
+
 				// Remove Box elements
 				if (boxremove) {
 					for (let n = 0; n < boxremove.length; n++) {
@@ -1038,17 +1110,17 @@
 						}
 					}
 				}
-	
+
 				this.make_frameline();
 				this.cursol = this.centerlist[0];
 				this.cursolS = 4 * (this.nx0) * (this.ny0) + 4 + 4 * (this.nx0);
 				let pu_qa = ["pu_q", "pu_a", "pu_q_col", "pu_a_col"];
-	
+
 				for (var i of pu_qa) {
 					this[i].command_redo = new Stack();
 					this[i].command_undo = new Stack();
 					this[i].command_replay = new Stack();
-	
+
 					// shift Surface elements to next column
 					if (this[i].surface) {
 						let temp = this[i].surface;
@@ -1060,7 +1132,7 @@
 							this[i].surface[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift Number elements to next column
 					if (this[i].number) {
 						let temp = this[i].number;
@@ -1073,7 +1145,7 @@
 							this[i].number[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift NumberS elements to next column
 					if (this[i].numberS) {
 						let temp = this[i].numberS;
@@ -1086,7 +1158,7 @@
 							this[i].numberS[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift Symbol elements to next column
 					if (this[i].symbol) {
 						let m;
@@ -1100,7 +1172,7 @@
 							this[i].symbol[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// shift Line elements to next column
 					if (this[i].line) {
 						let m;
@@ -1126,7 +1198,7 @@
 							}
 						}
 					}
-	
+
 					// shift Edge elements to next column
 					if (this[i].lineE) {
 						let m;
@@ -1147,8 +1219,8 @@
 							}
 						}
 					}
-	
-					// shift DeleteEdge elements to next column           
+
+					// shift DeleteEdge elements to next column
 					if (this[i].deletelineE) {
 						let temp = this[i].deletelineE;
 						this[i].deletelineE = {};
@@ -1160,7 +1232,7 @@
 							this[i].deletelineE[key] = temp[k];
 						}
 					}
-	
+
 					// shift FreeLine elements to next column
 					if (this[i].freeline) {
 						let temp = this[i].freeline;
@@ -1173,7 +1245,7 @@
 							this[i].freeline[key] = temp[k];
 						}
 					}
-	
+
 					// shift FreeEdge elements to next column
 					if (this[i].freelineE) {
 						let temp = this[i].freelineE;
@@ -1186,7 +1258,7 @@
 							this[i].freelineE[key] = temp[k];
 						}
 					}
-	
+
 					// shift Thermo elements to next column
 					if (this[i].thermo) {
 						let temp = this[i].thermo;
@@ -1200,7 +1272,7 @@
 							this[i].thermo[k] = temp[k];
 						}
 					}
-	
+
 					// shift No Bulb Thermo elements to next column
 					if (this[i].nobulbthermo) {
 						let temp = this[i].nobulbthermo;
@@ -1214,7 +1286,7 @@
 							this[i].nobulbthermo[k] = temp[k];
 						}
 					}
-	
+
 					// shift Arrow elements to next column
 					if (this[i].arrows) {
 						let temp = this[i].arrows;
@@ -1228,7 +1300,7 @@
 							this[i].arrows[k] = temp[k];
 						}
 					}
-	
+
 					// shift Direction elements to next column
 					if (this[i].direction) {
 						let temp = this[i].direction;
@@ -1242,7 +1314,7 @@
 							this[i].direction[k] = temp[k];
 						}
 					}
-	
+
 					// shift RectangleFrame elements to next column
 					if (this[i].squareframe) {
 						let temp = this[i].squareframe;
@@ -1256,7 +1328,7 @@
 							this[i].squareframe[k] = temp[k];
 						}
 					}
-	
+
 					// shift Wall elements to next column
 					if (this[i].wall) {
 						let temp = this[i].wall;
@@ -1270,7 +1342,7 @@
 							this[i].wall[key] = temp[k];
 						}
 					}
-	
+
 					// shift Cage elements to next column
 					if (this[i].cage) {
 						let temp = this[i].cage;
@@ -1285,7 +1357,7 @@
 							this[i].cage[key] = temp[k];
 						}
 					}
-	
+
 					// shift Killer cages to next column
 					if (this[i].killercages) {
 						let temp = this[i].killercages;
@@ -1299,8 +1371,8 @@
 							this[i].killercages[k] = temp[k];
 						}
 					}
-	
-	
+
+
 					// shift Polygon elements to next column
 					if (this[i].polygon) {
 						let temp = this[i].polygon;
@@ -1334,11 +1406,11 @@
 			// 	}
 			// }
 		}
-	
+
 		resize_right(sign, celltype = 'black') {
 			// reset the selection while resizing the grid
 			this.selection = [];
-	
+
 			sign = parseInt(sign);
 			// if ((this.nx + 1 * sign) <= this.gridmax['square'] && (this.nx + 1 * sign) > 0) {
 				let originalspace = [...this.space];
@@ -1360,7 +1432,7 @@
 				}
 				let originalnx0 = this.nx0;
 				let originalny0 = this.ny0;
-	
+
 				this.nx = this.nx + (1 * sign); // Columns, Adding/Removing 1 column
 				// this.ny = this.ny; // Rows
 				this.nx0 = this.nx + 4;
@@ -1373,7 +1445,7 @@
 				// this.height = this.height_c;
 				this.canvasx = this.width_c * this.size;
 				// this.canvasy = this.height_c * this.size;
-	
+
 				// Find the missing boxes
 				var old_centerlist = this.centerlist;
 				var old_idealcenterlist = []; // If no box was missing
@@ -1383,7 +1455,7 @@
 					}
 				}
 				var boxremove = old_idealcenterlist.filter(x => old_centerlist.indexOf(x) === -1);
-	
+
 				this.create_point();
 				this.centerlist = []
 				for (var j = 2; j < this.ny0 - 2; j++) {
@@ -1408,7 +1480,7 @@
 						this.centerlist.push(i + j * (this.nx0));
 					}
 				}
-	
+
 				// Remove Box elements
 				if (boxremove) {
 					for (let n = 0; n < boxremove.length; n++) {
@@ -1420,17 +1492,17 @@
 						}
 					}
 				}
-	
+
 				this.make_frameline();
 				this.cursol = this.centerlist[0];
 				this.cursolS = 4 * (this.nx0) * (this.ny0) + 4 + 4 * (this.nx0);
 				let pu_qa = ["pu_q", "pu_a", "pu_q_col", "pu_a_col"];
-	
+
 				for (var i of pu_qa) {
 					this[i].command_redo = new Stack();
 					this[i].command_undo = new Stack();
 					this[i].command_replay = new Stack();
-	
+
 					// Maintain Surface elements in the same column
 					if (this[i].surface) {
 						let temp = this[i].surface;
@@ -1442,7 +1514,7 @@
 							this[i].surface[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// Maintain Number elements in the same column
 					if (this[i].number) {
 						let temp = this[i].number;
@@ -1455,7 +1527,7 @@
 							this[i].number[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// Maintain NumberS elements in the same column
 					if (this[i].numberS) {
 						let temp = this[i].numberS;
@@ -1468,7 +1540,7 @@
 							this[i].numberS[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// Maintain Symbol elements in the same column
 					if (this[i].symbol) {
 						let m;
@@ -1482,7 +1554,7 @@
 							this[i].symbol[m] = temp[keys[k]];
 						}
 					}
-	
+
 					// Maintain Line elements in the same column
 					if (this[i].line) {
 						let m;
@@ -1508,7 +1580,7 @@
 							}
 						}
 					}
-	
+
 					// Maintain Edge elements in the same column
 					if (this[i].lineE) {
 						let m;
@@ -1529,8 +1601,8 @@
 							}
 						}
 					}
-	
-					// Maintain DeleteEdge elements in the same column           
+
+					// Maintain DeleteEdge elements in the same column
 					if (this[i].deletelineE) {
 						let temp = this[i].deletelineE;
 						this[i].deletelineE = {};
@@ -1542,7 +1614,7 @@
 							this[i].deletelineE[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain FreeLine elements in the same column
 					if (this[i].freeline) {
 						let temp = this[i].freeline;
@@ -1555,7 +1627,7 @@
 							this[i].freeline[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain FreeEdge elements in the same column
 					if (this[i].freelineE) {
 						let temp = this[i].freelineE;
@@ -1568,7 +1640,7 @@
 							this[i].freelineE[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain Thermo elements in the same column
 					if (this[i].thermo) {
 						let temp = this[i].thermo;
@@ -1582,7 +1654,7 @@
 							this[i].thermo[k] = temp[k];
 						}
 					}
-	
+
 					// Maintain No Bulb Thermo elements in the same column
 					if (this[i].nobulbthermo) {
 						let temp = this[i].nobulbthermo;
@@ -1596,7 +1668,7 @@
 							this[i].nobulbthermo[k] = temp[k];
 						}
 					}
-	
+
 					// Maintain Arrow elements in the same column
 					if (this[i].arrows) {
 						let temp = this[i].arrows;
@@ -1610,7 +1682,7 @@
 							this[i].arrows[k] = temp[k];
 						}
 					}
-	
+
 					// Maintain Direction elements in the same column
 					if (this[i].direction) {
 						let temp = this[i].direction;
@@ -1624,7 +1696,7 @@
 							this[i].direction[k] = temp[k];
 						}
 					}
-	
+
 					// Maintain RectangleFrame elements in the same column
 					if (this[i].squareframe) {
 						let temp = this[i].squareframe;
@@ -1638,7 +1710,7 @@
 							this[i].squareframe[k] = temp[k];
 						}
 					}
-	
+
 					// Maintain Wall elements in the same column
 					if (this[i].wall) {
 						let temp = this[i].wall;
@@ -1652,7 +1724,7 @@
 							this[i].wall[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain Cage elements in the same column
 					if (this[i].cage) {
 						let temp = this[i].cage;
@@ -1667,7 +1739,7 @@
 							this[i].cage[key] = temp[k];
 						}
 					}
-	
+
 					// Maintain Killer Cages in the same column
 					if (this[i].killercages) {
 						let temp = this[i].killercages;
@@ -1681,7 +1753,7 @@
 							this[i].killercages[k] = temp[k];
 						}
 					}
-	
+
 					// Maintain Polygon elements in the same column
 					if (this[i].polygon) {
 						let temp = this[i].polygon;
@@ -1734,8 +1806,8 @@
 			this.height_c = this.height0;
 			this.width = this.width_c;
 			this.height = this.height_c;
-			// this.canvasx = this.width_c * this.size;
-			// this.canvasy = this.height_c * this.size;
+			this.canvasx = this.width_c //* this.size;
+			this.canvasy = this.height_c //* this.size;
 			this.space = [//ML
 				parseInt(PenpaPuzzle.document.getElementById("nb_space1").value),
 				parseInt(PenpaPuzzle.document.getElementById("nb_space2").value),
@@ -1743,7 +1815,7 @@
 				parseInt(PenpaPuzzle.document.getElementById("nb_space4").value)
 			];
 			this.size = 1;
-			this._size = size;
+			this._size = Math.max(size, 38);
 			this.reset();
 		}
 
@@ -1778,8 +1850,8 @@
 					k++;
 				}
 			}
-	
-	
+
+
 			//centervertex
 			type = 2;
 			for (var j = 0; j < ny; j++) {
@@ -1803,7 +1875,7 @@
 					k++;
 				}
 			}
-	
+
 			//  1/4
 			var r = 0.25;
 			type = 4;
@@ -1825,7 +1897,7 @@
 					k++;
 				}
 			}
-	
+
 			//  compass
 			var r = 0.3;
 			type = 5;
@@ -1844,8 +1916,26 @@
 					k++;
 				}
 			}
-	
+
 			this.point = point;
+
+			//ML Always reset to unit scale
+			if (this.canvasx !== this.width_c) {
+				this.size = 1;
+				// this.nx0 = this.nx + 4;
+				// this.ny0 = this.ny + 4;
+				// this.width0 = this.nx + 1;
+				// this.height0 = this.ny + 1;
+				// this.width_c = this.width0;
+				// this.height_c = this.height0;
+				// this.width = this.width_c;
+				// this.height = this.height_c;
+				this.canvasx = this.width_c;
+				this.canvasy = this.height_c;
+				// if(this.point[this.center_n].type !== 0) {
+				// 	this.search_center();
+				// }
+			}
 		}
 
 		draw_sudokugrid(rows, cols, start, end, linestyle) {
@@ -1870,24 +1960,24 @@
 		draw_kakurogrid() {
 			let rows = this.ny;
 			let cols = this.nx;
-	
+
 			// R1C1 as black
 			let i = 0,
 				j = 0;
 			this[this.mode.qa].symbol[(i + 2) + ((j + 2) * this.nx0)] = [2, "kakuro", 2];
-	
+
 			// Row 1 Blacks
 			for (i = 1; i < cols; i++) { // column
 				this[this.mode.qa].symbol[(i + 2) + ((j + 2) * this.nx0)] = [1, "kakuro", 2];
 			}
-	
+
 			// Col 1 Blacks
 			i = 0;
 			for (j = 1; j < rows; j++) { // column
 				this[this.mode.qa].symbol[(i + 2) + ((j + 2) * this.nx0)] = [1, "kakuro", 2];
 			}
 		}
-	
+
 	}
 
 	class PenpaPuzzle_Sudoku extends PenpaPuzzle_Square {
@@ -1900,15 +1990,15 @@
 			this.nx0 = this.nx + 4;
 			this.ny0 = this.ny + 4;
 			this.margin = -1; //for arrow of number pointing outside of the grid
-	
+
 			this.width0 = this.nx + 1;
 			this.height0 = this.ny + 1;
 			this.width_c = this.width0;
 			this.height_c = this.height0;
 			this.width = this.width_c;
 			this.height = this.height_c;
-			// this.canvasx = this.width_c * this.size;
-			// this.canvasy = this.height_c * this.size;
+			this.canvasx = this.width_c //* this.size;
+			this.canvasy = this.height_c //* this.size;
 			this.sudoku = [
 				Number(PenpaPuzzle.document.getElementById("nb_sudoku1").checked),
 				Number(PenpaPuzzle.document.getElementById("nb_sudoku2").checked),
@@ -1924,7 +2014,7 @@
 			this.size = 1;
 			this._size = size;
 			this.reset();
-		}	
+		}
 	}
 
 	class Puzzle_square extends PenpaPuzzle_Square {

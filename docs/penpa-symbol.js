@@ -92,7 +92,7 @@ const PenpaSymbol = (() => {
                     set_circle_style(ctx, num, cc);
                     this.draw_circle(ctx, x, y, s1);
                 }
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'draw_polygon');
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), 'draw_polygon');
                 break;
             }
             case "square_LL":
@@ -103,7 +103,7 @@ const PenpaSymbol = (() => {
                 const {s1} = shape_map1[sym];
                 set_circle_style(ctx, num, cc);
                 this.draw_polygon(ctx, x, y, s1 * Math.sqrt(2), 4, 45);
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:square');
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), 'symbol:square');
                 break;
             }
             case "triup_L":
@@ -143,7 +143,7 @@ const PenpaSymbol = (() => {
             }
             case "ox_B":
                 ctx.setLineDash([]);
-                //ctx.lineCap = "butt";//ok
+                //ctx.lineCap = "butt";
                 ctx.fillStyle = cc || Color.BLACK;
                 ctx.strokeStyle = color_map[sym];
                 ctx.lineWidth = 2;
@@ -152,7 +152,7 @@ const PenpaSymbol = (() => {
             case "ox_E":
             case "ox_G": {
                 ctx.setLineDash([]);
-                //ctx.lineCap = "butt";//ok
+                //ctx.lineCap = "butt";
                 ctx.fillStyle = Color.TRANSPARENTWHITE;
                 ctx.strokeStyle = color_map[sym];
                 ctx.lineWidth = 2;
@@ -165,7 +165,7 @@ const PenpaSymbol = (() => {
             }
             case "cross": {
                 ctx.setLineDash([]);
-                ctx.lineCap = "butt";//ok
+                ctx.lineCap = "butt";
                 ctx.fillStyle = Color.TRANSPARENTBLACK;
                 ctx.strokeStyle = cc || Color.BLACK;
                 ctx.lineWidth = 3;
@@ -348,17 +348,230 @@ const PenpaSymbol = (() => {
                 this.draw_battleshipplus(ctx, num, x, y);
                 break;
 
-
             default:
                 console.warn('symbol not implemented:', sym);
                 return;
         }
-        if (ctx.path && ctx.path.length > 0)
-            this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:' + sym);
-        else if (ctx._text) {
-            const offset = [-0.00, 0];
-            this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'symbol math:' + JSON.stringify(ctx.text));
+
+        const featureMap = {
+            'line': 'lines',
+            'text': 'overlays',
+        };
+        let feature = featureMap[ctx.getIntent()];
+        if (feature) {
+            this.decoder.puzzleAdd(this.puzzle, feature, ctx.toOpts(), `symbol ${sym} ${JSON.stringify(num)}`);
         }
+    }
+
+    
+	P.draw_number = function(ctx, number, p) {
+		const {point2RC, point} = PenpaTools;
+		let text = number[0];
+		let factor = "abcdefghijklmnopqrstuvwxyz".indexOf(text) === -1 ? 1 : 0;
+		if (p.slice(-1) === 'E') p = slice(0, -1);
+		let [p_y, p_x] = point2RC(p);
+		// Vertex numbers/circles (point.type=1 or 2) should be drawn over gridlines
+		if (point(p).type === 1 || point(p).type === 2) {
+			ctx.target =  'overlay'
+		}
+		switch(number[2]) {
+			case "1": //normal
+				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.42);
+				set_font_style(ctx, 0.7, number[1]);
+                ctx.text(text, p_x, p_y + factor * 0.06, 0.8);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                break;
+			case "2": //arrow
+				const directionMap = {
+					"_0": 90,
+					"_1": 180,
+					"_2": 0,
+					"_3": 270,
+					"_4": 135,
+					"_5": 45,
+					"_6": 225,
+					"_7": 315,
+				}
+				const arrowMap = {
+					90 : {midarrow: [+0.3,  -0.0 ], textpos: [-0.1,  0.05], textwidth: 0.7, dir: 3},
+					180: {midarrow: [+0.0,  -0.3 ], textpos: [ 0.0,  0.15], textwidth: 0.8, dir: 1},
+					0  : {midarrow: [+0.0,  -0.3 ], textpos: [ 0.0,  0.15], textwidth: 0.8, dir: 5},
+					270: {midarrow: [+0.3,  -0.0 ], textpos: [-0.1,  0.05], textwidth: 0.7, dir: 7},
+					135: {midarrow: [+0.19, -0.19], textpos: [-0.05, 0.15], textwidth: 0.7, dir: 2},
+					45 : {midarrow: [-0.19, -0.19], textpos: [+0.05, 0.15], textwidth: 0.7, dir: 4},
+					225: {midarrow: [-0.19, -0.19], textpos: [+0.05, 0.15], textwidth: 0.7, dir: 8},
+					315: {midarrow: [+0.19, -0.19], textpos: [-0.05, 0.15], textwidth: 0.7, dir: 6},
+				};
+				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.42);
+                set_font_style(ctx, 0.7, number[1]);
+                var direction = (directionMap[text.slice(-2)] - this.pu.theta + 360) % 360;
+                if (this.pu.reflect[0] === -1) { direction = (180 - direction + 360) % 360; }
+                if (this.pu.reflect[1] === -1) { direction = (360 - direction + 360) % 360; }
+				let arrow = arrowMap[direction];
+				if (arrow !== undefined) {
+					text = text.slice(0, -2);
+					if (text.length > 0) {
+                        ctx.text(text, p_x + arrow.textpos[0], p_y + arrow.textpos[1])
+						this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number arrow:' + JSON.stringify(number));
+					}
+                    var len1 = 0.33; //tail
+                    var len2 = 0.32; //tip
+                    var w1 = 1 / ctx.penpaSize; // head width
+                    var w2 = 3 / ctx.penpaSize; // tail width
+                    var ri = -0.22; // head length
+                    this.draw_arrow(ctx, arrow.dir, p_x + arrow.midarrow[0], p_y + arrow.midarrow[1], len1, len2, w1, w2, ri, 0);
+                    ctx.target = 'cell-grids'; // This is the correct z-order for number arrows
+                    this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), 'number arrow:' + JSON.stringify(number));
+				}
+                else {
+                    if (text.length > 0) {
+                        ctx.text(text, p_x, p_y + 0.06, 0.8);
+                        this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));    
+                    }
+                }
+				break;
+			case "4": //tapa
+				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.44);
+				const tapa_pos = {
+					1: {font: 0.7,  offset: [[ 0   ,  0.06]]},
+					2: {font: 0.48, offset: [[-0.16, -0.15], [ 0.18,  0.19]]},
+					3: {font: 0.45, offset: [[-0.22, -0.14], [ 0.24, -0.05], [0   , 0.30]]},
+					4: {font: 0.4,  offset: [[ 0   , -0.22], [-0.26,  0.04], [0.26, 0.04], [0, 0.30]]},
+				};
+				let values = [...number[0]]; // This is to handle unicode symbols.
+				let pos = tapa_pos[values.length];
+				if (pos) {
+					set_font_style(ctx, pos.font * 0.9, number[1]);
+					for (let i = 0; i < pos.offset.length; i++) {
+						const offset = pos.offset[i];
+                        ctx.text(values[i], p_x + offset[0], p_y + offset[1], 0.8);
+						this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'tapa');
+					}
+				}
+				break;
+			case "5": //small
+				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.17);
+				set_font_style(ctx, 0.25, number[1]);
+                ctx.text(text, p_x, p_y + factor * 0.02, 0.8);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+				break;
+			case "6": //medium
+				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.25);
+				set_font_style(ctx, 0.4, number[1]);
+                ctx.text(text, p_x, p_y + factor * 0.03, 0.8);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+				break;
+			case "10": //big
+				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.36);
+				set_font_style(ctx, 0.6, number[1]);
+                ctx.text(text, p_x, p_y + factor * 0.03, 0.8);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+				break;
+			case "7": //sudoku
+				{
+                    this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.42);
+					let sum = 0, pos = 0;
+					for (let j = 0; j < 9; j++) {
+						if (number[0][j] === 1) {
+							sum += 1;
+							pos = j;
+						}
+					}
+					if (sum === 1) {
+						set_font_style(ctx, 0.7, number[1]);
+                        ctx.text((pos + 1).toString(), p_x, p_y +  0.06, 0.8);
+                        this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                    } else {
+						set_font_style(ctx, 0.3, number[1]);
+						for (let j = 0; j < 9; j++) {
+							if (number[0][j] === 1) {
+                                ctx.text((j + 1).toString(), p_x + ((j % 3 - 1) * 0.28), p_y + (((j / 3 | 0) - 1) * 0.28 + 0.02))
+								this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number sudoku:' + JSON.stringify(number));
+							}
+						}
+					}
+				}
+				break;
+			case "8": //long
+				if (number[1] === 5) {
+					// White background not implemented 
+				}
+				set_font_style(ctx, 0.5, number[1]);
+                ctx.textAlign = 'left';
+                ctx.text(number[0], p_x - 0.2, p_y);
+				this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number:' + JSON.stringify(number));
+				break;
+		}
+	}
+
+	P.draw_numberS = function(ctx, number, p) {
+		const {point2cell, point2RC} = PenpaTools;
+		let rc = point2RC(p)
+		if (number[1] === 5) { // WHITE
+			set_circle_style(ctx, 7);
+			this.draw_rect_elem(ctx, rc[1], rc[0], 0.40, 0.40);
+		} else if (number[1] === 6) { // WHITE + BLACK border
+			set_circle_style(ctx, 1);
+			this.draw_circle_elem(ctx, rc[1], rc[0], 0.18);
+		} else if (number[1] === 7) { 
+			set_circle_style(ctx, 2); // BLACK
+			this.draw_circle_elem(ctx, rc[1], rc[0], 0.18);
+		} else if (number[1] === 11) { // RED
+			set_circle_style(ctx, 11);
+			this.draw_circle_elem(ctx, rc[1], rc[0], 0.18);
+			// Draw twice because RED in Sudokupad has alpha 0.5
+			set_circle_style(ctx, 11);
+			this.draw_circle_elem(ctx, rc[1], rc[0], 0.18);
+		}
+		if (this.pu.point[p]) {
+			set_font_style(ctx, 0.32, number[1]);
+			ctx.textAlign = "center";
+			let [y, x] = point2RC(p);
+            ctx.text(number[0], x, y + 0.03, 0.48);
+			this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'numberS:' + JSON.stringify(number));
+		}
+	}
+
+    P.draw_numbercircle = function(ctx, number, i, p_x, p_y, size) {
+		if (number[1] === 5) {  //WHITE no border
+			set_circle_style(ctx, 7);
+            this.draw_circle_elem(ctx, p_x, p_y, size);
+        } else if (number[1] === 6) { //WHITE
+			set_circle_style(ctx, 1);
+            this.draw_circle_elem(ctx, p_x, p_y, size);
+        } else if (number[1] === 7) { //BLACK
+			set_circle_style(ctx, 2);
+            this.draw_circle_elem(ctx, p_x, p_y, size);
+        } else if (number[1] === 11) { //RED
+			set_circle_style(ctx, 11);
+            this.draw_circle_elem(ctx, p_x, p_y, size);
+			// Draw twice because RED in Sudokupad has alpha 0.5
+			set_circle_style(ctx, 11);
+            this.draw_circle_elem(ctx, p_x, p_y, size);
+        }
+    }
+
+	P.draw_circle_elem = function(ctx, x, y, r) {
+		let opts = Object.assign(ctx.toOpts(), {
+			rounded: true,
+			center: [y, x],
+			width: 2 * r,
+			height: 2 * r,
+			target: ctx.target || 'cages',
+		});
+		this.decoder.puzzleAdd(this.puzzle, 'underlays', opts);
+        ctx.reset();
+    }
+
+	P.draw_rect_elem = function(ctx, x, y, w, h) {
+		let opts = Object.assign(ctx.toOpts(), {
+			//opts.rounded = false;
+			center: [y, x],
+			width: w,
+			height: h,
+		});
+		this.decoder.puzzleAdd(this.puzzle, 'underlays', opts);
+        ctx.reset();
     }
 
     P.draw_circle = function(ctx, x, y, r) {
@@ -367,15 +580,6 @@ const PenpaSymbol = (() => {
         ctx.fill();
         ctx.stroke();
     }
-	// P.draw_circle = function(ctx, x, y, r) {
-	// 	let opts = Object.assign(ctx.toOpts('surface'), {
-	// 		rounded: true,
-	// 		center: [y, x],
-	// 		width: 2 * r,
-	// 		height: 2 * r,
-	// 	});
-	// 	this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, 'draw_circle');
-    // }
 
 	P.draw_rect = function(ctx, x, y, w, h) {
 		let opts = Object.assign(ctx.toOpts('surface'), {
@@ -412,23 +616,23 @@ const PenpaSymbol = (() => {
         ctx.stroke();
     }
 
-    P.draw_slash = function(ctx, x, y, r) {
+    P.draw_ast = function(ctx, x, y, r) {
         var th;
-        th = 45 ;//+ this.theta % 180;
+        th = 45 + this.pu.theta % 180;
+        ctx.beginPath();
+        ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
+        ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
+        ctx.stroke();
+        th = 135 + this.pu.theta % 180;
         ctx.beginPath();
         ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
         ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
         ctx.stroke();
     }
 
-    P.draw_ast = function(ctx, x, y, r) {
+    P.draw_slash = function(ctx, x, y, r) {
         var th;
-        th = 45 ;//+ this.theta % 180;
-        ctx.beginPath();
-        ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
-        ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
-        ctx.stroke();
-        th = 135 ;//+ this.theta % 180;
+        th = 45 + this.pu.theta % 180;
         ctx.beginPath();
         ctx.moveTo(x + r * Math.cos(th * (Math.PI / 180)), y + r * Math.sin(th * (Math.PI / 180)));
         ctx.lineTo(x + r * Math.cos((th + 180) * (Math.PI / 180)), y + r * Math.sin((th + 180) * (Math.PI / 180)));
@@ -791,14 +995,13 @@ const PenpaSymbol = (() => {
                 break;
             case 2:
                 ctx.font = 0.7 + "px Helvetica,Arial";
-                ctx.text("＋", x, y + 0.1);
+                ctx.text("＋", x, y);
                 break;
             case 3:
                 ctx.font = 0.7 + "px Helvetica,Arial";
                 ctx.text("－", x, y);
                 break;
             case 4:
-                    ctx.font = 0.7 + "px Helvetica,Arial";
                 ctx.text("×", x, y);
                 break;
             case 5:
@@ -806,7 +1009,6 @@ const PenpaSymbol = (() => {
                 ctx.text("＊", x, y);
                 break;
             case 6:
-                    ctx.font = 0.7 + "px Helvetica,Arial";
                 ctx.text("÷", x, y);
                 break;
             case 7:
@@ -814,15 +1016,12 @@ const PenpaSymbol = (() => {
                 ctx.text("＝", x, y);
                 break;
             case 8:
-                    ctx.font = 0.7 + "px Helvetica,Arial";
                 ctx.text("≠", x, y);
                 break;
             case 9:
-                    ctx.font = 0.8 + "px Helvetica,Arial";
                 ctx.text("≦", x, y);
                 break;
             case 0:
-                    ctx.font = 0.8 + "px Helvetica,Arial";
                 ctx.text("≧", x, y);
                 break;
         }
@@ -916,7 +1115,7 @@ const PenpaSymbol = (() => {
         ctx.strokeStyle = Color.GREY_LIGHT;
 
         this.draw_degital(ctx, num.map(n => n ? 0 : 1), x, y);
-        this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:' );
+        this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), 'symbol:' );
 
         //contents
         set_circle_style(ctx, 2, ccolor);
@@ -979,7 +1178,7 @@ const PenpaSymbol = (() => {
     P.draw_arrowN = function(ctx, num, x, y) {
         var len1 = 0.38; //nemoto
         var len2 = 0.4; //tip
-        var w1 = 0.03;
+        var w1 = 0.035//0.03;
         var w2 = 0.13;
         var ri = -0.25;
         this.draw_arrow(ctx, num, x, y, len1, len2, w1, w2, ri);
@@ -988,16 +1187,16 @@ const PenpaSymbol = (() => {
     P.draw_arrowS = function(ctx, num, x, y) {
         var len1 = 0.3; //nemoto
         var len2 = 0.32; //tip
-        var w1 = 0.02;
-        var w2 = 0.12;
-        var ri = -0.2;
+        var w1 = 0.03//0.02;
+        var w2 = 0.14//0.12;
+        var ri = -0.22//-0.2;
         this.draw_arrow(ctx, num, x, y, len1, len2, w1, w2, ri);
     }
 
-    P.draw_arrow = function(ctx, num, x, y, len1, len2, w1, w2, ri) {
+    P.draw_arrow = function(ctx, num, x, y, len1, len2, w1, w2, ri, useTheta = 1) {
         var th;
         if (num > 0 && num <= 8) {
-            th = this.rotate_theta((num - 1) * 45 - 180);
+            th = this.rotate_theta((num - 1) * 45 - 180, useTheta);
             ctx.beginPath();
             ctx.arrow(x - len1 * Math.cos(th), y - len1 * Math.sin(th), x + len2 * Math.cos(th), y + len2 * Math.sin(th),
                 [0, w1, ri, w1, ri, w2]);
@@ -1050,8 +1249,6 @@ const PenpaSymbol = (() => {
         var w2 = 0.35;
         var ri = 0;
         this.draw_arrow(ctx, num, x, y, len1, len2, w1, w2, ri);
-        //let th = ((num - 1) * 45);
-        //this.draw_polygon(ctx, x, y, 0.5 / Math.sqrt(2), 3, th);
     }
 
     P.draw_arrowcross = function(ctx, num, x, y) {
@@ -1075,9 +1272,9 @@ const PenpaSymbol = (() => {
     P.draw_arroweight = function(ctx, num, x, y) {
         var len1 = -0.2; //nemoto
         var len2 = 0.45; //tip
-        var w1 = 0.025;
+        var w1 = 0.032//0.025;
         var w2 = 0.10;
-        var ri = -0.15;
+        var ri = -0.16//-0.15;
         for (var i = 0; i < 8; i++) {
             if (num[i] === 1) {
                 this.draw_arrow8(ctx, i + 1, x, y, len1, len2, w1, w2, ri);
@@ -1126,44 +1323,6 @@ const PenpaSymbol = (() => {
         }
     }
 
-    P.arrowML = function(ctx, startX, startY, endX, endY, controlPoints) {
-        controlPoints = [...controlPoints];
-        ctx.lineWidth = controlPoints[1] * 64 * 64 / 38;
-        var dx = endX - startX;
-        var dy = endY - startY;
-        var len = Math.sqrt(dx * dx + dy * dy);
-        var sin = dy / len;
-        var cos = dx / len;
-        var a = [];
-        var x;
-        var y;
-        a.push(0, 0);
-        x = controlPoints[2];
-        a.push(x < 0 ? len + x : x, 0);
-        y = controlPoints[5];
-        a.push(x < 0 ? len + x : x, y/2);
-        a.push(len-0.05, 0);
-        a.push(x < 0 ? len + x : x, -y/2);
-        a.push(x < 0 ? len + x : x, 0);
-        // for (var i = 0; i < controlPoints.length; i += 2) {
-        //     var x = controlPoints[i];
-        //     var y = controlPoints[i + 1];
-        //     a.push(x < 0 ? len + x : x, y);
-        // }
-        // a.push(len, 0);
-        // for (var i = controlPoints.length; i > 0; i -= 2) {
-        //     var x = controlPoints[i - 2];
-        //     var y = controlPoints[i - 1];
-        //     a.push(x < 0 ? len + x : x, -y);
-        // }
-        // a.push(0, 0);
-        for (var i = 0; i < a.length; i += 2) {
-            var x = a[i] * cos - a[i + 1] * sin + startX;
-            var y = a[i] * sin + a[i + 1] * cos + startY;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-    };
     P.draw_arrowfouredge = function(ctx, num, x, y) {
         var len1 = 0.5; //nemoto
         var len2 = 0.5;
@@ -1317,7 +1476,7 @@ const PenpaSymbol = (() => {
 
     P.draw_tents = function(ctx, num, x, y, ccolor = "none") {
         switch (num) {
-            case 1:
+            case 1: // Tree
                 var r1;
                 var r2;
                 ctx.setLineDash([]);
@@ -1335,7 +1494,7 @@ const PenpaSymbol = (() => {
                 ctx.lineTo(x - r1, y);
                 ctx.fill();
                 ctx.stroke();
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:');
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts());
                 r1 = 0.2;
                 r2 = 0.4;
                 ctx.setLineDash([]);
@@ -1348,19 +1507,18 @@ const PenpaSymbol = (() => {
                 }
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(x - r1 * Math.cos(90 * (Math.PI / 180)), y - (r1 * Math.sin(90 * (Math.PI / 180)) + 0));
+                ctx.moveTo(x - r1 * Math.cos( 90 * (Math.PI / 180)), y - (r1 * Math.sin( 90 * (Math.PI / 180)) + 0));
                 ctx.lineTo(x - r2 * Math.cos(210 * (Math.PI / 180)), y - (r2 * Math.sin(210 * (Math.PI / 180)) + 0));
                 ctx.lineTo(x - r2 * Math.cos(330 * (Math.PI / 180)), y - (r2 * Math.sin(330 * (Math.PI / 180)) + 0));
-                //ctx.arc(x,y-0.1,0.3,0,2*Math.PI,false);
                 ctx.fill();
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:');
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts());
                 ctx.beginPath();
-                ctx.moveTo(x - r1 * Math.cos(90 * (Math.PI / 180)), y - (r1 * Math.sin(90 * (Math.PI / 180)) + 0.2));
+                ctx.moveTo(x - r1 * Math.cos( 90 * (Math.PI / 180)), y - (r1 * Math.sin( 90 * (Math.PI / 180)) + 0.2));
                 ctx.lineTo(x - r2 * Math.cos(210 * (Math.PI / 180)), y - (r2 * Math.sin(210 * (Math.PI / 180)) + 0.2));
                 ctx.lineTo(x - r2 * Math.cos(330 * (Math.PI / 180)), y - (r2 * Math.sin(330 * (Math.PI / 180)) + 0.2));
                 ctx.fill();
                 break;
-            case 2:
+            case 2: // Tent
                 ctx.setLineDash([]);
                 ctx.lineCap = "butt";
                 ctx.strokeStyle = Color.BLACK;
@@ -1373,17 +1531,17 @@ const PenpaSymbol = (() => {
                 r1 = 0.3;
                 r2 = 0.4;
                 ctx.beginPath();
-                ctx.moveTo(x - r1 * Math.cos(90 * (Math.PI / 180)), y - (r1 * Math.sin(90 * (Math.PI / 180)) - 0.1));
+                ctx.moveTo(x - r1 * Math.cos( 90 * (Math.PI / 180)), y - (r1 * Math.sin( 90 * (Math.PI / 180)) - 0.1));
                 ctx.lineTo(x - r2 * Math.cos(210 * (Math.PI / 180)), y - (r2 * Math.sin(210 * (Math.PI / 180)) - 0.1));
                 ctx.lineTo(x - r2 * Math.cos(330 * (Math.PI / 180)), y - (r2 * Math.sin(330 * (Math.PI / 180)) - 0.1));
-                ctx.lineTo(x - r1 * Math.cos(90 * (Math.PI / 180)), y - (r1 * Math.sin(90 * (Math.PI / 180)) - 0.1));
+                ctx.lineTo(x - r1 * Math.cos( 90 * (Math.PI / 180)), y - (r1 * Math.sin( 90 * (Math.PI / 180)) - 0.1));
                 ctx.lineTo(x - r2 * Math.cos(210 * (Math.PI / 180)), y - (r2 * Math.sin(210 * (Math.PI / 180)) - 0.1));
                 ctx.fill();
                 ctx.stroke();
                 break;
-            case 3: //anglers
+            case 3: // Fish
                 ctx.setLineDash([]);
-                ctx.lineCap = "butt";
+                ctx.lineCap = "round";
                 if (ccolor !== "none") {
                     ctx.strokeStyle = ccolor;
                 } else {
@@ -1393,21 +1551,19 @@ const PenpaSymbol = (() => {
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(x - 0.35, y);
-                ctx.quadraticCurveTo(x - 0., y + 0.37, x + 0.3, y - 0.2);
+                ctx.quadraticCurveTo(x - 0., y + 0.35, x + 0.3, y - 0.18);
                 ctx.stroke();
                 ctx.moveTo(x - 0.35, y);
-                ctx.quadraticCurveTo(x - 0., y - 0.37, x + 0.3, y + 0.2);
+                ctx.quadraticCurveTo(x - 0., y - 0.35, x + 0.3, y + 0.18);
                 ctx.stroke();
                 break;
-            case 4:
-                set_font_style(ctx, 0.8.toString(10), 1, ccolor);
-                //y+=0.00
-                ctx.text("～", x, y - 0.20);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'symbol math:' + JSON.stringify(ctx.text));
-                ctx.text("～", x, y - 0.00);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'symbol math:' + JSON.stringify(ctx.text));
-                ctx.text("～", x, y + 0.20);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'symbol math:' + JSON.stringify(ctx.text));
+            case 4: // Water
+                set_font_style(ctx, 0.8, 1, ccolor);
+                ctx.text("～", x, y - 0.11);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts());
+                ctx.text("～", x, y + 0.09);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts());
+                ctx.text("～", x, y + 0.29);
                 break;
         }
     }
@@ -1571,13 +1727,12 @@ const PenpaSymbol = (() => {
                 this.draw_battleship_tip(ctx, x, y, 270);
                 break;
             case 7:
-                set_font_style(ctx, 0.8.toString(10), color_type, ccolor);
-                ctx.text("～", x, y - 0.20);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'symbol math:' + JSON.stringify(ctx.text));
-                ctx.text("～", x, y - 0.00);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'symbol math:' + JSON.stringify(ctx.text));
-                ctx.text("～", x, y + 0.20);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'symbol math:' + JSON.stringify(ctx.text));
+                set_font_style(ctx, 0.8, color_type, ccolor);
+                ctx.text("～", x, y - 0.11);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts());
+                ctx.text("～", x, y + 0.09);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts());
+                ctx.text("～", x, y + 0.29);
                 break;
             case 8:
                 r = 0.05;
@@ -1605,7 +1760,7 @@ const PenpaSymbol = (() => {
         ctx.beginPath();
         ctx.arc(x, y, r, Math.PI * 0.5 + th, Math.PI * 1.5 + th, false);
         ctx.moveTo(x + r * Math.sin(th), y - r * Math.cos(th));
-        ctx.lineTo(x + r * Math.sqrt(2) * Math.sin(th + 45 / 180 * Math.PI), y - r * Math.sqrt(2) * Math.cos(th + 45 / 180 * Math.PI));
+        ctx.lineTo(x + r * Math.sqrt(2) * Math.sin(th +  45 / 180 * Math.PI), y - r * Math.sqrt(2) * Math.cos(th +  45 / 180 * Math.PI));
         ctx.lineTo(x + r * Math.sqrt(2) * Math.sin(th + 135 / 180 * Math.PI), y - r * Math.sqrt(2) * Math.cos(th + 135 / 180 * Math.PI));
         ctx.lineTo(x + r * Math.sin(th + Math.PI), y - r * Math.cos(th + Math.PI));
         ctx.fill();
@@ -1637,7 +1792,7 @@ const PenpaSymbol = (() => {
         ctx.beginPath();
         ctx.arc(x, y, r, Math.PI * 0.5 + th, Math.PI * 1.0 + th, false);
         ctx.moveTo(x - r * Math.sin(th), y + r * Math.cos(th));
-        ctx.lineTo(x + r * Math.sqrt(2) * Math.sin(-th + 45 / 180 * Math.PI), y + r * Math.sqrt(2) * Math.cos(-th + 45 / 180 * Math.PI));
+        ctx.lineTo(x + r * Math.sqrt(2) * Math.sin(-th +  45 / 180 * Math.PI), y + r * Math.sqrt(2) * Math.cos(-th +  45 / 180 * Math.PI));
         ctx.lineTo(x + r * Math.sqrt(2) * Math.sin(-th + 135 / 180 * Math.PI), y + r * Math.sqrt(2) * Math.cos(-th + 135 / 180 * Math.PI));
         ctx.lineTo(x + r * Math.sqrt(2) * Math.sin(-th + 225 / 180 * Math.PI), y + r * Math.sqrt(2) * Math.cos(-th + 225 / 180 * Math.PI));
         ctx.lineTo(x - r * Math.sin(-th + 0.5 * Math.PI), y - r * Math.cos(-th + 0.5 * Math.PI));
@@ -1691,7 +1846,7 @@ const PenpaSymbol = (() => {
                 var th = this.rotate_theta((num - 1) * 90 - 180);
                 set_circle_style(ctx, 1, ccolor);
                 this.draw_circle(ctx, x, y, r1);
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol: pencils');
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), 'symbol: pencils');
                 ctx.fillStyle = Color.BLACK;
                 ctx.strokeStyle = Color.TRANSPARENTBLACK;
                 ctx.lineWidth = 2;
@@ -1721,17 +1876,18 @@ const PenpaSymbol = (() => {
                 ctx.fill();
                 break;
             case 3:
-                set_font_style(ctx, 0.6.toString(10), 10);
+                set_font_style(ctx, 0.6, 10);
                 ctx.text("💡", x, y, 0.7, this.size * 0.8);
                 break;
             case 4:
-                set_font_style(ctx, 0.6.toString(10), 10);
+                set_font_style(ctx, 0.6, 10);
                 ctx.text("💣", x + 0.04, y + 0.04, 0.7, this.size * 0.8);
                 break;
             case 5:
-                // FIXME: bombs should be closer together
-                set_font_style(ctx, 0.5.toString(10), 10);
-                ctx.text("💣💣", x + 0.02, y + 0.02, 0.7, this.size * 0.8);
+                set_font_style(ctx, 0.5, 10);
+                ctx.text("💣", x - 0.21, y - 0.08, 0.7, this.size * 0.8);
+                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts());
+                ctx.text("💣", x + 0.21, y + 0.12, 0.7, this.size * 0.8);
                 break;
         }
     }
@@ -1761,7 +1917,7 @@ const PenpaSymbol = (() => {
                 ctx.lineTo(x, y);
                 ctx.lineTo((x + Math.sqrt(2) * 0.5 * Math.cos(th - Math.PI * 0.25)), (y + Math.sqrt(2) * 0.5 * Math.sin(th - Math.PI * 0.25)));
                 ctx.stroke();
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol: pencils');
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts());
                 ctx.beginPath();
                 ctx.moveTo((x + Math.sqrt(2) * 0.25 * Math.cos(th + Math.PI * 0.25)), (y + Math.sqrt(2) * 0.25 * Math.sin(th + Math.PI * 0.25)));
                 ctx.lineTo(x, y);
@@ -1799,7 +1955,7 @@ const PenpaSymbol = (() => {
                 this.draw_circle(ctx, x + 0.36, y + h, r);
                 break;
             case 5:
-                set_font_style(ctx, 0.35.toString(10), 1, ccolor);
+                set_font_style(ctx, 0.35, 1, ccolor);
                 ctx.text("?", x, y + h);
                 break;
         }
@@ -1817,7 +1973,7 @@ const PenpaSymbol = (() => {
                 }
                 this.draw_polygon(ctx, x - r, y + r, r * Math.sqrt(2), 4, 45);
                 this.draw_polygon(ctx, x + r, y - r, r * Math.sqrt(2), 4, 45);
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.pathToOpts(), 'symbol:');
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts());
                 ctx.fillStyle = Color.GREY_DARK;
                 this.draw_polygon(ctx, x - r, y - r, r * Math.sqrt(2), 4, 45);
                 this.draw_polygon(ctx, x + r, y + r, r * Math.sqrt(2), 4, 45);
@@ -1971,11 +2127,12 @@ const PenpaSymbol = (() => {
                 ctx.lineCap = "round";
                 ctx.lineWidth = 3;
                 ctx.setLineDash([]);
-                // if ((this.version[0] < 2) || (this.version[0] == 2 && this.version[1] < 25) || (this.version[0] == 2 && this.version[1] == 25 && this.version[2] < 9)) {
-                //     ctx.fillStyle = Color.TRANSPARENTBLACK;
-                // } else {
+                // before v2.25.9
+                if ((this.pu.version[0] < 2) || (this.pu.version[0] == 2 && this.pu.version[1] < 25) || (this.pu.version[0] == 2 && this.pu.version[1] == 25 && this.pu.version[2] < 9)) {
+                    ctx.fillStyle = Color.TRANSPARENTBLACK;
+                } else {
                     ctx.fillStyle = Color.WHITE;
-                // }
+                }
                 if (ccolor !== "none") {
                     ctx.strokeStyle = ccolor;
                 } else {
@@ -2004,11 +2161,11 @@ const PenpaSymbol = (() => {
                 ctx.lineCap = "round";
                 ctx.lineWidth = 3;
                 ctx.setLineDash([]);
-                // if ((this.version[0] < 2) || (this.version[0] == 2 && this.version[1] < 25) || (this.version[0] == 2 && this.version[1] == 25 && this.version[2] < 9)) {
-                //     ctx.fillStyle = Color.TRANSPARENTBLACK;
-                // } else {
+                if ((this.pu.version[0] < 2) || (this.pu.version[0] == 2 && this.pu.version[1] < 25) || (this.pu.version[0] == 2 && this.pu.version[1] == 25 && this.pu.version[2] < 9)) {
+                    ctx.fillStyle = Color.TRANSPARENTBLACK;
+                } else {
                     ctx.fillStyle = Color.WHITE;
-                // }
+                }
                 if (ccolor !== "none") {
                     ctx.strokeStyle = ccolor;
                 } else {
@@ -2037,11 +2194,11 @@ const PenpaSymbol = (() => {
                 ctx.lineCap = "round";
                 ctx.lineWidth = 3;
                 ctx.setLineDash([]);
-                // if ((this.version[0] < 2) || (this.version[0] == 2 && this.version[1] < 25) || (this.version[0] == 2 && this.version[1] == 25 && this.version[2] < 9)) {
-                //     ctx.fillStyle = Color.TRANSPARENTBLACK;
-                // } else {
+                if ((this.pu.version[0] < 2) || (this.pu.version[0] == 2 && this.pu.version[1] < 25) || (this.pu.version[0] == 2 && this.pu.version[1] == 25 && this.pu.version[2] < 9)) {
+                    ctx.fillStyle = Color.TRANSPARENTBLACK;
+                } else {
                     ctx.fillStyle = Color.WHITE;
-                // }
+                }
                 if (ccolor !== "none") {
                     ctx.strokeStyle = ccolor;
                 } else {
@@ -2070,11 +2227,11 @@ const PenpaSymbol = (() => {
                 ctx.lineCap = "round";
                 ctx.lineWidth = 3;
                 ctx.setLineDash([]);
-                // if ((this.version[0] < 2) || (this.version[0] == 2 && this.version[1] < 25) || (this.version[0] == 2 && this.version[1] == 25 && this.version[2] < 9)) {
-                //     ctx.fillStyle = Color.TRANSPARENTBLACK;
-                // } else {
+                if ((this.pu.version[0] < 2) || (this.pu.version[0] == 2 && this.pu.version[1] < 25) || (this.pu.version[0] == 2 && this.pu.version[1] == 25 && this.pu.version[2] < 9)) {
+                    ctx.fillStyle = Color.TRANSPARENTBLACK;
+                } else {
                     ctx.fillStyle = Color.WHITE;
-                // }
+                }
                 if (ccolor !== "none") {
                     ctx.strokeStyle = ccolor;
                 } else {
@@ -2212,11 +2369,12 @@ const PenpaSymbol = (() => {
         }
     }
 
-    P.rotate_theta = function(th) {
-        // FIXME
-        //th = (th + this.theta);
-        // if (this.reflect[0] === -1) { th = (180 - th + 360) % 360; }
-        // if (this.reflect[1] === -1) { th = (360 - th + 360) % 360; }
+    P.rotate_theta = function(th, useTheta = 1) {
+        if (useTheta) {
+            th = (th + this.pu.theta);
+            if (this.pu.reflect[0] === -1) { th = (180 - th + 360) % 360; }
+            if (this.pu.reflect[1] === -1) { th = (360 - th + 360) % 360; }
+        }
         th = th / 180 * Math.PI;
         return th;
     }
