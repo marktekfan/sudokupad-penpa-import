@@ -172,10 +172,10 @@ const PenpaTools = (() => {
 		const wp = wayPoints;
 		let first = 0;
 		let last = wp.length - 1;
-		var x1 = r * wp[first][0] + (1 - r) * wp[last][0];
-		var y1 = r * wp[first][1] + (1 - r) * wp[last][1];
-		var x2 = (1 - r) * wp[first][0] + r * wp[last][0];
-		var y2 = (1 - r) * wp[first][1] + r * wp[last][1];
+		let x1 = r * wp[first][0] + (1 - r) * wp[last][0];
+		let y1 = r * wp[first][1] + (1 - r) * wp[last][1];
+		let x2 = (1 - r) * wp[first][0] + r * wp[last][0];
+		let y2 = (1 - r) * wp[first][1] + r * wp[last][1];
 		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
 	}
 

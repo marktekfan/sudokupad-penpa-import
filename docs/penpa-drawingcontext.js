@@ -16,14 +16,16 @@ const DrawingContext = (() => {
         this.textAlign = "center";
         this.textBaseline = "middle";
         this.ctcSize = Number(C.ctcSize);
-        this.penpaSize = Number(C.penpaSize);
+        this.penpaSize = Math.min(Math.max(Number(C.penpaSize), 28), 42);
         this.path = []
-        this._start = false;
+        this._strokeStarted = false;
         this._fill = false;
-        this._text = undefined;
+        this._text = null;
         this.x = 0;
         this.y = 0;
     }
+
+    // Injectable constants
     C.ctcSize = 64;
     C.penpaSize = 38;
 
@@ -47,10 +49,10 @@ const DrawingContext = (() => {
     }
 
     P.beginPath = function() {
-        this._start = false;
+        this._strokeStarted = false;
     }
     P.moveTo = function(x, y) {
-        this._start = true;
+        this._strokeStarted = true;
         this.path.push(['M', x, y]);
         this.x = x;
         this.y = y;
@@ -79,7 +81,7 @@ const DrawingContext = (() => {
         let end = polarToCartesian(x, y, radius, startAngle);
 
         let largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
-        if (!this._start)
+        if (!this._strokeStarted)
             this.moveTo(start.x, start.y)
         else
             this.lineTo(start.x, start.y)
@@ -89,10 +91,10 @@ const DrawingContext = (() => {
         this.y = end.y;
     }
     P.arcTo = function(x1, y1, x2, y2, radius) {
-        var start = {x: x1, y: y1};
-        var end = {x: x2, y: y2};
+        let start = {x: x1, y: y1};
+        let end = {x: x2, y: y2};
 
-        var largeArcFlag = 0;//endAngle - startAngle <= 180 ? "0" : "1";
+        let largeArcFlag = 0;//endAngle - startAngle <= 180 ? "0" : "1";
 
         // if (start.x !== this.x || start.y != this.y)
         //     this.path.push(['M', start.x, start.y]);
@@ -133,36 +135,36 @@ const DrawingContext = (() => {
             if (this.fillStyle === this.strokeStyle
                 || isTransparent(this.strokeStyle)
                 || this.strokeStyle === Color.WHITE) {
-                // simple narrow arrow
+                // simple narrow arrow drawable with a single line
                 return this._arrowLine(startX, startY, endX, endY, controlPoints);
             }
         }
         return this._arrowN(startX, startY, endX, endY, controlPoints);
     }
     P._arrowN = function(startX, startY, endX, endY, controlPoints) {
-        var dx = endX - startX;
-        var dy = endY - startY;
-        var len = Math.sqrt(dx * dx + dy * dy);
-        var sin = dy / len;
-        var cos = dx / len;
-        var a = [];
+        let dx = endX - startX;
+        let dy = endY - startY;
+        let len = Math.sqrt(dx * dx + dy * dy);
+        let sin = dy / len;
+        let cos = dx / len;
+        let a = [];
         // this.strokeStyle = '#00c040'
         a.push(0, 0);
-        for (var i = 0; i < controlPoints.length; i += 2) {
-            var x = controlPoints[i];
-            var y = controlPoints[i + 1];
+        for (let i = 0; i < controlPoints.length; i += 2) {
+            let x = controlPoints[i];
+            let y = controlPoints[i + 1];
             a.push(x < 0 ? len + x : x, y);
         }
         a.push(len, 0);
-        for (var i = controlPoints.length; i > 0; i -= 2) {
-            var x = controlPoints[i - 2];
-            var y = controlPoints[i - 1];
+        for (let i = controlPoints.length; i > 0; i -= 2) {
+            let x = controlPoints[i - 2];
+            let y = controlPoints[i - 1];
             a.push(x < 0 ? len + x : x, -y);
         }
         //a.push(0, 0);
-        for (var i = 0; i < a.length; i += 2) {
-            var x = a[i] * cos - a[i + 1] * sin + startX;
-            var y = a[i] * sin + a[i + 1] * cos + startY;
+        for (let i = 0; i < a.length; i += 2) {
+            let x = a[i] * cos - a[i + 1] * sin + startX;
+            let y = a[i] * sin + a[i + 1] * cos + startY;
             if (i === 0) this.moveTo(x, y);
             else this.lineTo(x, y);
         }
@@ -175,14 +177,14 @@ const DrawingContext = (() => {
         this.lineCap = 'butt'
         this.strokeStyle = this.fillStyle
         // this.strokeStyle = '#ff0000'
-        var dx = endX - startX;
-        var dy = endY - startY;
-        var len = Math.sqrt(dx * dx + dy * dy);
-        var sin = dy / len;
-        var cos = dx / len;
-        var a = [];
-        var x;
-        var y;
+        let dx = endX - startX;
+        let dy = endY - startY;
+        let len = Math.sqrt(dx * dx + dy * dy);
+        let sin = dy / len;
+        let cos = dx / len;
+        let a = [];
+        let x;
+        let y;
         const headwidth = controlPoints[5];
         const taillength = controlPoints[2] + controlPoints[5] * 0.45;
         // Butt
@@ -200,19 +202,19 @@ const DrawingContext = (() => {
         // back of head
         a.push(x < 0 ? len + x : x, 0);
 
-        for (var i = 0; i < a.length; i += 2) {
-            var x = a[i] * cos - a[i + 1] * sin + startX;
-            var y = a[i] * sin + a[i + 1] * cos + startY;
+        for (let i = 0; i < a.length; i += 2) {
+            let x = a[i] * cos - a[i + 1] * sin + startX;
+            let y = a[i] * sin + a[i + 1] * cos + startY;
             if (i === 0) this.moveTo(x, y);
             else this.lineTo(x, y);
         }
     }
 
-    P._mapPathToPuzzle = function(p, size) {
-        const {round1, round2} = PenpaTools;
+    const mapPathToPuzzle = function(p, size) {
+        const {round1, round3} = PenpaTools;
         const scale1 = (d) => round1(d * size);
-        const scale2 = (d) => round2(d * size);
-            if(p.length === 1) {
+        const scale2 = (d) => round3(d * size);
+        if(p.length === 1) {
             return p[0];
         }
         else if('MmLl'.includes(p[0])) {
@@ -222,7 +224,7 @@ const DrawingContext = (() => {
             return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale1(p[6])} ${scale1(p[7])}`;
         }
         else if('a'.includes(p[0])) {
-            if (Math.max(p[1], p[2]) > 0.5) // Large radius should round with more decimals for better precision
+            if (Math.max(p[1], p[2]) > 0.5) // Large radii should round with more decimals for better drawing precision
                 return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`;
             else
                 return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale1(p[6])} ${scale1(p[7])}`;
@@ -232,7 +234,7 @@ const DrawingContext = (() => {
         }
         else {
             console.error('UNEXPECTED PATH COMMAND: ', p);
-            debugger;
+            // debugger;
             return p.join(' ');
         }
     }
@@ -240,7 +242,7 @@ const DrawingContext = (() => {
     P.getIntent = function() {
         if (this.path.length > 0)
             return 'line';
-        else if (this._text)// || this.font)
+        else if (this._text)
             return 'text';
         else if (this.fillStyle && !isTransparent(this.fillStyle))
             return  'surface';
@@ -265,8 +267,8 @@ const DrawingContext = (() => {
                     opts['stroke-linejoin'] = this.lineJoin;
             }
             if (this.path.length > 0) {
-                opts.d = this.path.map(d => this._mapPathToPuzzle(d, this.ctcSize)).join('');
-                this.path.length = 0;
+                opts.d = this.path.map(d => mapPathToPuzzle(d, this.ctcSize)).join('');
+                this.path.length = 0; // path consumed
             }
             if (this._fill) {
                 opts.fill = this.fillStyle;
@@ -293,15 +295,14 @@ const DrawingContext = (() => {
                 else if (this.lineWidth > 0) {
                     opts['stroke-width'] = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                 }
-                //opts.fill = '#ff0000';
                 if (this._text) {
                     if (this.strokeStyle && !isTransparent(this.strokeStyle)) {
                          opts.textStroke = this.strokeStyle;
                     }
                     opts.text = this._text;
                     opts.center = [this.y, this.x];
-                    this._text = undefined;
-                    //Don't set font-family
+                    this._text = null; // text consumed
+                    //Don't need set font-family
                     // opts["font-family"] = font.family
                     if (this.textBaseline && this.textBaseline !== 'middle') {
                         opts["dominant-baseline"] = getDominantBaseline(this.textBaseline);
@@ -329,7 +330,7 @@ const DrawingContext = (() => {
 
         if (this.lineDash.length > 0) {
             const scale = (d) => round1(d * this.ctcSize);
-            opts['stroke-dasharray'] = this.lineDash.map(scale).map(round).join(',');
+            opts['stroke-dasharray'] = this.lineDash.map(scale).join(',');
             if (this.lineDashOffset) {
                 opts['stroke-dashoffset'] = scale(this.lineDashOffset);
             }

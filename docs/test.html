@@ -42,6 +42,11 @@ body { background-color: #121212; }
 	text-overflow: ellipsis;
 	user-select: none;
 }
+button:disabled {
+	background-color: #f3e5f5;
+
+}
+
 #penpa-url {
 	width: 100%;
 	height: 10rem;
@@ -66,8 +71,19 @@ body { background-color: #121212; }
 .extra {
 	font-weight: 500;
 }
+span.extra {
+	margin-left: 0.2rem;
+	margin-right: 0.3rem;
+}
 .extra.footer2 {
 	font-size: 100%;
+}
+.open-in {
+	display: inline;
+	margin-left:1rem;
+}
+#select-destination {
+	font-size: 1.2rem;
 }
 		</style>
 		<link rel="stylesheet" href="./style.css">
@@ -86,14 +102,18 @@ body { background-color: #121212; }
 			<div class="penpa">
 				<div">
 					<div>
-						<div><span class="extra">Penpa+</span> or <span class="extra">puzz.link</span> url:</div>
+						<div><span class="extra">Penpa+</span> <span class="extra">puzz.link</span> <span class="extra">f-puzzles</span> or <span class="extra">tinyurl.com</span> url:</div>
 						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()"></textarea>
 					</div>
                     <div>
-                        <button id="importbtn" onclick="openInSudokupad()">Open in SudokuPad</button>
+                        <button id="btnconvert" onclick="openInSudokupad()">Convert url</button>
+						<div class="open-in">
+							<label>Open in</label>
+							<select id="select-destination"></select>
+						</div>
                     </div>
-					<div id="disclaimer">(Beta version, for testing purposes only)</div>
 					<div id="errortext"> </div>
+					<div id="disclaimer">(Beta version, for testing purposes only. Please report any issues on <a href="https://discordapp.com/users/MarkTekfan#8907" target="_blank">Discord MarkTekfan#8907</a>)</div>
 					<div class="footer2">
 						Created by <a href="https://discordapp.com/users/MarkTekfan#8907" target="_blank">Mark Langezaal</a> and <a href="https://svencodes.com" target="_blank">Sven Neumann</a> (&copy; 2023)
 					</div>
@@ -106,50 +126,90 @@ body { background-color: #121212; }
 		<script defer src="./test.js"></script>
 		<script defer>
 			window.addEventListener('DOMContentLoaded', () => {
-				let urltext = document.querySelector('#penpa-url')
+				let urltext = document.getElementById('penpa-url')
 				urltext.focus();
 			});
 			function textOnChange(event) {
-				let errortext = document.querySelector('#errortext');
+				let errortext = document.getElementById('errortext');
 				errortext.innerHTML = '';
 			}
 
+			const destinations = [
+				'https://sudokupad.app/',
+				'https://beta.sudokupad.app/',
+				'https://alpha.sudokupad.app/',
+			]
+
+			function addDestination(urlPrefix) {
+				let selectElem = document.getElementById('select-destination');
+				let option = document.createElement('option');
+				option.value = urlPrefix;
+				option.innerHTML = urlPrefix.match(/(?:https?:\/\/)?([^\/]+)/)[1]
+				selectElem.appendChild(option);
+			}
+			destinations.forEach(url => addDestination(url));
+
+			let selectElem = document.getElementById('select-destination');
+			let destination = localStorage.destination;
+			selectElem.value = destination;
+			if (selectElem.value !== destination) {
+				selectElem.selectedIndex = 0;
+			}
+
+			// Stub to capture messages
 			const Swal = {
 				fire: function(opts) {
-					let errortext = document.querySelector('#errortext');
+					let errortext = document.getElementById('errortext');
 					errortext.innerHTML = opts.html;
 				}
 			}
 
 			function openInSudokupad(event)
 			{
-				let urltext = document.querySelector('#penpa-url')
+				let selectElem = document.getElementById('select-destination');
+				let destination = selectElem.value;
+				localStorage.destination = destination;
+
+				let urltext = document.getElementById('penpa-url')
 				let urlstring = urltext.value.trim();
 
 				let param = urlstring.substring(urlstring.indexOf('&') + 1);
 				if (param.length === 0)
 					return;
 
+				let button = document.getElementById('btnconvert');
+				button.disabled = true;
+				button.innerHTML = "Converting...";
+
 				Promise.resolve(urlstring)
-				.then(penpa => loadPenpaPuzzle(penpa))
-				.then(res => res && loadFPuzzle.compressPuzzle(res))
-				.then(ctc => {
-					if (!ctc) return;
-					var redirect = 'https://beta.sudokupad.app/ctc' + ctc;
+				.then(url => puzzleLinkConverter.expandShortUrl(url))
+				//.then(url => urltext.value = url)
+				.then(url => puzzleLinkConverter.convertPuzzleUrl(url))
+				.then(puzzleid => {
+					if (!puzzleid) {
+						throw {penpa: 'Not a recognized puzzle url'}
+						return;
+					} 
+					let redirect = destination + puzzleid;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');
 				})
 				.catch(err => {
-					console.error('Unable to convert penpa puzzle');
+					console.error('Unable to convert Penpa puzzle link');
 					console.log(err);
-					let errortext = document.querySelector('#errortext');
+					let errortext = document.getElementById('errortext');
 					if (err.penpa) {
 						errortext.innerHTML = err.penpa;
 					}
 					else {
 						errortext.innerHTML = 'An error occured while processing the penpa url.<br>'
 					}
+				})
+				.then(()=> {
+					button.disabled = false;
+					button.innerHTML = "Convert url";
 				});
+
 			}
 
 		</script>

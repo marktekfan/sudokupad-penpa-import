@@ -1871,7 +1871,7 @@ function import_url(urlstring) {
             if (UserSettings.tab_settings > 0) {
                 selectBox.setValue(UserSettings.tab_settings);
             }
-        } else if (urlstring.match(/\/puzz.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p\.html\?/)) {
+        } else if (urlstring.match(/\/puzz.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p(\.html)?\?/)) {
             decode_puzzlink(urlstring);
             document.getElementById("modal-load").style.display = 'none';
         } else {
