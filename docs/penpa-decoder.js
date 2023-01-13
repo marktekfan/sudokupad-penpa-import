@@ -980,7 +980,7 @@ const puzzleLinkConverter = (() => {
 			applyDefaultMeta(pu, puzzle, 'msgcorrect', pu._document.custom_message);
 		}
 
-		console.log(pu, puzzle);
+		// console.log(pu, puzzle);
 		return puzzle;
 	};
 
@@ -1039,7 +1039,7 @@ const puzzleLinkConverter = (() => {
 			fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + short[1])
 			.then(res => res.text())
 			.then(text => {
-				console.log('json response:', text)
+				// console.log('json response:', text)
 				let result = JSON.parse(text)
 				if (result.success) {
 					return resolve(result.longurl);
