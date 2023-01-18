@@ -9,10 +9,6 @@ const puzzleLinkConverter = (() => {
 	const reFpuzzlesUrl = /[\.\/]+f-puzzles.com\//;
 	
 
-	class UserSettings {
-		loadFromCookies() {}
-	};
-
 	class FakeDoc {
 		constructor() { }
 		getElementById(id) {
@@ -286,6 +282,7 @@ const puzzleLinkConverter = (() => {
 				ctx.fillStyle = listCol[surface.key];
 				ctx.strokeStyle = listCol[surface.key];
 			}
+			// ctx.fillStyle = '#ff000040'
 			if (!pu.centerlist.includes(surface.key)) {
 				ctx.target = 'overlay';
 			}
@@ -783,7 +780,6 @@ const puzzleLinkConverter = (() => {
 			saveinfoauthor: `puzz.link`
 		}
 		pu._document = doc;
-		pu._UserSettings = usersettings;
 		return pu;
 	}
 
@@ -794,9 +790,9 @@ const puzzleLinkConverter = (() => {
 		
 		let urlParam = paramMatch[1];
 
+		// Capture global document state
 		let fakedoc = new FakeDoc();
-		let usersettings = new UserSettings();
-		let penpaGeneral = PenpaGeneral(fakedoc, usersettings);
+		let penpaGeneral = PenpaGeneral(fakedoc);
 
 		try {
 			penpaGeneral.load(urlParam, 'local');
@@ -814,9 +810,8 @@ const puzzleLinkConverter = (() => {
 		let pu = penpaGeneral.get_pu();
 		let doc = {};
 		// Flatten fakedoc into values
-		Object.keys(fakedoc).forEach(k => { if(fakedoc[k].value !== undefined) doc[k] = fakedoc[k].value; })
+		Object.keys(fakedoc).forEach(k => { if(fakedoc[k].value !== undefined) doc[k] = fakedoc[k].value.toString(); })
 		pu._document = doc;
-		pu._UserSettings = usersettings;
 		return pu;
 	}
 
@@ -830,17 +825,6 @@ const puzzleLinkConverter = (() => {
 		}
 		return pu;
 	}
-
-	const getMinMaxRC = function(list = []) {
-		const {point2cell} = PenpaTools;
-		const rcs = [].concat(list.map(point2cell)),
-					rows = rcs.map(([r, c]) => r),
-					cols = rcs.map(([r, c]) => c);
-		return [
-			Math.min(...rows), Math.min(...cols),
-			Math.max(...rows), Math.max(...cols),
-		];
-	};
 
 	function rgba2hex(orig) {
 		let rgb = orig.replace(/\s/g, '').match(/^rgba?\((\d+),(\d+),(\d+),?([^,\s)]+)?/i);
@@ -858,13 +842,16 @@ const puzzleLinkConverter = (() => {
 		return hex;
 	}
 
-	function convertCustomColors(list) {
+	function convertCustomColors(list, cc) {
 		for(let i in list) {
-			if (typeof list[i] === 'string') {
+			if (!cc) {
+				delete list[i]; // remove custom color
+			}
+			else if (typeof list[i] === 'string') {
 				list[i] = rgba2hex(list[i]);
 			}
 			else {
-				if (list[i] === null || Array.isArray(list[i])) {
+				if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
 					delete list[i]; // remove invalid color
 				}
 			}
@@ -875,8 +862,8 @@ const puzzleLinkConverter = (() => {
 		if (!pu) return;
 
 		// Convert custom colors to hex
-		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i]);
-		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i]);
+		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document["custom_color_opt"] === '2');
+		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document["custom_color_opt"] === '2');
 
 		const doc = {
 			point: pu.point,
@@ -889,6 +876,7 @@ const puzzleLinkConverter = (() => {
 			width_c: pu.width_c,
 			height_c: pu.height_c,
 			center_n: pu.center_n,
+			centerlist: pu.centerlist,
 			col0: 0,
 			row0: 0,
 			width: 0,
@@ -900,8 +888,10 @@ const puzzleLinkConverter = (() => {
 		DrawingContext.ctcSize = 64;
 		DrawingContext.penpaSize = pu._size;
 
+		cleanupCenterlist(pu);
+
 		// Determine cell grid bounding box
-		const [top, left, bottom, right] = getMinMaxRC(pu.centerlist);
+		const [top, left, bottom, right] = PenpaTools.getMinMaxRC(pu.centerlist);
 
 		// Update with calculated top-left position
 		doc.col0 = left;
@@ -909,11 +899,15 @@ const puzzleLinkConverter = (() => {
 		doc.width = right - left + 1;
 		doc.height = bottom - top + 1;
 
+		let squares = findSudokuSquares(pu, doc);
+		findSudokuRegions(squares, pu, doc);
+
 		let puzzle = {id: `penpa${md5Digest(JSON.stringify(pu))}`};
 		const {width, height} = doc;
 		createBlankPuzzle(pu, puzzle, width, height);
 		addGivens(pu, puzzle);
 		
+
 		if (pu.gridtype === "sudoku") {
 			// When no frame then there are no sudoku regions
 			//if (pu.mode.grid[2] !== '2') // No Frame

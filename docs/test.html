@@ -11,6 +11,7 @@
 		<script defer src="./penpa-puzzle.js"></script>
 		<script defer src="./penpa-drawingcontext.js"></script>
 		<script defer src="./penpa-tools.js"></script>
+		<script defer src="./penpa-regions.js"></script>
 		<script defer src="./penpa-decoder.js"></script>
 		<script defer src="./penpa-symbol.js"></script>
 		<script defer src="./penpa-general.js"></script>
@@ -103,7 +104,7 @@ span.extra {
 				<div">
 					<div>
 						<div><span class="extra">Penpa+</span> <span class="extra">puzz.link</span> <span class="extra">f-puzzles</span> or <span class="extra">tinyurl.com</span> url:</div>
-						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()"></textarea>
+						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()" onkeypress="textOnKeyPress()"></textarea>
 					</div>
                     <div>
                         <button id="btnconvert" onclick="openInSudokupad()">Convert url</button>
@@ -129,10 +130,18 @@ span.extra {
 				let urltext = document.getElementById('penpa-url')
 				urltext.focus();
 			});
-			function textOnChange(event) {
+			function textOnChange() {
 				let errortext = document.getElementById('errortext');
 				errortext.innerHTML = '';
 			}
+			function textOnKeyPress() {
+				var key = window.event.keyCode;
+				if (key === 13) {
+					event.preventDefault();
+					openInSudokupad();
+				}
+			}
+
 
 			const destinations = [
 				'https://sudokupad.app/',
@@ -164,7 +173,7 @@ span.extra {
 				}
 			}
 
-			function openInSudokupad(event)
+			function openInSudokupad()
 			{
 				let selectElem = document.getElementById('select-destination');
 				let destination = selectElem.value;

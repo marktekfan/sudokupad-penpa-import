@@ -378,8 +378,10 @@ const PenpaSymbol = (() => {
 			case "1": //normal
 				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.42);
 				set_font_style(ctx, 0.7, number[1]);
-                ctx.text(text, p_x, p_y + factor * 0.06, 0.8);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                if (text.length > 0) {
+                    ctx.text(text, p_x, p_y + factor * 0.06, 0.8);
+                    this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                }
                 break;
 			case "2": //arrow
 				const directionMap = {
@@ -452,20 +454,26 @@ const PenpaSymbol = (() => {
 			case "5": //small
 				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.17);
 				set_font_style(ctx, 0.25, number[1]);
-                ctx.text(text, p_x, p_y + factor * 0.02, 0.8);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                if (text.length > 0) {
+                    ctx.text(text, p_x, p_y + factor * 0.02, 0.8);
+                    this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                }
 				break;
 			case "6": //medium
 				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.25);
 				set_font_style(ctx, 0.4, number[1]);
-                ctx.text(text, p_x, p_y + factor * 0.03, 0.8);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                if (text.length > 0) {
+                    ctx.text(text, p_x, p_y + factor * 0.03, 0.8);
+                    this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                }
 				break;
 			case "10": //big
 				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.36);
 				set_font_style(ctx, 0.6, number[1]);
-                ctx.text(text, p_x, p_y + factor * 0.03, 0.8);
-                this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                if (text.length > 0) {
+                    ctx.text(text, p_x, p_y + factor * 0.03, 0.8);
+                    this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number' + JSON.stringify(number));
+                }
 				break;
 			case "7": //sudoku
 				{
@@ -498,8 +506,10 @@ const PenpaSymbol = (() => {
 				}
 				set_font_style(ctx, 0.5, number[1]);
                 ctx.textAlign = 'left';
-                ctx.text(number[0], p_x - 0.2, p_y);
-				this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number:' + JSON.stringify(number));
+                if (number[0].length > 0) {
+                    ctx.text(number[0], p_x - 0.2, p_y);
+    				this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'number:' + JSON.stringify(number));
+                }
 				break;
 		}
 	}
@@ -527,8 +537,10 @@ const PenpaSymbol = (() => {
 			set_font_style(ctx, 0.32, number[1]);
 			ctx.textAlign = "center";
 			let [y, x] = point2RC(p);
-            ctx.text(number[0], x, y + 0.03, 0.48);
-			this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'numberS:' + JSON.stringify(number));
+            if (number[0].length > 0) {
+                ctx.text(number[0], x, y + 0.03, 0.48);
+    			this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'numberS:' + JSON.stringify(number));
+            }
 		}
 	}
 
@@ -1326,28 +1338,38 @@ const PenpaSymbol = (() => {
     P.draw_arrowfouredge = function(ctx, num, x, y) {
         var len1 = 0.5; //nemoto
         var len2 = 0.5;
-        var t1 = 0.00;
-        var t2 = 0.50;
         var w1 = 0.02;
         var w2 = 0.07;
         var ri = 0.42;
-        var th1, th2;
+        var th1a, th1b, th2;
         for (var i = 0; i < 4; i++) {
             if (num[i] === 1) {
-                th1 = this.rotate_theta(225 + 90 * i);
+                th1a = this.rotate_theta(225 + 90 * i);
+                th1b = this.rotate_theta(315 + 90 * i);
                 th2 = this.rotate_theta(90 * i);
                 ctx.beginPath();
-                ctx.arrow(x + len1 * Math.cos(th1 + Math.PI * t1) + 0.1 * Math.cos(th2), y + len1 * Math.sin(th1 + Math.PI * t1) + 0.1 * Math.sin(th2), x + len2 * Math.cos(th1 + Math.PI * t2) - 0.05 * Math.cos(th2), y + len2 * Math.sin(th1 + Math.PI * t2) - 0.05 * Math.sin(th2),
-                [0.0 , w1, ri, w1+0.02, ri, w2]);
+                ctx.arrow(
+                    x + len1 * pu.size * Math.cos(th1a) + 0.1 * pu.size * Math.cos(th2),
+                    y + len1 * pu.size * Math.sin(th1a) + 0.1 * pu.size * Math.sin(th2),
+                    x + len2 * pu.size * Math.cos(th1b) - 0.05 * pu.size * Math.cos(th2),
+                    y + len2 * pu.size * Math.sin(th1b) - 0.05 * pu.size * Math.sin(th2),
+                    [0, w1 * pu.size, ri * pu.size, w1 * pu.size, ri * pu.size, w2 * pu.size]);
+                ctx.fill();
+                ctx.stroke();
             }
         }
         for (var i = 4; i < 8; i++) {
             if (num[i] === 1) {
-                th1 = this.rotate_theta(225 + 90 * i);
+                th1a = this.rotate_theta(225 + 90 * i);
+                th1b = this.rotate_theta(315 + 90 * i);
                 th2 = this.rotate_theta(90 * i);
                 ctx.beginPath();
-                ctx.arrow(x + len2 * Math.cos(th1 + Math.PI * t2) - 0.1 * Math.cos(th2), y + len2 * Math.sin(th1 + Math.PI * t2) - 0.1 * Math.sin(th2), x + len1 * Math.cos(th1 + Math.PI * t1) + 0.05 * Math.cos(th2), y + len1 * Math.sin(th1 + Math.PI * t1) + 0.05 * Math.sin(th2),
-                    [0, w1, ri, w1, ri, w2]);
+                ctx.arrow(
+                    x + len2 * pu.size * Math.cos(th1b) - 0.1 * pu.size * Math.cos(th2), 
+                    y + len2 * pu.size * Math.sin(th1b) - 0.1 * pu.size * Math.sin(th2), 
+                    x + len1 * pu.size * Math.cos(th1a) + 0.05 * pu.size * Math.cos(th2), 
+                    y + len1 * pu.size * Math.sin(th1a) + 0.05 * pu.size * Math.sin(th2),
+                    [0, w1 * pu.size, ri * pu.size, w1 * pu.size, ri * pu.size, w2 * pu.size]);
                 ctx.fill();
                 ctx.stroke();
             }

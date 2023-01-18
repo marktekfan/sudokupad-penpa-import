@@ -269,7 +269,31 @@
 		subcombimode(v){}
 		redraw(){}
 		make_frameline() {
-			// debugger;
+			var gr = 1; // Solid line
+			var ot = 2; // Thick line
+			if (this.mode.grid[0] === "2") {
+				gr = 11; // Dotted line
+			} else if (this.mode.grid[0] === "3") {
+				gr = 0; // No line
+			}
+			if (this.mode.grid[2] === "2") { // No Frame
+				ot = gr; // The line frame is the same line as the inside
+			}
+			var max, min, key, corner;
+			this.frame = {};
+			for (var j = 0; j < this.centerlist.length; j++) {
+				corner = this.point[this.centerlist[j]].surround.length;
+				for (var i = 0; i < corner; i++) {
+					max = Math.max(this.point[this.centerlist[j]].surround[i], this.point[this.centerlist[j]].surround[(i + 1) % corner]);
+					min = Math.min(this.point[this.centerlist[j]].surround[i], this.point[this.centerlist[j]].surround[(i + 1) % corner]);
+					key = min.toString() + "," + max.toString();
+					if (this.frame[key]) {
+						this.frame[key] = gr;
+					} else {
+						this.frame[key] = ot;
+					}
+				}
+			}
 		}
 		submode_check(v) {}
 		canvas_size_setting() {}

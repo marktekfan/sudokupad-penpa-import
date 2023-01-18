@@ -30,6 +30,7 @@ const DrawingContext = (() => {
     C.penpaSize = 38;
 
     function isTransparent(color) {
+        if (typeof color !== 'string') debugger
         return color.slice(7) === '00';
     }
 

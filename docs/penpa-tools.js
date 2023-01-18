@@ -409,6 +409,20 @@ const PenpaTools = (() => {
 	C.point = function(p) {
 		return C.doc.point[p];
 	}
+	C.point2matrixYX = function(p) {
+		p = C.point2cellPoint(p);
+		let x = (p % C.doc.nx0); //column
+		let y = parseInt(p / C.doc.nx0); //row
+		return [y - 2 - C.doc.row0, x - 2 - C.doc.col0];
+	}
+
+	C.yx2key = function(y, x, type = 0) {
+		const y0 = Math.floor(C.doc.point[0].y);
+		const x0 = Math.floor(C.doc.point[0].x);
+		let key = (y - y0 + 2 + C.doc.row0) * C.doc.nx0 + (x - x0 + 2 + C.doc.col0) + type * (C.doc.nx0 * C.doc.ny0);
+		return key;
+	}
+
 
 	C.point2cellPoint = function(p) {
 		const point = C.doc.point[p];
@@ -423,6 +437,16 @@ const PenpaTools = (() => {
 				return Math.floor((p - 4 * C.doc.nx0 * C.doc.ny0) / 4) - (point.type - 4) * C.doc.nx0 * C.doc.ny0;			
 		}
 	}
+
+	C.getMinMaxRC = function(list = []) {
+		const rcs = [].concat(list.map(C.point2cell)),
+					rows = rcs.map(([r, c]) => r),
+					cols = rcs.map(([r, c]) => c);
+		return [
+			Math.min(...rows), Math.min(...cols),
+			Math.max(...rows), Math.max(...cols),
+		];
+	};
 
 	return C;
 })();

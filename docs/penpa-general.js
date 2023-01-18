@@ -1,19 +1,14 @@
-const PenpaGeneral = function(doc, userSettings) {  
-    // Inject custom globals
-    const document = doc;
-    const UserSettings = userSettings;
-    PenpaPuzzle.document = doc;
-    UserSettings.tab_settings = [];
+const PenpaGeneral = function(fakedoc) {  
+    // Inject custom global
+    const document = fakedoc;
 
-    class Panel {
-        draw_panel() { }
-    }
+    // Inject into puzzle class
+    PenpaPuzzle.document = fakedoc;
 
+    // Create stub functions
     const penpa_constraints = {
         'options_groups': []
     };
-    let panel_pu = new Panel();
-    let pu = new Puzzle_square(10, 10, 38);
     const sw_timer = {
         isPaused: () => false,
         start: () => {},
@@ -30,10 +25,19 @@ const PenpaGeneral = function(doc, userSettings) {
         trigger: (e) => { },
         toggleSelect2: (s) => { },
     });
+    class UserSettings {
+		static loadFromCookies() {}
+        static tab_settings = [];
+	};
+    class Panel {
+        draw_panel() { }
+    }
+
+    let panel_pu = new Panel();
+    let pu = new Puzzle_square(10, 10, 38);
 
     // Initialize to boot state
     boot_parameters();
-    //create();
 
 //=====================================
 //
