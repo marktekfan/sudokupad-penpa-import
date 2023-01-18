@@ -190,6 +190,9 @@ span.extra {
 						throw {penpa: 'Not a recognized puzzle url'}
 						return;
 					} 
+					if (destination.includes('?')) {
+						puzzleid = puzzleid.replace('?', '&');
+					}
 					let redirect = destination + puzzleid;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');

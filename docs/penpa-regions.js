@@ -417,114 +417,109 @@ const PenpaRegions = (() => {
 		const {yx2key} = PenpaTools;
 		const lineE = pu.pu_q.lineE;
 
-		// Create outlines around squares
+		// Create square outlines
 		for(let sq of squares) {
-			let outline = [];
+			sq.outline = [];
 			for (let i = 0; i < sq.size; i++) {
 				let p11 = yx2key(sq.r + i - 1, sq.c - 1, 1)
 				let p12 = yx2key(sq.r + i, sq.c - 1, 1)
 				let l1 = p11 + ',' + p12;
-				outline.push(l1);
+				sq.outline.push(l1);
 				let p21 = yx2key(sq.r - 1, sq.c + i - 1, 1)
 				let p22 = yx2key(sq.r - 1, sq.c + i, 1)
 				let l2 = p21 + ',' + p22;
-				outline.push(l2);
+				sq.outline.push(l2);
 				let p31 = yx2key(sq.r + i - 1, sq.c + sq.size - 1, 1)
 				let p32 = yx2key(sq.r + i, sq.c + sq.size - 1, 1)
 				let l3 = p31 + ',' + p32;
-				outline.push(l3);
+				sq.outline.push(l3);
 				let p41 = yx2key(sq.r + sq.size - 1, sq.c + i - 1, 1)
 				let p42 = yx2key(sq.r + sq.size - 1, sq.c + i, 1)
 				let l4 = p41 + ',' + p42;
-				outline.push(l4);
+				sq.outline.push(l4);
 			}
-			sq.outline = outline;
-
-			let counts = {};
-			outline.forEach(k => {
-				let linetype = lineE[k];
-				if (linetype) {
-					counts[linetype] = (counts[linetype] || 0) + 1;
+			// Get dominant linestyle of outline
+			let lineStyleCount = {};
+			sq.outline.forEach(k => {
+				let linestyle = lineE[k];
+				if (linestyle) {
+					lineStyleCount[linestyle] = (lineStyleCount[linestyle] || 0) + 1;
 				}
 			})
-			console.log(counts);
 			sq.dominantBorderStyle = undefined;
 			sq.dominantBorderStyleCount = 0;
-			Object.keys(counts).forEach(k => {
-				if (counts[k] > sq.dominantBorderStyleCount) {
+			Object.keys(lineStyleCount).forEach(k => {
+				if (lineStyleCount[k] > sq.dominantBorderStyleCount) {
 					sq.dominantBorderStyle = Number(k);
-					sq.dominantBorderStyleCount = counts[k];
+					sq.dominantBorderStyleCount = lineStyleCount[k];
 				}
 			});
 		}
 
+		// Try to find all regions
 		for(let sq of squares) {
 			let edge_elements = pu.pu_q.lineE;
+			// First pass, try with dominant border linestyle
 			sq.regions = getregiondata(sq.r, sq.c, sq.size, edge_elements, sq.dominantBorderStyle);
-
-            // When failed then try again with default borderStyle
+			// When failed then try again with default borderStyle
 			if (Object.keys(sq.regions).length !== sq.size) {
 				sq.regions = getregiondata(sq.r, sq.c, sq.size, edge_elements);
-			}	
-		
+			}		
 			createRegionOutlines(pu, sq);
-			// for (let l of sq.outline) {
-			// 	pu.pu_q.lineE[l] = 8;
-			// }
-			console.log(sq);
+			// console.log(sq);
 		}
 
+		// Use different tactic when not all squares are resolved
 		if(squares.some(sq => Object.keys(sq.regions).length !== sq.size || Object.keys(sq.regions).some(reg => sq.regions[reg].length !== sq.size))) {
-			// remove all square borders and region borders. For current square add all regions borders which have size = sq.size
-			// And try again
-
+			// Remove all square and region outlines
 			let todoSquares = [];
-			// delete all square outlines
-			let emptyEdges = Object.assign({}, pu.pu_q.lineE);
-			// delete all region outlines where region length = sq.size;
+			let noFrameEdges = Object.assign({}, pu.pu_q.lineE);
+			let noRegionEdges = Object.assign({}, pu.pu_q.lineE);
 			for(let sq of squares) {
-				sq.outline.forEach(k => delete emptyEdges[k]);
+				// Remove square outlines
+				sq.outline.forEach(k => delete noFrameEdges[k]);
+				sq.outline.forEach(k => delete noRegionEdges[k]);
+				// Remove region outlines
 				Object.keys(sq.regions).forEach(reg => {
 					if (sq.regions[reg].length === sq.size) {
-						 sq.region_outline[reg].forEach(k => delete emptyEdges[k])
+						 sq.region_outline[reg].forEach(k => delete noRegionEdges[k])
 					}
 				});
-
 				if (Object.keys(sq.regions).length !== sq.size) {
 					todoSquares.push(sq);
 				}
 			}
 
+			// Revisit failed squares, but now with selectively erased lines.
 			for(let sq of todoSquares) {
-				let edges = Object.assign({}, emptyEdges);					
-				Object.keys(sq.regions).forEach(reg => {
-					if (sq.regions[reg].length === sq.size) {
-						sq.region_outline[reg].forEach(k => { edges[k] = 21; }) // add (thick) outline
-					}
-				});
-
-				sq.regions = getregiondata(sq.r, sq.c, sq.size, edges);
-				createRegionOutlines(pu, sq);
-				if (Object.keys(sq.regions).length !== sq.size) {
-					pu.pu_q.lineE = edges;
-				}
+				let validRegionOutlines = [];
+				let resolved = [noFrameEdges, noRegionEdges].some(noEdges => {
+					// try again with erased lines
+					let edges = Object.assign({}, noEdges);
+					Object.keys(sq.regions) // collect valid regions
+						.filter(reg => sq.regions[reg].length === sq.size)
+						.forEach(reg => validRegionOutlines.push(sq.region_outline[reg]));
+					// Add all valid region outlines of current square
+					validRegionOutlines.forEach(outline => outline.forEach(k => { edges[k] = 21; })) // draw (thick) outline
+					sq.regions = getregiondata(sq.r, sq.c, sq.size, edges);
+					createRegionOutlines(pu, sq);
+					let resolved = Object.keys(sq.regions).length === sq.size;
+					// if (!resolved) pu.pu_q.lineE = edges;
+					return resolved;
+				});				
 			}
+			// pu.pu_q.lineE = noFrameEdges;
 		}
 
-		if(squares.some(sq => Object.keys(sq.regions).length !== sq.size || Object.keys(sq.regions).some(reg => sq.regions[reg].length !== sq.size))) {
+		let allSquaresResolved = squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size))
+		if(allSquaresResolved) {
+			console.log('All cages are resolved!')
+		}
+		else {
 			console.log(squares);
 			console.warn('Not all cages resolved')
 		}
-		else {
-			console.log('All cages are resolved!')
-		}
-
-		// pu.pu_q.lineE = {};
-
-		for(let sq of squares) {
-
-		}
-
-		
 	}
+
+	return C;
 })();

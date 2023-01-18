@@ -93,36 +93,14 @@ const puzzleLinkConverter = (() => {
 		}
 	}
 
-	function createSudokuRegions(pu, puzzle) {
-		const {point2cell} = PenpaTools;
-		let rows = puzzle.cells.length;
-		let cols = puzzle.cells[0].length;
-		let regRC = getRegionShape(Math.min(rows, cols));
-		const rowRegions = Math.ceil(cols / regRC[1]);
-		let regions = {};
-		const convRegion = (r, c, region) => {
-			if(region === undefined) return Math.floor(r / regRC[0]) * rowRegions + Math.floor(c / regRC[1]);
-			return Number(region);
-		};
-		pu.centerlist.forEach(pos => {
-			let [r, c] = point2cell(pos);
-			let cell = puzzle.cells[r][c];
-			let region = convRegion(r, c, cell.region);
-			if(regions[region] === undefined) regions[region] = [];
-			regions[region].push([r, c]);
-		});
-		if(regions['null'] !== undefined) { // Handle "null" region
-			puzzleAdd(puzzle, 'cages', {cells: regions['null'], unique: false, hidden: true}, 'region');
-			delete regions['null'];
+	function addSudokuRegions(squares, puzzle) {
+		let conflictChecker = false;
+		let complete = squares.every(sq => sq.regions.length === sq.size);
+		if(complete && squares.length === 1) {
+			conflictChecker = true;
 		}
-		let regionKeys = Object.keys(regions);
-		if (regionKeys.length > 0) {
-			// Check all regions have same size, otherwise delete all
-			let length = regions[regionKeys[0]].length;
-			if(regionKeys.every(key => regions[key].length === length)) {
-				Object.keys(regions)
-				.forEach(region => puzzleAdd(puzzle, 'regions', regions[region], 'region'));
-			}
+		if (!conflictChecker) {
+			puzzle.settings['conflictchecker'] = 0;
 		}
 	}
 
@@ -888,7 +866,7 @@ const puzzleLinkConverter = (() => {
 		DrawingContext.ctcSize = 64;
 		DrawingContext.penpaSize = pu._size;
 
-		cleanupCenterlist(pu);
+		PenpaRegions.cleanupCenterlist(pu);
 
 		// Determine cell grid bounding box
 		const [top, left, bottom, right] = PenpaTools.getMinMaxRC(pu.centerlist);
@@ -899,20 +877,16 @@ const puzzleLinkConverter = (() => {
 		doc.width = right - left + 1;
 		doc.height = bottom - top + 1;
 
-		let squares = findSudokuSquares(pu, doc);
-		findSudokuRegions(squares, pu, doc);
-
+		let squares = PenpaRegions.findSudokuSquares(pu, doc);
+		PenpaRegions.findSudokuRegions(squares, pu, doc);
+		
 		let puzzle = {id: `penpa${md5Digest(JSON.stringify(pu))}`};
+		puzzle.settings = {};
 		const {width, height} = doc;
 		createBlankPuzzle(pu, puzzle, width, height);
 		addGivens(pu, puzzle);
 		
-
-		if (pu.gridtype === "sudoku") {
-			// When no frame then there are no sudoku regions
-			//if (pu.mode.grid[2] !== '2') // No Frame
-			createSudokuRegions(pu, puzzle);
-		}
+		addSudokuRegions(squares, puzzle);
 
 		positionBoard(pu, puzzle, doc);
 		createCellMask(pu, puzzle, doc);
@@ -984,12 +958,13 @@ const puzzleLinkConverter = (() => {
 		if (Color[c][0] === '#') Color[c] = Color[c].toUpperCase();
 	});
 
-	const loadPuzzle = penpaRaw => Promise.resolve(penpaRaw)
-		.then(penpaRaw => penpaRaw.replace(/^penpa/, ''))
-		.then(loadPenpaPuzzle)
-		.then(convertPenpaPuzzle)
-		.then(puzzle => puzzle && PuzzleZipper.zip(JSON.stringify(puzzle)))
-		.catch(err => (console.error('Error fetching penpa:', err), Promise.reject(err)));
+	const loadPuzzle = {};
+	// const loadPuzzle = penpaRaw => Promise.resolve(penpaRaw)
+	// 	.then(penpaRaw => penpaRaw.replace(/^penpa/, ''))
+	// 	.then(loadPenpaPuzzle)
+	// 	.then(convertPenpaPuzzle)
+	// 	.then(puzzle => puzzle && PuzzleZipper.zip(JSON.stringify(puzzle)))
+	// 	.catch(err => (console.error('Error fetching penpa:', err), Promise.reject(err)));
 
 	const convertPuzzleUrl = url => {
 		if (url.match(rePenpaUrl)
@@ -997,7 +972,9 @@ const puzzleLinkConverter = (() => {
 			let pu = loadPenpaPuzzle(url);
 			let puzzle = convertPenpaPuzzle(pu);
 			if (!puzzle) return null;
-			let puzzleId = 'ctc' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle)))
+			let settings = Object.entries(puzzle.settings).map(([k, v]) => `setting-${k}=${v}`).join('&');
+			delete puzzle.settings;
+			let puzzleId = 'ctc' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle))) + (settings ? '?' + settings : '');
 			return puzzleId;
 		}
 
