@@ -39,14 +39,14 @@ const puzzleLinkConverter = (() => {
 		}
 	}
 
-	const getRegionShape = (size = 9) => {
-		if (size > 10) return [3, 3];
-		let height = Math.sqrt(size);
-		if(Number.isInteger(height)) return [height, height];
-		height = Math.floor(height);
-		while(!Number.isInteger(size / height) && height > 1) height--;
-		return height > 0 ? [height, size / height] : [1, 1];
-	};
+	// const getRegionShape = (size = 9) => {
+	// 	if (size > 10) return [3, 3];
+	// 	let height = Math.sqrt(size);
+	// 	if(Number.isInteger(height)) return [height, height];
+	// 	height = Math.floor(height);
+	// 	while(!Number.isInteger(size / height) && height > 1) height--;
+	// 	return height > 0 ? [height, size / height] : [1, 1];
+	// };
 
 	const puzzleHas = (puzzle, feature, part) => {
 		const partStr = JSON.stringify(part);
@@ -82,26 +82,50 @@ const puzzleLinkConverter = (() => {
 		for (let pos in number) {
 			if (pu.centerlist.includes(Number(pos))) {
 				const num = number[pos];
-				if (num && !isNaN(num[0]) && num[1] == 1 && (num[2] === '1')) { //Black Normal or Big number
-					let [r, c] = point2cell(pos);
-					let cell = puzzle.cells[r][c];
-					cell.given = true;
-					cell.value = num[0];
-					num.role = 'given';
+				if (num && num[1] == 1) { //Black
+					let given = null;
+					if (num[2] === '1' && !isNaN(num[0]) && Number(num[0]) <= 9) { //Normal or Big number
+						given = num[0];
+					}
+					else if (num[2] === '7') { //Sudoku number
+						let count = num[0].reduce((n, acc) => n + acc, 0);
+						if (count === 1) {
+							let idx = num[0].findIndex(n => n === 1);
+							given = (idx + 1).toString();
+						}
+					}
+					if (given !== null) {
+						let [r, c] = point2cell(pos);
+						let cell = puzzle.cells[r][c];
+						cell.value = given;
+						cell.given = true;
+						num.role = 'given';
+					}
 				}
 			}
 		}
 	}
 
-	function addSudokuRegions(squares, puzzle) {
-		let conflictChecker = false;
-		let complete = squares.every(sq => sq.regions.length === sq.size);
+	function addSudokuRegions(squares, regions, puzzle) {
+		const {matrix2point, point2cell} = PenpaTools;
+		let enableConflictChecker = false;
+		let complete = regions || squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size));
 		if(complete && squares.length === 1) {
-			conflictChecker = true;
+			enableConflictChecker = true;
+
+			regions = regions || squares[0].regions;
+			puzzle.regions = [];
+
+			Object.keys(regions).forEach(reg => {
+				let region = regions[reg].map(matrix2point).map(point2cell);
+				puzzleAdd(puzzle, 'regions', region);
+			});
 		}
-		if (!conflictChecker) {
+		if (!enableConflictChecker) {
 			puzzle.settings['conflictchecker'] = 0;
 		}
+
+
 	}
 
 	function addSolution(pu, puzzle, doc) {
@@ -111,6 +135,12 @@ const puzzleLinkConverter = (() => {
 			let stext = JSON.parse(pu.solution);
 			const {width, height} = doc;
 			let sol = Array(height * width).fill('?');
+            // 0 - shading
+            // 1 - Line / FreeLine
+            // 2 - Edge / FreeEdge
+            // 3 - Wall
+            // 4 - Number
+            // 5 - Symbol
 			stext[4].forEach(s => {
 				let [point, val] = s.split(',');
 				let [r, c] = point2cell(point);
@@ -118,8 +148,6 @@ const puzzleLinkConverter = (() => {
 				if (pos >= 0 && pos < sol.length) {
 					sol[pos] = val;
 				}
-				else
-					val=val;
 			});
 			let solString = sol.join('');
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
@@ -292,7 +320,7 @@ const puzzleLinkConverter = (() => {
 	parse.numberS = (qa, pu, puzzle, feature = 'numberS') => {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
-		const {point2cell, point2cellPoint} = PenpaTools;
+		const {point2cell, point2centerPoint} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			const number = list[key];
 			if (number.role !== undefined) return;
@@ -300,7 +328,7 @@ const puzzleLinkConverter = (() => {
 			draw.draw_numberS(ctx, number, key);
 
 			if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
-				if(pu.centerlist.includes(point2cellPoint(key))) { // top-left cell corner
+				if(pu.centerlist.includes(point2centerPoint(key))) { // top-left cell corner
 					let rc = point2cell(key);
 					let cell = puzzle.cells[rc[0]][rc[1]];
 					cell.pencilMarks = [' '];
@@ -498,12 +526,12 @@ const puzzleLinkConverter = (() => {
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
 		let wpLinesCol = PenpaTools.penpaLines2WaypointLines(listCol);
 		const cages = pu[qa].killercages || [];
-		const {point2cellPoint} = PenpaTools;
+		const {point2centerPoint} = PenpaTools;
 		// Filter out cage lines which are on killer cages.
 		wpLines = wpLines.filter(line => {
 			if (line.value === 16) return true; // always keep solid cage lines
-			let ndx1 = cages.findIndex(c => c.includes(point2cellPoint(line.keys[0])));
-			let ndx2 = cages.findIndex(c => c.includes(point2cellPoint(line.keys[1])));
+			let ndx1 = cages.findIndex(c => c.includes(point2centerPoint(line.keys[0])));
+			let ndx2 = cages.findIndex(c => c.includes(point2centerPoint(line.keys[1])));
 			if (ndx1 === ndx2 && ndx1 !== -1) {
 				// Copy custom color to killercage
 				let cc = wpLinesCol.find(col => col.keys[0] === line.keys[0] && col.keys[1] === line.keys[1]);
@@ -541,7 +569,7 @@ const puzzleLinkConverter = (() => {
 	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
-		const {point2cell, point2cellPoint} = PenpaTools;
+		const {point2cell, point2centerPoint} = PenpaTools;
 		const {numberS} = pu[qa];
 		list.forEach((cage, i) => {
 			if (cage.length === 0) return;
@@ -554,7 +582,7 @@ const puzzleLinkConverter = (() => {
 			let valueKey = null;
 			for(let k in numberS) {
 				if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left cell corner
-					if (cage.includes(point2cellPoint(k))) {
+					if (cage.includes(point2centerPoint(k))) {
 						let num = numberS[k];
 						if (!isNaN(num[0])) {
 							valueKey = k;
@@ -729,8 +757,7 @@ const puzzleLinkConverter = (() => {
 
 	const parsePuzzLink = (url) => {
 		let fakedoc = new FakeDoc();
-		let usersettings = new UserSettings();
-		let penpaGeneral = PenpaGeneral(fakedoc, usersettings);
+		let penpaGeneral = PenpaGeneral(fakedoc);
 
 		penpaGeneral.decode_puzzlink(url);
 
@@ -755,7 +782,8 @@ const puzzleLinkConverter = (() => {
 		let doc = {
 			saveinfotitle: title,
 			saveinforules: rules.join('\n'),
-			saveinfoauthor: `puzz.link`
+			saveinfoauthor: `puzz.link`,
+			sourcelink: url,
 		}
 		pu._document = doc;
 		return pu;
@@ -804,19 +832,52 @@ const puzzleLinkConverter = (() => {
 		return pu;
 	}
 
+	function convertFreelineE2LineE(pu) {
+		const {point2matrix} = PenpaTools;
+		const lineE = pu.pu_q.lineE;
+		const freelineE = pu.pu_q.freelineE;
+
+		Object.keys(freelineE).forEach(key => {
+			const p = key.split(',').map(Number);
+			const m1 = point2matrix(p[0]);
+			const m2 = point2matrix(p[1]);
+			// Replace horizontal freelineE with lineE's
+			if (m1[0] === m2[0]) {
+				for (let p1 = p[0]; p1 < p[1]; p1 += 1) {
+					let p2 = p1 + 1; // next column
+					let newkey = p1 + ',' + p2;
+					if (lineE[newkey] === undefined) { // freelineE is always under lineE
+						lineE[newkey] = freelineE[key];
+					}
+				}				
+				delete freelineE[key];
+			}
+			// Replace vertical freelineE with lineE's
+			else if (m1[1] === m2[1]) {
+				for (let p1 = p[0]; p1 < p[1]; p1 += pu.nx0) {
+					let p2 = p1 + pu.nx0; // next row
+					let newkey = p1 + ',' + p2;
+					if (lineE[newkey] === undefined) { // freelineE is always under lineE
+						lineE[newkey] = freelineE[key];
+					}
+				}				
+				delete freelineE[key];
+			}
+		});
+	}
+
 	function rgba2hex(orig) {
 		let rgb = orig.replace(/\s/g, '').match(/^rgba?\((\d+),(\d+),(\d+),?([^,\s)]+)?/i);
-		let alpha = (rgb && rgb[4] || "").trim();
-		let hex = rgb ? '#' +
-		  (rgb[1] | 1 << 8).toString(16).slice(1).toUpperCase() +
-		  (rgb[2] | 1 << 8).toString(16).slice(1).toUpperCase() +
-		  (rgb[3] | 1 << 8).toString(16).slice(1).toUpperCase() : orig;
+		let alpha = (rgb && rgb[4]) || "";
+		let hex = !rgb ? orig : '#' +
+			(rgb[1] | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(rgb[2] | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(rgb[3] | 1 << 8).toString(16).slice(1).toUpperCase();
 
 		if (alpha !== "" && alpha != 1) {
 		  let a = ((alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase()
 		  hex = hex + a;
 		}
-
 		return hex;
 	}
 
@@ -866,27 +927,28 @@ const puzzleLinkConverter = (() => {
 		DrawingContext.ctcSize = 64;
 		DrawingContext.penpaSize = pu._size;
 
+		convertFreelineE2LineE(pu);
 		PenpaRegions.cleanupCenterlist(pu);
 
-		// Determine cell grid bounding box
-		const [top, left, bottom, right] = PenpaTools.getMinMaxRC(pu.centerlist);
+		// Determine visual cell grid bounding box
+		const [top, left, height, width] = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);
 
 		// Update with calculated top-left position
 		doc.col0 = left;
 		doc.row0 = top;
-		doc.width = right - left + 1;
-		doc.height = bottom - top + 1;
+		doc.width = width;
+		doc.height = height;
 
-		let squares = PenpaRegions.findSudokuSquares(pu, doc);
-		PenpaRegions.findSudokuRegions(squares, pu, doc);
-		
 		let puzzle = {id: `penpa${md5Digest(JSON.stringify(pu))}`};
 		puzzle.settings = {};
-		const {width, height} = doc;
 		createBlankPuzzle(pu, puzzle, width, height);
 		addGivens(pu, puzzle);
-		
-		addSudokuRegions(squares, puzzle);
+
+		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
+		if (!regions) {
+			PenpaRegions.findSudokuRegions(squares, pu);
+		}
+		addSudokuRegions(squares, regions, puzzle);
 
 		positionBoard(pu, puzzle, doc);
 		createCellMask(pu, puzzle, doc);

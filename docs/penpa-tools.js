@@ -273,13 +273,13 @@ const PenpaTools = (() => {
 	}
 
 	C.getAdjacentCellsOfELine = function(pu, eline) {
-		const {point2cellPoint} = C;
+		const {point2centerPoint} = C;
 		let [k1, k2] = eline.split(',').map(Number);
 		let p1 = pu.point[k1];
 		let p2 = pu.point[k2];
 		// Find common surrounding cells
-		let adjacent1 = [k1, p1.adjacent[2], p1.adjacent[3], p1.adjacent_dia[3]].map(point2cellPoint);
-		let adjacent2 = [k2, p2.adjacent[2], p2.adjacent[3], p2.adjacent_dia[3]].map(point2cellPoint);
+		let adjacent1 = [k1, p1.adjacent[2], p1.adjacent[3], p1.adjacent_dia[3]].map(point2centerPoint);
+		let adjacent2 = [k2, p2.adjacent[2], p2.adjacent[3], p2.adjacent_dia[3]].map(point2centerPoint);
 		let commonCells = adjacent1.filter(k => adjacent2.includes(k));
 		return commonCells;
 	}
@@ -409,25 +409,27 @@ const PenpaTools = (() => {
 	C.point = function(p) {
 		return C.doc.point[p];
 	}
-	C.point2matrixYX = function(p) {
-		p = C.point2cellPoint(p);
+	C.point2matrix = function(p) {
+		p = C.point2centerPoint(p);
 		let x = (p % C.doc.nx0); //column
-		let y = parseInt(p / C.doc.nx0); //row
-		return [y - 2 - C.doc.row0, x - 2 - C.doc.col0];
+		let y = Math.floor(p / C.doc.nx0); //row
+		return [y - 2, x - 2];
 	}
 
-	C.yx2key = function(y, x, type = 0) {
-		const y0 = Math.floor(C.doc.point[0].y);
-		const x0 = Math.floor(C.doc.point[0].x);
-		let key = (y - y0 + 2 + C.doc.row0) * C.doc.nx0 + (x - x0 + 2 + C.doc.col0) + type * (C.doc.nx0 * C.doc.ny0);
-		return key;
+	C.matrix2point = function(y, x, type = 0) {
+		if (Array.isArray(y)) {
+			[y, x] = y;
+			type = 0;
+		}
+		let p = (y + 2) * C.doc.nx0 + (x + 2) + type * (C.doc.nx0 * C.doc.ny0);
+		return p;
 	}
 
-
-	C.point2cellPoint = function(p) {
+	C.point2centerPoint = function(p) {
 		const point = C.doc.point[p];
 		switch(point.type) {
 			case 0:
+				return p;
 			case 1:
 			case 2:
 			case 3:
@@ -438,14 +440,21 @@ const PenpaTools = (() => {
 		}
 	}
 
-	C.getMinMaxRC = function(list = []) {
-		const rcs = [].concat(list.map(C.point2cell)),
+	C.getMinMaxRC = function(list = [], mapper = ([r, c]) => [r, c]) {
+		const rcs = [].concat(list.map(mapper)),
 					rows = rcs.map(([r, c]) => r),
 					cols = rcs.map(([r, c]) => c);
 		return [
 			Math.min(...rows), Math.min(...cols),
 			Math.max(...rows), Math.max(...cols),
 		];
+	};
+
+	C.getBoundsRC = function(list = [], mapper) {
+		const [top, left, bottom, right] = C.getMinMaxRC(list, mapper);
+		const width = right - left + 1;
+		const height = bottom - top + 1;
+		return [top, left, height, width];
 	};
 
 	return C;
