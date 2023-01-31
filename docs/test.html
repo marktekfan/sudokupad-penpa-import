@@ -104,7 +104,7 @@ span.extra {
 				<div">
 					<div>
 						<div><span class="extra">Penpa+</span> <span class="extra">puzz.link</span> <span class="extra">f-puzzles</span> or <span class="extra">tinyurl.com</span> url:</div>
-						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()" onkeypress="textOnKeyPress()"></textarea>
+						<textarea rows="10" cols="120" id="penpa-url" placeholder="https://" oninput="textOnChange()"></textarea>
 					</div>
                     <div>
                         <button id="btnconvert" onclick="openInSudokupad()">Convert url</button>
@@ -130,18 +130,10 @@ span.extra {
 				let urltext = document.getElementById('penpa-url')
 				urltext.focus();
 			});
-			function textOnChange() {
+			function textOnChange(event) {
 				let errortext = document.getElementById('errortext');
 				errortext.innerHTML = '';
 			}
-			function textOnKeyPress() {
-				var key = window.event.keyCode;
-				if (key === 13) {
-					event.preventDefault();
-					openInSudokupad();
-				}
-			}
-
 
 			const destinations = [
 				'https://sudokupad.app/',
@@ -158,13 +150,15 @@ span.extra {
 			}
 			destinations.forEach(url => addDestination(url));
 
-			let selectElem = document.getElementById('select-destination');
-			let destination = localStorage.destination;
-			selectElem.value = destination;
-			if (selectElem.value !== destination) {
-				selectElem.selectedIndex = 0;
-			}
-
+			window.addEventListener('DOMContentLoaded', () => {
+				let selectElem = document.getElementById('select-destination');
+				let destination = localStorage.getItem('destination');
+				selectElem.value = destination;
+				if (selectElem.value !== destination) {
+					selectElem.selectedIndex = 0;
+				}
+			});
+			
 			// Stub to capture messages
 			const Swal = {
 				fire: function(opts) {
@@ -173,11 +167,11 @@ span.extra {
 				}
 			}
 
-			function openInSudokupad()
+			function openInSudokupad(event)
 			{
 				let selectElem = document.getElementById('select-destination');
 				let destination = selectElem.value;
-				localStorage.destination = destination;
+				localStorage.setItem('destination', destination);
 
 				let urltext = document.getElementById('penpa-url')
 				let urlstring = urltext.value.trim();
@@ -199,6 +193,9 @@ span.extra {
 						throw {penpa: 'Not a recognized puzzle url'}
 						return;
 					} 
+					if (destination.includes('?')) {
+						puzzleid = puzzleid.replace('?', '&');
+					}
 					let redirect = destination + puzzleid;
 					console.log(redirect, redirect.length);
 					window.open(redirect, '_blank');

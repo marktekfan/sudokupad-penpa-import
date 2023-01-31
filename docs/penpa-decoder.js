@@ -10,9 +10,11 @@ const puzzleLinkConverter = (() => {
 	
 
 	class FakeDoc {
-		constructor() { }
+		constructor() { 
+			this._elem = {};
+		}
 		getElementById(id) {
-			let elem = this[id];
+			let elem = this._elem[id];
 			if (!elem) {
 				elem = {
 					id: id,
@@ -27,7 +29,10 @@ const puzzleLinkConverter = (() => {
 					getElementsByClassName: c => [],
 					addEventListener: e => {},
 				}
-				this[id] = elem;
+				this._elem[id] = elem;
+			}
+			if (typeof elem.value !== 'string') {
+				elem.value = elem.value.toString();
 			}
 			return elem;
 		}
@@ -36,6 +41,15 @@ const puzzleLinkConverter = (() => {
 		}
 		querySelector(selector) {
 			return undefined;
+		}
+		getValues() {
+			let doc = {};
+			Object.entries(this._elem).forEach(([id, elem]) => {
+				if(elem.value !== undefined) {
+					doc[id] = elem.value.toString();
+				}
+			});
+			return doc;
 		}
 	}
 
@@ -75,8 +89,6 @@ const puzzleLinkConverter = (() => {
 	}
 
 	function addGivens(pu, puzzle) {
-		// Place 'Givens'
-		if(!pu.pu_q) debugger
 		const {number} = pu.pu_q;
 		const {point2cell} = PenpaTools;
 		for (let pos in number) {
@@ -84,7 +96,7 @@ const puzzleLinkConverter = (() => {
 				const num = number[pos];
 				if (num && num[1] == 1) { //Black
 					let given = null;
-					if (num[2] === '1' && !isNaN(num[0]) && Number(num[0]) <= 9) { //Normal or Big number
+					if (['1', '10'].includes(num[2]) && num[0].toString().length === 1) { //Normal or Big single digit
 						given = num[0];
 					}
 					else if (num[2] === '7') { //Sudoku number
@@ -99,33 +111,34 @@ const puzzleLinkConverter = (() => {
 						let cell = puzzle.cells[r][c];
 						cell.value = given;
 						cell.given = true;
-						num.role = 'given';
+						num.role = 'given'; // Exclude from rendering
 					}
 				}
 			}
 		}
 	}
 
-	function addSudokuRegions(squares, regions, puzzle) {
+	function addSudokuRegions(pu, puzzle, squares, regions) {
 		const {matrix2point, point2cell} = PenpaTools;
 		let enableConflictChecker = false;
-		let complete = regions || squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size));
-		if(complete && squares.length === 1) {
-			enableConflictChecker = true;
 
-			regions = regions || squares[0].regions;
-			puzzle.regions = [];
+		if (['square', 'sudoku'].includes(pu.gridtype)) {
+			let complete = regions || squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size));
+			if(complete && squares.length === 1) {
+				enableConflictChecker = true;
 
-			Object.keys(regions).forEach(reg => {
-				let region = regions[reg].map(matrix2point).map(point2cell);
-				puzzleAdd(puzzle, 'regions', region);
-			});
+				regions = regions || squares[0].regions;
+				puzzle.regions = [];
+
+				Object.keys(regions).forEach(reg => {
+					let region = regions[reg].map(matrix2point).map(point2cell);
+					puzzleAdd(puzzle, 'regions', region);
+				});
+			}
 		}
 		if (!enableConflictChecker) {
 			puzzle.settings['conflictchecker'] = 0;
 		}
-
-
 	}
 
 	function addSolution(pu, puzzle, doc) {
@@ -154,7 +167,7 @@ const puzzleLinkConverter = (() => {
 		}
 	}
 
-	function createCellMask(pu, puzzle, doc) {
+	function createGridLineMask_old(pu, puzzle, doc) {
 		const {point2cell} = PenpaTools;
 		const {centerlist} = pu;
 
@@ -162,7 +175,7 @@ const puzzleLinkConverter = (() => {
 		if (centerlist.length !== doc.width * doc.height) {
 			let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
 			let outlinePoints = PenpaTools.getCellOutline(gridCells);	
-			let edgePoints = PenpaTools.normalizePath(outlinePoints).map(l => (l.length === 3) ? [l[0], l[2], l[1]] : l);
+			let edgePoints = PenpaTools.normalizePath(outlinePoints).map(p => (p.length === 3) ? [p[0], p[2], p[1]] : p);
 
 			const margin = 0.06;
 			let left = 0 - margin;
@@ -178,13 +191,68 @@ const puzzleLinkConverter = (() => {
 			ctx.closePath();
 			let opts = Object.assign(ctx.toOpts(), {
 				fill:  '#FFFFFF',
-				// fill: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
+				//  fill: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
 				'fill-rule': 'evenodd',
-				target: 'overlay'
+				target: 'cell-grids'//'overlay'
 			});
 			puzzleAdd(puzzle, 'lines', opts, 'outside mask');
+
+			doc.hasCellMask = true;
 		}
 	}
+
+	function createGridLineMask(pu, puzzle, doc) {
+		const {point2matrix, matrix2point, getBoundsRC} = PenpaTools;
+		const {centerlist} = pu;
+
+		const {top, left, bottom, right, height, width} = getBoundsRC(centerlist, point2matrix);
+		// Create 'outside cell mask' only when cells are removed
+		if (centerlist.length === width * height) {
+			return;
+		}
+
+		// Mask off non-grid grid lines
+		let outsideCells = [];
+		for (let r = top; r <= bottom; r++) {
+			for (let c = left; c <= right; c++) {
+				let p = matrix2point(r, c);
+				if(!centerlist.includes(p)) {
+					outsideCells.push(p);
+				}
+			}
+		}
+
+		let {deletelineE} = pu.pu_q;
+
+		for(let c of outsideCells) {
+			const [y, x] = point2matrix(c);
+			let hasleft = outsideCells.includes(pu.point[c].adjacent[1]) || x === left;
+			let hasright = outsideCells.includes(pu.point[c].adjacent[2]) || x === right;
+			let hastop = outsideCells.includes(pu.point[c].adjacent[0]) || y === top;
+			let hasbottom = outsideCells.includes(pu.point[c].adjacent[3]) || y === bottom;
+
+			if (hastop) {
+				const key = matrix2point(y - 1, x - 1, 1) + ',' + matrix2point(y - 1, x, 1);
+				deletelineE[key] = 1;
+			}
+			if (hasleft) {
+				const key = matrix2point(y - 1, x - 1, 1) + ',' + matrix2point(y, x - 1, 1);
+				deletelineE[key] = 1;
+			}
+			if (hasright) {
+				const key = matrix2point(y - 1, x, 1) + ',' + matrix2point(y, x, 1);
+				deletelineE[key] = 1;
+			}
+			if (hasbottom) {
+				const key = matrix2point(y, x - 1, 1) + ',' + matrix2point(y, x, 1);
+				deletelineE[key] = 1;
+			}
+		}
+
+		doc.hasCellMask = true;
+	}
+
+
 	function drawBoardOutline(pu, puzzle, doc) {
 		const {point2cell} = PenpaTools;
 		const {centerlist} = pu;
@@ -193,46 +261,82 @@ const puzzleLinkConverter = (() => {
 		// ot = outline style
 		let gridStyle = 1; // Solid line
         let outlineStyle = 2; // Thick line
-        if (pu.mode.grid[0] === "2") {
+        if (pu.mode.grid[0] === '2') {
             gridStyle = 11; // Dotted line
-        } else if (pu.mode.grid[0] === "3") {
+        } else if (pu.mode.grid[0] === '3') {
             gridStyle = 0; // No line
         }
-        if (pu.mode.grid[2] === "2") { // No Frame
+        if (pu.mode.grid[2] === '2') { // No Frame
             outlineStyle = gridStyle; // The line frame is the same line as the inside
         }
-		
-		// Add frame outine
-		let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
-		let outlinePoints = PenpaTools.getCellOutline(gridCells);
 
-		let lineScaleFactor = 1;
-		if (outlineStyle === 2) { // Thick line
-			let count = Object.keys(pu.pu_q.lineE).reduce((p, k) => pu.pu_q.lineE[k] == 2 ? p + 1 : p, 0);
-			if(count < Math.max(doc.ny, doc.nx)) {
-				lineScaleFactor = 0.9;
+		// Dotted grid lines
+		if (pu.mode.grid[0] === '2') {
+			puzzle.settings['dashedgrid'] = 1;
+		}
+		// No grid lines
+		if (pu.mode.grid[0] === '3') {
+			puzzle.settings['nogrid'] = 1; // not (yet) implemented
+		}
+		// // Grid points
+		// if (pu.mode.grid[1] === '1') {
+		// 	puzzle.settings['gridpoints'] = 1; // not (yet) implemented
+		// }
+		// // No outside frame
+		// if (pu.mode.grid[2] === '2') {			
+		// 	puzzle.settings['nogridframe'] = 1; // not (yet) implemented
+		// }
+
+		if (outlineStyle !== 0 && outlineStyle !== gridStyle) {
+			// Add frame outine
+			let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
+			let outlinePoints = PenpaTools.getCellOutline(gridCells);
+
+			let wayPoints = [];
+			outlinePoints.forEach(([t, r, c]) => {
+				if (t === 'Z') {
+					wayPoints.push(wayPoints[0]);
+					let ctx = new DrawingContext();
+					set_line_style(ctx, outlineStyle); // thick line
+					let opts = Object.assign(ctx.toOpts('line'), {
+						// color: '#FF0000',
+						wayPoints: PenpaTools.reduceWayPoints(wayPoints),
+						target: 'overlay'
+					});
+					puzzleAdd(puzzle, 'lines', opts, 'outside frame');
+					wayPoints.length = 0;
+				}
+				else {
+					wayPoints.push([r, c]);
+				}
+			});
+		}
+	}
+
+	function drawBoardLattice(pu, puzzle, doc) {
+		const {point2RC} = PenpaTools;
+		if (pu.mode.grid[1] === '1') {
+			let ctx = new DrawingContext();
+			ctx.target = doc.hasCellMask ? 'overlay' : 'cell-grids';
+			ctx.strokeStyle = Color.BLACK;
+			ctx.lineWidth = 4;
+			ctx.lineCap = "round";
+			var verticelist = [];
+			for (let i = 0; i < pu.centerlist.length; i++) {
+				for (let j = 0; j < pu.point[pu.centerlist[i]].surround.length; j++) {
+					verticelist.push(pu.point[pu.centerlist[i]].surround[j]);
+				}
+			}
+			verticelist = Array.from(new Set(verticelist));
+			if (verticelist.length > 0) {
+				for (let i = 0; i < verticelist.length; i++) {
+					let [y, x] = point2RC(verticelist[i]);
+					ctx.moveTo(x, y);
+					ctx.lineTo(x, y);
+				}
+				puzzleAdd(puzzle, 'lines', ctx.toOpts(), 'lattice');
 			}
 		}
-
-		let wayPoints = [];
-		outlinePoints.forEach(([t, r, c]) => {
-			if (t === 'Z') {
-				wayPoints.push(wayPoints[0]);
-				let ctx = new DrawingContext();
-				set_line_style(ctx, outlineStyle); // thick line
-				let opts = Object.assign(ctx.toOpts('line'), {
-					// color: '#FF0000',
-					wayPoints: PenpaTools.reduceWayPoints(wayPoints),
-					target: 'overlay'
-				});
-				opts.thickness *= lineScaleFactor;
-				puzzleAdd(puzzle, 'lines', opts, 'outside frame');
-				wayPoints.length = 0;
-			}
-			else {
-				wayPoints.push([r, c]);
-			}
-		});
 	}
 
 	function positionBoard(pu, puzzle, doc) {
@@ -247,10 +351,11 @@ const puzzleLinkConverter = (() => {
 		// });
 		const opts = Object.assign(ctx.toOpts(), {
 			backgroundColor: Color.TRANSPARENTWHITE,
-			// backgroundColor: '#cc4440',
+			//  backgroundColor: '#cc4440',
 			center: PenpaTools.point2RC(doc.center_n),
 			width: doc.width_c - 1,
 			height: doc.height_c - 1,
+			class: 'board-position',
 		});
 		puzzleAdd(puzzle, 'underlays', opts, 'board position');
 	}
@@ -290,11 +395,11 @@ const puzzleLinkConverter = (() => {
 			}
 			// ctx.fillStyle = '#ff000040'
 			if (!pu.centerlist.includes(surface.key)) {
-				ctx.target = 'overlay';
+				// ctx.target = 'overlay';
 			}
 			if (ctx.fillStyle === Color.GREY_DARK_VERY) {
 			 	ctx.fillStyle = '#010101'; // Make darker, which will be lightened by SP with alpha 0.5
-			 	ctx.target = 'overlay';
+			 	//ctx.target = 'overlay';
 			}
 			puzzleAdd(puzzle, 'underlays', Object.assign(ctx.toOpts(), {
 				center: surface.center,
@@ -341,7 +446,7 @@ const puzzleLinkConverter = (() => {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC, isBoardCell} = PenpaTools;
+		const {point2RC, isBoardCell, doc} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			const symbol = list[key];
 			if (symbol[2] !== layer) return;
@@ -349,21 +454,23 @@ const puzzleLinkConverter = (() => {
             if (key.slice(-1) === 'E') {
                 key = key.slice(0, -1);
             }
-			let isMaskedCell = !pu.centerlist.includes(key) && isBoardCell(point2RC(key));
+			let isMaskedCell = doc.hasCellMask && !pu.centerlist.includes(Number(key)) && isBoardCell(point2RC(key));
+			// In front of lines or on an outside/masked cell.
 			if (symbol[2] === 2 || isMaskedCell) {
-				ctx.target = 'overlay';
+				ctx.target = 'cell-grids';//'overlay';
 			}
 			const [r, c] = point2RC(key);
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], listCol[key]);
 		});
 	}
-	const draw_freeline = (qa, pu, puzzle, feature) => {
+	const draw_freeline = (qa, pu, puzzle, feature, target = undefined) => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list, listCol);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
+			ctx.target = target;
 			set_line_style(ctx, line.value);
 			if(line.cc) {
 				ctx.strokeStyle = line.cc;
@@ -372,9 +479,9 @@ const puzzleLinkConverter = (() => {
 				drawDoubleLine(ctx, line, puzzle);
 			}
 			else {
-				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
-				}), line);
+				}), feature);
 			}
 		});
 		drawXmarks(qa, pu, puzzle, feature);
@@ -383,7 +490,7 @@ const puzzleLinkConverter = (() => {
 		draw_freeline(qa, pu, puzzle, 'freeline');
 	}
 	parse.freelineE = (qa, pu, puzzle) => {
-		draw_freeline(qa, pu, puzzle, 'freelineE');
+		draw_freeline(qa, pu, puzzle, 'freelineE', 'overlay');
 	}
 	parse.thermo = (qa, pu, puzzle, feature = 'thermo') => {
 		const list = pu[qa][feature] || [];
@@ -401,69 +508,74 @@ const puzzleLinkConverter = (() => {
 				rounded: true,
 				width: 0.85,
 				height: 0.85,
-			}, 'thermo bulb');
+			}, feature + ' bulb');
 		});
 	}
 	parse.arrows = (qa, pu, puzzle, feature = 'arrows') => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC} = PenpaTools;
+		const {point2RC, doc, round3} = PenpaTools;
 		list.forEach((line, i) => {
 			if(line.length < 2) return;
+			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
 			let points = PenpaTools.reduceWayPoints(line.map(point2RC));
-			points = PenpaTools.shortenLine(points, 0.3, 0);
+			let commonend = pu.find_common(pu[qa], i, line[line.length - 1], feature);
+			points = PenpaTools.shortenLine(points, 0.4, commonend ? 0.1 : 0);
 			let color = listCol[i] || '#a1a1a1';
 			puzzleAdd(puzzle, 'arrows', Object.assign({
 				color: color,
 				headLength: 0.3,
 				thickness: 5,
 				wayPoints: PenpaTools.reduceWayPoints(points)
-			}), 'arrow line');
+			}, target), feature);
 
 			const bulbStrokeThickness = 5;
 			puzzleAdd(puzzle, 'overlays', Object.assign({
 				borderColor: color,
-				backgroundColor: '#ffffff',
+				backgroundColor: '#FFFFFF',
 				center: point2RC(line[0]),
-				thickness: bulbStrokeThickness,
+				borderSize: bulbStrokeThickness,
 				rounded: true,
-				width: 0.75,
-				height: 0.75,
-			}), 'arrow bulb');
+				width: 0.83, // round3(0.75 + bulbStrokeThickness / 64),
+				height: 0.83, // round3(0.75 + bulbStrokeThickness / 64),
+			}, target), feature + ' bulb');
 		});
 	}
 	parse.direction = (qa, pu, puzzle, feature = 'direction') => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC} = PenpaTools;
+		const {point2RC, doc} = PenpaTools;
 		list.forEach((line, i) => {
 			if(line.length < 2) return;
+			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
 			let points = line.map(point2RC);
+			let commonend = pu.find_common(pu[qa], i, line[line.length - 1], feature);
+			points = PenpaTools.shortenLine(points, 0, commonend ? 0.1 : 0);
 			let color = listCol[i] || '#a1a1a1';
 			puzzleAdd(puzzle, 'arrows', Object.assign({
 				color: color,
 				headLength: 0.3,
 				thickness: 5,
 				wayPoints: PenpaTools.reduceWayPoints(points)
-			}), 'direction');
+			}, target), feature);
 		});
 	}
 	parse.squareframe = (qa, pu, puzzle, feature = 'squareframe') => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC} = PenpaTools;
+		const {point2RC, doc} = PenpaTools;
 		list.forEach((line, i) => {
 			if (line.length === 0) return;
+			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
 			let cells = line.map(point2RC);
 			let color = listCol[i] || '#CFCFCF';
-			puzzleAdd(puzzle, 'lines', {
+			puzzleAdd(puzzle, 'lines', Object.assign({
 				color: color,
 				thickness: 64 * 0.8,
 				'stroke-linecap': 'square',
 				'stroke-linejoin': 'square',
 				wayPoints: PenpaTools.reduceWayPoints(cells),
-				target: 'underlay'
-			}, 'squareframe');
+			}, target), feature);
 		});
 	}
 	parse.polygon = (qa, pu, puzzle, feature = 'polygon') => {
@@ -471,6 +583,7 @@ const puzzleLinkConverter = (() => {
 		const listCol = pu[qa + '_col'][feature] || [];
 		const {point2RC} = PenpaTools;
 		Object.keys(list).forEach(key => {
+			const target = {target: 'underlay'};
 			let points = list[key].map(point2RC);
 			let ctx = new DrawingContext();
 			ctx.strokeStyle = listCol[key] || Color.BLACK;
@@ -479,18 +592,18 @@ const puzzleLinkConverter = (() => {
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 		 		'fill-rule': 'nonzero',
 				fill: ctx.fillStyle,
-				target: 'underlay',
 				wayPoints: PenpaTools.reduceWayPoints(points),
-			}), 'polygon');
+			}, target), feature);
 		});
 	}
-	const draw_line = (qa, pu, puzzle, feature) => {
+	const draw_line = (qa, pu, puzzle, feature, target = undefined) => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list, listCol);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
+			ctx.target = target;
 			set_line_style(ctx, line.value);
 			if(line.cc) {
 				ctx.strokeStyle = line.cc;
@@ -502,11 +615,9 @@ const puzzleLinkConverter = (() => {
 				drawShortLine(ctx, line, puzzle);
 			}
 			else {
-				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
-					target: 'overlay',
-					//target: 'underlay',
-				}), line);
+				}), feature);
 			}
 		});
 		drawXmarks(qa, pu, puzzle, feature);
@@ -515,7 +626,7 @@ const puzzleLinkConverter = (() => {
 		draw_line(qa, pu, puzzle, 'line');
 	}
 	parse.lineE = (qa, pu, puzzle) => {
-		draw_line(qa, pu, puzzle, 'lineE');
+		draw_line(qa, pu, puzzle, 'lineE', 'overlay');
 	}
 	parse.wall = (qa, pu, puzzle) => {
 		draw_line(qa, pu, puzzle, 'wall');
@@ -560,10 +671,10 @@ const puzzleLinkConverter = (() => {
 			if (line.cc) {
 				ctx.strokeStyle = line.cc;
 			}
-			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 				wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
 				target: 'cages'
-			}), 'cage line');
+			}), feature + ' line');
 		});
 	}
 	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
@@ -594,43 +705,51 @@ const puzzleLinkConverter = (() => {
 			if (valueKey) {
 				let rc = point2cell(valueKey);
 				cagePart.cageValue = `r${rc[0] + 1}c${rc[1] + 1}=${numberS[valueKey][0].trim()}`;
-				numberS[valueKey].role = 'killer';
+				numberS[valueKey].role = 'killer'; // Exclude from rendering
 			}				
 				
-			puzzleAdd(puzzle, 'cages', cagePart, 'killercages');
+			puzzleAdd(puzzle, 'cages', cagePart, feature);
 		});
 	}
-	parse.deletelineE = (qa, pu, puzzle) => {
-		const list = pu[qa].deletelineE || [];
+	parse.deletelineE = (qa, pu, puzzle, feature = 'deletelineE') => {
+		const list = pu[qa][feature] || [];
+		const surface = pu[qa].surface;
+		const surfaceCol = pu[qa + '_col'].surface || [];
+		const darkBackgrounds = [Color.BLACK, Color.BLACK_LIGHT, Color.GREY_DARK_VERY];
 		Object.keys(list).forEach(l => {
 			let [p1, p2] = PenpaTools.getAdjacentCellsOfELine(pu, l);
-			let s1 = pu[qa].surface[p1];
-			let s2 = pu[qa].surface[p2];
-			if (s1 && s1 === s2) {
+			let s1 = surface[p1];
+			let s2 = surface[p2];
+			if (s1 || s2) {
 				let ctx = new DrawingContext();
-				set_surface_style(ctx, s1);
-				if (ctx.fillStyle === Color.BLACK || ctx.fillStyle === Color.BLACK_LIGHT || ctx.fillStyle === Color.GREY_DARK_VERY) {
-					list[l] = 0;
+				set_surface_style(ctx, s1 || s2);
+				let fillstyle1 = (s1 && surfaceCol[p1]) || ctx.fillStyle;
+				set_surface_style(ctx, s2 || s1);
+				let fillstyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
+				// Don't remove when not visible due to dark background
+				if (darkBackgrounds.includes(fillstyle1) || darkBackgrounds.includes(fillstyle2)) {
+					list[l] = 0; // line.value = 0
 				}
 				else {
-					list[l] = ctx.fillStyle;
+					// Pre-calculate line color to make it visually identical to the surface color which has 0.5 alpha in SudokuPad.
+					list[l] = PenpaTools.ColorApplyAlpha(fillStyle1, 0.5);
 				}
 			}
 		});
 		let comblist = PenpaTools.combineStraightPenpaLines(list);
 		let wpList = PenpaTools.penpaLines2WaypointLines(comblist);
-		wpList.forEach(line => {
-			if (line.value === 0) return;
+		let combined = PenpaTools.concatenateEndpoints(wpList);
+		combined.forEach(line => {
+			if (line.value === 0) return; // Skip not visible line
 			let shortLine = PenpaTools.shortenLine(line.wayPoints, 2/64, 2/64);
 			let ctx = new DrawingContext();
-			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 			 	wayPoints: PenpaTools.reduceWayPoints(shortLine),
-				//d: 'M0 0',
-				color: '#FFFFFF',
-				color: line.value === 1 ? '#FFFFFF' : line.value,
-				thickness: 3.0,
+				 color: line.value === 1 ? '#FFFFFF' : line.value,
+				 // color: '#FF40A0'
+				thickness: 4,
 				target: 'cell-grids'
-			}), 'deletelineE');
+			}), feature);
 		});
 	}
 	parse.nobulbthermo = (qa, pu, puzzle, feature = 'nobulbthermo') => {
@@ -639,13 +758,14 @@ const puzzleLinkConverter = (() => {
 			if (pu.nobulbthermo && pu.nobulbthermo.find(l => l !== line && l.includes(endpoint))) return true;
 			return false;
 		}
-		const {point2RC} = PenpaTools;
+		const {point2RC, doc} = PenpaTools;
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature];
 		const reduce_straight = 0.32;
 		const reduce_diagonal = 0.22;
 		list.forEach((line, i) => {
-			if (line.length === 0) return;
+			if (line.length < 2) return;
+			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
 			let cells = line.map(point2RC);
 			if (cells.length >= 2) {
 				let end = line[line.length - 1];
@@ -664,14 +784,11 @@ const puzzleLinkConverter = (() => {
 					}
 				}
 				let color = listCol[i] || '#CFCFCF';
-				let opts = {
+				puzzleAdd(puzzle, 'lines', Object.assign({
 					color: color,
 					thickness: 21,
 					wayPoints: PenpaTools.reduceWayPoints(cells)
-				}
-				// if (outside)
-				//  	opts.target = 'overlay';
-				puzzleAdd(puzzle, 'lines', opts, 'thermo line');
+				}, target), 'thermo line');
 			}
 		});
 	}
@@ -691,17 +808,17 @@ const puzzleLinkConverter = (() => {
 			}
 			const r = 0.1414;
 			let [y, x] = point2RC(key);
-			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 				wayPoints: PenpaTools.reduceWayPoints([[y - r, x - r], [y + r, x + r]])
 			}), 'x');
-			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 				wayPoints: PenpaTools.reduceWayPoints([[y + r, x - r], [y - r, x + r]])
 			}), 'x');
 		});
 	}
 	function drawShortLine(ctx, line, puzzle) {
 		let shortLine = PenpaTools.shrinkLine(line.wayPoints, 0.2);
-		puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+		puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 			wayPoints: shortLine
 		}), 'short line');
 	}
@@ -714,45 +831,45 @@ const puzzleLinkConverter = (() => {
 		let d = Math.sqrt(dx * dx + dy * dy);
 		let rx = r / d * dx;
 		let ry = r / d * dy;
-		puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+		puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 			wayPoints: PenpaTools.reduceWayPoints([[p1[0] + rx, p1[1] - ry], [p2[0] + rx, p2[1] - ry]])
 		}), 'double line 1');
-		puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts(), {
+		puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 			wayPoints: PenpaTools.reduceWayPoints([[p1[0] - rx, p1[1] + ry], [p2[0] - rx, p2[1] + ry]])
 		}), 'double line 2');
 	}
 
 	const puzzlinkNames = {
-		"aho": "Aho-ni-Narikire", "amibo": "Amibo", "angleloop": "Angle Loop", "anglers": "Anglers", "antmill": "Ant Mill", "aqre": "Aqre", "aquarium": "Aquarium", "araf": "Araf",
-		"armyants": "Army Ants", "arukone": "Arukone", "ayeheya": "ekawayeh", "balance": "Balance Loop", "cave": "Cave", "cbanana": "Choco Banana", "context": "Context",
-		"crossstitch": "Crossstitch", "cts": "Cross the Streams", "barns": "Barns", "bdblock": "Border Block", "bdwalk": "Building Walk", "bonsan": "Bonsan", "bosanowa": "Bosanowa",
-		"box": "Box", "skyscrapers": "Skyscrapers", "canal": "Canal View", "castle": "Castle Wall", "cbblock": "Combi Block", "chainedb": "Chained Block", "chocona": "Chocona",
-		"coffeemilk":"Coffee Milk", "cojun": "Cojun", "compass": "Compass", "coral": "Coral", "country": "Country Road", "creek": "Creek", "curvedata": "Curve Data", 
-		"curvedata-aux": "Edit shape", "dbchoco": "Double Choco", "detour": "Detour", "disloop": "Disorderly Loop", "dominion": "Dominion", "doppelblock": "Doppelblock", 
-		"dosufuwa": "Dosun-Fuwari", "dotchi": "Dotchi-Loop", "doubleback": "Double Back", "easyasabc": "Easy as ABC", "factors": "Rooms of Factors", "familyphoto": "Family Photo", 
-		"fillmat": "Fillmat", "fillomino": "Fillomino", "firefly": "Hotaru Beam", "fivecells": "FiveCells", "fourcells": "FourCells", "geradeweg": "Geradeweg", "goishi": "Goishi", 
-		"gokigen": "Slant", "haisu": "Haisu", "hakoiri": "Hakoiri-masashi", "hanare": "Hanare-gumi", "hashikake": "Hashiwokakero", "hebi": "Hebi-Ichigo", "herugolf": "Herugolf", 
-		"heteromino": "Heteromino", "heyablock": "Heyablock", "heyabon": "Heya-Bon", "heyawake": "Heyawake", "hinge": "Hinge", "hitori": "Hitori", "icebarn": "Icebarn", "icelom": "Icelom", 
-		"icelom2": "Icelom 2", "icewalk": "Ice Walk", "ichimaga": "Ichimaga", "ichimagam": "Magnetic Ichimaga", "ichimagax": "Crossing Ichimaga", "interbd": "International Borders", 
-		"juosan": "Juosan", "kaero": "Return Home", "kaidan": "Stairwell", "kakuro": "Kakuro", "kakuru": "Kakuru", "kazunori": "Kazunori Room", "kinkonkan": "Kin-Kon-Kan", 
-		"koburin": "Koburin", "kouchoku": "Kouchoku", "kramma": "KaitoRamma", "kramman": "New KaitoRamma", "kropki": "Kropki", "kurochute": "Kurochute", "kurodoko": "Kurodoko", 
-		"kurotto": "Kurotto", "kusabi": "Kusabi", "ladders": "Ladders", "lapaz": "La Paz", "lightshadow": "Light and Shadow", "lightup": "Akari", "lither": "Litherslink", "lits": "LITS", 
-		"lohkous": "Lohkous", "lollipops": "Lollipops", "lookair": "Look-Air", "loopsp": "Loop Special", "loute": "L-route", "makaro": "Makaro", "mashu": "Masyu", "maxi": "Maxi Loop", 
-		"meander": "Meandering Numbers", "mejilink": "Mejilink", "minarism": "Minarism", "mines": "Minesweeper", "midloop": "Mid-loop", "mirrorbk": "Mirror Block", "mochikoro": "Mochikoro", 
-		"mochinyoro": "Mochinyoro", "moonsun": "Moon or Sun", "nagare": "Nagareru-Loop", "nagenawa": "Nagenawa", "nanro": "Nanro", "nawabari": "Territory", "nikoji": "NIKOJI", 
-		"nondango": "Nondango", "nonogram": "Nonogram", "norinori": "Norinori", "nothree": "No Three", "numlin": "Numberlink", "numrope": "Number Rope", "nuribou": "Nuribou", 
-		"nurikabe": "Nurikabe", "nurimaze": "Nuri-Maze", "nurimisaki": "Nurimisaki", "nuriuzu": "Nuri-uzu", "ovotovata": "Ovotovata", "oneroom": "One Room One Door", "onsen": "Onsen-meguri", 
-		"paintarea": "Paintarea", "parquet": "Parquet", "pencils": "Pencils", "pentominous": "Pentominous", "pentopia": "Pentopia", "pipelink": "Pipelink", "pipelinkr": "Pipelink Returns", 
-		"putteria": "Putteria", "ququ": "Ququ", "railpool": "Rail Pool", "rassi": "Rassi Silai", "rectslider": "Rectangle-Slider", "reflect": "Reflect Link", "renban": "Renban-Madoguchi", 
-		"ringring": "Ring-ring", "ripple": "Ripple Effect", "roma": "Roma", "roundtrip": "Round Trip", "sashigane": "Sashigane", "satogaeri": "Satogaeri", "scrin": "Scrin", 
-		"shakashaka": "Shakashaka", "shikaku": "Shikaku", "shimaguni": "Islands", "shugaku": "School Trip", "shwolf": "Goats and Wolves", "simpleloop": "Simple Loop", "slalom": "Slalom", 
-		"slither": "Slitherlink", "snake": "Snake", "snakepit": "Snake Pit", "starbattle": "Star Battle", "squarejam": "Square Jam", "statuepark": "Statue Park", "statuepark-aux": "Edit shape", 
-		"stostone": "Stostone", "sudoku": "Sudoku", "sukoro": "Sukoro", "sukororoom": "Sukoro-room", "symmarea": "Symmetry Area", "tajmahal": "Taj Mahal", "takoyaki": "Takoyaki", 
-		"tapa": "Tapa", "tapaloop": "Tapa-Like Loop", "tasquare": "Tasquare", "tatamibari": "Tatamibari", "tateyoko": "Tatebo-Yokobo", "tawa": "Tawamurenga", "tentaisho": "Tentaisho", 
-		"tents": "Tents", "tilepaint": "Tilepaint", "toichika": "Toichika", "toichika2": "Toichika 2", "tontti": "Tonttiraja", "tren": "Tren", "triplace": "Tri-place", 
-		"tslither": "Touch Slitherlink", "usotatami": "Uso-tatami", "usoone": "Uso-one", "view": "View", "voxas": "Voxas", "vslither": "Vertex Slitherlink", "wagiri": "Wagiri", 
-		"walllogic": "Wall Logic", "wblink": "Shirokuro-link", "yajikazu": "Yajisan-Kazusan", "yajilin": "Yajilin", "yajilin-regions": "Regional Yajilin", "yajisoko": "Yajisan-Sokoban", 
-		"yajitatami": "Yajitatami", "yinyang": "Yin-Yang", "yosenabe": "Yosenabe"
+		'aho': 'Aho-ni-Narikire', 'amibo': 'Amibo', 'angleloop': 'Angle Loop', 'anglers': 'Anglers', 'antmill': 'Ant Mill', 'aqre': 'Aqre', 'aquarium': 'Aquarium', 'araf': 'Araf',
+		'armyants': 'Army Ants', 'arukone': 'Arukone', 'ayeheya': 'ekawayeh', 'balance': 'Balance Loop', 'cave': 'Cave', 'cbanana': 'Choco Banana', 'context': 'Context',
+		'crossstitch': 'Crossstitch', 'cts': 'Cross the Streams', 'barns': 'Barns', 'bdblock': 'Border Block', 'bdwalk': 'Building Walk', 'bonsan': 'Bonsan', 'bosanowa': 'Bosanowa',
+		'box': 'Box', 'skyscrapers': 'Skyscrapers', 'canal': 'Canal View', 'castle': 'Castle Wall', 'cbblock': 'Combi Block', 'chainedb': 'Chained Block', 'chocona': 'Chocona',
+		'coffeemilk':'Coffee Milk', 'cojun': 'Cojun', 'compass': 'Compass', 'coral': 'Coral', 'country': 'Country Road', 'creek': 'Creek', 'curvedata': 'Curve Data', 
+		'curvedata-aux': 'Edit shape', 'dbchoco': 'Double Choco', 'detour': 'Detour', 'disloop': 'Disorderly Loop', 'dominion': 'Dominion', 'doppelblock': 'Doppelblock', 
+		'dosufuwa': 'Dosun-Fuwari', 'dotchi': 'Dotchi-Loop', 'doubleback': 'Double Back', 'easyasabc': 'Easy as ABC', 'factors': 'Rooms of Factors', 'familyphoto': 'Family Photo', 
+		'fillmat': 'Fillmat', 'fillomino': 'Fillomino', 'firefly': 'Hotaru Beam', 'fivecells': 'FiveCells', 'fourcells': 'FourCells', 'geradeweg': 'Geradeweg', 'goishi': 'Goishi', 
+		'gokigen': 'Slant', 'haisu': 'Haisu', 'hakoiri': 'Hakoiri-masashi', 'hanare': 'Hanare-gumi', 'hashikake': 'Hashiwokakero', 'hebi': 'Hebi-Ichigo', 'herugolf': 'Herugolf', 
+		'heteromino': 'Heteromino', 'heyablock': 'Heyablock', 'heyabon': 'Heya-Bon', 'heyawake': 'Heyawake', 'hinge': 'Hinge', 'hitori': 'Hitori', 'icebarn': 'Icebarn', 'icelom': 'Icelom', 
+		'icelom2': 'Icelom 2', 'icewalk': 'Ice Walk', 'ichimaga': 'Ichimaga', 'ichimagam': 'Magnetic Ichimaga', 'ichimagax': 'Crossing Ichimaga', 'interbd': 'International Borders', 
+		'juosan': 'Juosan', 'kaero': 'Return Home', 'kaidan': 'Stairwell', 'kakuro': 'Kakuro', 'kakuru': 'Kakuru', 'kazunori': 'Kazunori Room', 'kinkonkan': 'Kin-Kon-Kan', 
+		'koburin': 'Koburin', 'kouchoku': 'Kouchoku', 'kramma': 'KaitoRamma', 'kramman': 'New KaitoRamma', 'kropki': 'Kropki', 'kurochute': 'Kurochute', 'kurodoko': 'Kurodoko', 
+		'kurotto': 'Kurotto', 'kusabi': 'Kusabi', 'ladders': 'Ladders', 'lapaz': 'La Paz', 'lightshadow': 'Light and Shadow', 'lightup': 'Akari', 'lither': 'Litherslink', 'lits': 'LITS', 
+		'lohkous': 'Lohkous', 'lollipops': 'Lollipops', 'lookair': 'Look-Air', 'loopsp': 'Loop Special', 'loute': 'L-route', 'makaro': 'Makaro', 'mashu': 'Masyu', 'maxi': 'Maxi Loop', 
+		'meander': 'Meandering Numbers', 'mejilink': 'Mejilink', 'minarism': 'Minarism', 'mines': 'Minesweeper', 'midloop': 'Mid-loop', 'mirrorbk': 'Mirror Block', 'mochikoro': 'Mochikoro', 
+		'mochinyoro': 'Mochinyoro', 'moonsun': 'Moon or Sun', 'nagare': 'Nagareru-Loop', 'nagenawa': 'Nagenawa', 'nanro': 'Nanro', 'nawabari': 'Territory', 'nikoji': 'NIKOJI', 
+		'nondango': 'Nondango', 'nonogram': 'Nonogram', 'norinori': 'Norinori', 'nothree': 'No Three', 'numlin': 'Numberlink', 'numrope': 'Number Rope', 'nuribou': 'Nuribou', 
+		'nurikabe': 'Nurikabe', 'nurimaze': 'Nuri-Maze', 'nurimisaki': 'Nurimisaki', 'nuriuzu': 'Nuri-uzu', 'ovotovata': 'Ovotovata', 'oneroom': 'One Room One Door', 'onsen': 'Onsen-meguri', 
+		'paintarea': 'Paintarea', 'parquet': 'Parquet', 'pencils': 'Pencils', 'pentominous': 'Pentominous', 'pentopia': 'Pentopia', 'pipelink': 'Pipelink', 'pipelinkr': 'Pipelink Returns', 
+		'putteria': 'Putteria', 'ququ': 'Ququ', 'railpool': 'Rail Pool', 'rassi': 'Rassi Silai', 'rectslider': 'Rectangle-Slider', 'reflect': 'Reflect Link', 'renban': 'Renban-Madoguchi', 
+		'ringring': 'Ring-ring', 'ripple': 'Ripple Effect', 'roma': 'Roma', 'roundtrip': 'Round Trip', 'sashigane': 'Sashigane', 'satogaeri': 'Satogaeri', 'scrin': 'Scrin', 
+		'shakashaka': 'Shakashaka', 'shikaku': 'Shikaku', 'shimaguni': 'Islands', 'shugaku': 'School Trip', 'shwolf': 'Goats and Wolves', 'simpleloop': 'Simple Loop', 'slalom': 'Slalom', 
+		'slither': 'Slitherlink', 'snake': 'Snake', 'snakepit': 'Snake Pit', 'starbattle': 'Star Battle', 'squarejam': 'Square Jam', 'statuepark': 'Statue Park', 'statuepark-aux': 'Edit shape', 
+		'stostone': 'Stostone', 'sudoku': 'Sudoku', 'sukoro': 'Sukoro', 'sukororoom': 'Sukoro-room', 'symmarea': 'Symmetry Area', 'tajmahal': 'Taj Mahal', 'takoyaki': 'Takoyaki', 
+		'tapa': 'Tapa', 'tapaloop': 'Tapa-Like Loop', 'tasquare': 'Tasquare', 'tatamibari': 'Tatamibari', 'tateyoko': 'Tatebo-Yokobo', 'tawa': 'Tawamurenga', 'tentaisho': 'Tentaisho', 
+		'tents': 'Tents', 'tilepaint': 'Tilepaint', 'toichika': 'Toichika', 'toichika2': 'Toichika 2', 'tontti': 'Tonttiraja', 'tren': 'Tren', 'triplace': 'Tri-place', 
+		'tslither': 'Touch Slitherlink', 'usotatami': 'Uso-tatami', 'usoone': 'Uso-one', 'view': 'View', 'voxas': 'Voxas', 'vslither': 'Vertex Slitherlink', 'wagiri': 'Wagiri', 
+		'walllogic': 'Wall Logic', 'wblink': 'Shirokuro-link', 'yajikazu': 'Yajisan-Kazusan', 'yajilin': 'Yajilin', 'yajilin-regions': 'Regional Yajilin', 'yajisoko': 'Yajisan-Sokoban', 
+		'yajitatami': 'Yajitatami', 'yinyang': 'Yin-Yang', 'yosenabe': 'Yosenabe'
 	}
 
 	const parsePuzzLink = (url) => {
@@ -767,8 +884,8 @@ const puzzleLinkConverter = (() => {
 
 		let variant = false
 		let parts, urldata, type;
-		parts = url.split("?");
-		urldata = parts[1].split("/");
+		parts = url.split('?');
+		urldata = parts[1].split('/');
 		if (urldata[1] === 'v:') {
 			urldata.splice(1, 1); // Ignore variant rules
 			variant = true;
@@ -777,7 +894,7 @@ const puzzleLinkConverter = (() => {
 
 		let title = puzzlinkNames[type] || type;		
 		let rules = [`${title} rules apply.`] ;
-		if (variant) rules.push("This puzzle uses variant rules.");
+		if (variant) rules.push('This puzzle uses variant rules.');
 
 		let doc = {
 			saveinfotitle: title,
@@ -814,10 +931,7 @@ const puzzleLinkConverter = (() => {
 		}
 
 		let pu = penpaGeneral.get_pu();
-		let doc = {};
-		// Flatten fakedoc into values
-		Object.keys(fakedoc).forEach(k => { if(fakedoc[k].value !== undefined) doc[k] = fakedoc[k].value.toString(); })
-		pu._document = doc;
+		pu._document = fakedoc.getValues();
 		return pu;
 	}
 
@@ -832,7 +946,7 @@ const puzzleLinkConverter = (() => {
 		return pu;
 	}
 
-	function convertFreelineE2LineE(pu) {
+	function convertFreeline2Line(pu) {
 		const {point2matrix} = PenpaTools;
 		const lineE = pu.pu_q.lineE;
 		const freelineE = pu.pu_q.freelineE;
@@ -866,20 +980,6 @@ const puzzleLinkConverter = (() => {
 		});
 	}
 
-	function rgba2hex(orig) {
-		let rgb = orig.replace(/\s/g, '').match(/^rgba?\((\d+),(\d+),(\d+),?([^,\s)]+)?/i);
-		let alpha = (rgb && rgb[4]) || "";
-		let hex = !rgb ? orig : '#' +
-			(rgb[1] | 1 << 8).toString(16).slice(1).toUpperCase() +
-			(rgb[2] | 1 << 8).toString(16).slice(1).toUpperCase() +
-			(rgb[3] | 1 << 8).toString(16).slice(1).toUpperCase();
-
-		if (alpha !== "" && alpha != 1) {
-		  let a = ((alpha * 255) | 1 << 8).toString(16).slice(1).toUpperCase()
-		  hex = hex + a;
-		}
-		return hex;
-	}
 
 	function convertCustomColors(list, cc) {
 		for(let i in list) {
@@ -887,7 +987,7 @@ const puzzleLinkConverter = (() => {
 				delete list[i]; // remove custom color
 			}
 			else if (typeof list[i] === 'string') {
-				list[i] = rgba2hex(list[i]);
+				list[i] = PenpaTools.ColorRgba2Hex(list[i]);
 			}
 			else {
 				if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
@@ -900,26 +1000,24 @@ const puzzleLinkConverter = (() => {
 	function convertPenpaPuzzle(pu) {
 		if (!pu) return;
 
-		// Convert custom colors to hex
-		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document["custom_color_opt"] === '2');
-		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document["custom_color_opt"] === '2');
-
 		const doc = {
-			point: pu.point,
-			nx: pu.nx,
-			ny: pu.ny,
-			nx0: pu.nx0,
-			ny0: pu.ny0,
-			theta: pu.theta,
-			reflect: pu.reflect,
-			width_c: pu.width_c,
-			height_c: pu.height_c,
-			center_n: pu.center_n,
-			centerlist: pu.centerlist,
-			col0: 0,
-			row0: 0,
-			width: 0,
-			height: 0,
+			// Copied from pu:
+			point: pu.point, // point coordinate map
+			nx: pu.nx, // width
+			ny: pu.ny, // height
+			nx0: pu.nx0, // width + 4
+			ny0: pu.ny0, // height + 4
+			theta: pu.theta, // rotation angle
+			reflect: pu.reflect, // [0] = -1: reft LR; [1] = -1: reflect UD
+			width_c: pu.width_c, // canvas width, default = nx + 1
+			height_c: pu.height_c, // canvas height, default = ny + 1
+			center_n: pu.center_n, // center point of canvas
+			centerlist: pu.centerlist, // board cells list
+			// Calculated parameters:
+			col0: 0, // offset of puzzle cell(0,0)
+			row0: 0, //  offset of puzzle cell(0,0)
+			width: 0, // number of columns in puzzle (=after translation)
+			height: 0, // number of rows in puzzle (=after translation)
 		};
 
 		// Inject puzzle/doc metrics into helper classes
@@ -927,31 +1025,36 @@ const puzzleLinkConverter = (() => {
 		DrawingContext.ctcSize = 64;
 		DrawingContext.penpaSize = pu._size;
 
-		convertFreelineE2LineE(pu);
+		// Convert custom colors to hex
+		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document['custom_color_opt'] === '2');
+		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document['custom_color_opt'] === '2');
+
+		convertFreeline2Line(pu);
 		PenpaRegions.cleanupCenterlist(pu);
 
 		// Determine visual cell grid bounding box
-		const [top, left, height, width] = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);
-
+		const {top, left, height, width} = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);
 		// Update with calculated top-left position
 		doc.col0 = left;
 		doc.row0 = top;
 		doc.width = width;
 		doc.height = height;
 
-		let puzzle = {id: `penpa${md5Digest(JSON.stringify(pu))}`};
-		puzzle.settings = {};
+		let puzzle = {
+			id: `penpa${md5Digest(JSON.stringify(pu))}`,
+			settings: {},
+		};
 		createBlankPuzzle(pu, puzzle, width, height);
 		addGivens(pu, puzzle);
 
 		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
 		if (!regions) {
-			PenpaRegions.findSudokuRegions(squares, pu);
+			PenpaRegions.findSudokuRegions(pu, squares);
 		}
-		addSudokuRegions(squares, regions, puzzle);
+		addSudokuRegions(pu, puzzle, squares, regions);
 
 		positionBoard(pu, puzzle, doc);
-		createCellMask(pu, puzzle, doc);
+		createGridLineMask(pu, puzzle, doc);
 
 		let qa = 'pu_q'
 		parse.surface(qa, pu, puzzle);
@@ -975,6 +1078,7 @@ const puzzleLinkConverter = (() => {
 		parse.number(qa, pu, puzzle);
 		parse.numberS(qa, pu, puzzle);
 
+		drawBoardLattice(pu, puzzle, doc);
 		drawBoardOutline(pu, puzzle, doc);
 
 		parse.deletelineE(qa, pu, puzzle);

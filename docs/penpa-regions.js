@@ -74,12 +74,17 @@ const PenpaRegions = (() => {
 			12: 60,
 		};
 
+		const linecountMinimum = (minimumLineCount[Math.min(height, width)] || 0);
 		let linecount = _fillMatrix(borderStyle);
-		if (linecount < (minimumLineCount[Math.min(height, width)] || 0)) {
+		if (linecount < linecountMinimum) {
 			if (borderStyle !== defaultBorderStyle) {
 				// try again with default borderStyle;
 				linecount = _fillMatrix(defaultBorderStyle);
 			}
+		}
+		// Not enough edges found to determine a minimum 50% of the cages.
+		if (linecount < linecountMinimum / 2) {
+			return {};
 		}
 
 		var counter = 0;
@@ -210,10 +215,10 @@ const PenpaRegions = (() => {
 		}
 
 		// Check for equal region shape (rectangle) of completed regions
-		let maxw = 0, maxh = 0;		
+		let maxw = 0, maxh = 0;
 		regkeys.forEach(reg => {
 			if (regions[reg].length === size) {
-				const [top, left, height, width] = PenpaTools.getBoundsRC(regions[reg]);
+				const {height, width} = PenpaTools.getBoundsRC(regions[reg]);
 				maxw = Math.max(maxw, width);
 				maxh = Math.max(maxh, height);
 			}
@@ -225,7 +230,7 @@ const PenpaRegions = (() => {
 		if (maxw * maxh !== size) {
 			return regions;
 		}
-        
+
 		// Recreate all missing regions from the known shape
 		regions = {};
 		const cols = size / maxw;
@@ -251,11 +256,11 @@ const PenpaRegions = (() => {
 			// Increase size until it no longer fits
 			size += 1;
 			// Completely inside another square?
-			let inside = squares.some(sq => 
+			let inside = squares.some(sq =>
 				r0 >= sq.r && r0 + size <= sq.r + sq.size &&
 				c0 >= sq.c && c0 + size <= sq.c + sq.size );
 			if (inside) continue;
-			
+
 			// Does it fit at (r0, c0)?
 			let clash = false;
 			for(let r = r0; r < r0 + size; r++) {
@@ -273,11 +278,11 @@ const PenpaRegions = (() => {
 				clash = false;
 				c0 -= 1;
 				size -= 1;
-				let inside = squares.some(sq => 
+				let inside = squares.some(sq =>
 					r0 >= sq.r && r0 + size <= sq.r + sq.size &&
 					c0 >= sq.c && c0 + size <= sq.c + sq.size );
 				if (inside) continue;
-	
+
 				for(let r = r0; r < r0 + size; r++) {
 					for(let c = c0; c < c0 + size; c++) {
 						if(!centerlist.includes(matrix2point(r, c))) {
@@ -292,7 +297,7 @@ const PenpaRegions = (() => {
 
 			// Record last found square
 			foundSquare = { r: r0, c: c0, size: size };
-	
+
 		} while(size < maxSize);
 
 		return foundSquare;
@@ -301,13 +306,13 @@ const PenpaRegions = (() => {
 	//Find unused centerList cell
 	function findNextSquare(squares, centerlist, height, width) {
 		const {matrix2point} = PenpaTools;
-		const maxSize = Math.min(width, height);		
+		const maxSize = Math.min(width, height);
 		for(let r0 = 0; r0 < maxSize; r0++) {
 			for(let c0 = 0; c0 < maxSize; c0++) {
 				if (!centerlist.includes(matrix2point(r0, c0))) continue;
 
 				let square = findLargestFixedSquareAtRC(squares, centerlist, r0, c0, maxSize);
-				if (square) {					
+				if (square) {
 					squares.push(square);
 					return square;
 				}
@@ -318,7 +323,7 @@ const PenpaRegions = (() => {
 
 	C.cleanupCenterlist = function(pu) {
 		const {getAdjacentCellsOfELine, point2matrix} = PenpaTools;
-		const [top, left, height, width] = PenpaTools.getBoundsRC(pu.centerlist, point2matrix);
+		const {height, width} = PenpaTools.getBoundsRC(pu.centerlist, point2matrix);
 
 		// Cleanup frame
 		for (let k in pu.pu_q.deletelineE) {
@@ -329,57 +334,73 @@ const PenpaRegions = (() => {
 		// Remove deleted/invisible framelines from frame.
 		Object.keys(pu.frame).filter(k => pu.frame[k] === 0).forEach(k => delete pu.frame[k]);
 
-		// First determine if cells need to be deleted:
-		// Delete when deletelineE is on the edge of centerlist cells or on the outer ring.
-		let deleteCells = false;
+		const noFrame = pu.mode.grid[0] === '3';
+		const noGridLines = pu.mode.grid[2] === '2';
+		const noGridPoints = pu.mode.grid[1] === '2';
+		// First determine if cells need to be removed:
+		// remove cells when deletelineE is on the edge of centerlist cells, or on the outer ring when there is no frame.
+		let removeCells = false;
 		for(let k in pu.pu_q.deletelineE) {
-			// Don't delete when replaced with another line
-			if (k in pu.pu_q.lineE) { 
+			// Don't remove when replaced with another line
+			if (k in pu.pu_q.lineE) {
 				continue;
 			}
 			let adj = getAdjacentCellsOfELine(pu, k);
 			// Is on border of centerlist (one side in centerlist, the other side not)
-			if ((pu.centerlist.indexOf(adj[0] === -1)) !== (pu.centerlist.indexOf(adj[1] === -1))) {
-				deleteCells = true;
+			let inside1 = pu.centerlist.includes(adj[0]);
+			let inside2 = pu.centerlist.includes(adj[1]);
+			// a deleted outer frame
+			if (inside1 !== inside2) {
+				removeCells = true;
 				break;
 			}
 
-			let p1 = point2matrix(adj[0]);
-			let p2 = point2matrix(adj[1]);
-			// At least one side is on outer ring of centerlist
-			if(p1[0] === 0 || p1[0] === height - 1 || p1[1] === 0 || p1[1] === width - 1) {
-				deleteCells = true;
-				break;
-			}
-			if(p2[0] === 0 || p2[0] === height - 1 || p2[1] === 0 || p2[1] === width - 1) {
-				deleteCells = true;
-				break;
+			if (noFrame) {
+				let p1 = point2matrix(adj[0]);
+				let p2 = point2matrix(adj[1]);
+				let onedge1 = (p1[0] === 0 || p1[0] === height - 1 || p1[1] === 0 || p1[1] === width - 1);
+				let onedge2 = (p2[0] === 0 || p2[0] === height - 1 || p2[1] === 0 || p2[1] === width - 1);
+				// At least one side is on outer ring of centerlist
+				if(onedge1 || onedge2) {
+					removeCells = true;
+					break;
+				}
 			}
 		}
 
-		if (deleteCells) {
-			// delete centerlist cells based on deletelineE			
-			for(let k in pu.pu_q.deletelineE) {
-				// Don't delete when replaced with another line
-				if (k in pu.pu_q.lineE) { 
-					continue;
+		if (removeCells) {
+			// remove cells from centerlist based on deletelineE
+			Object.keys(pu.pu_q.deletelineE).forEach(k => {
+				// Don't remove when replaced with another line
+				if (k in pu.pu_q.lineE) {
+					return;
 				}
 				let adj = getAdjacentCellsOfELine(pu, k);
+				// Don't remove when on a surface
+				if (pu.pu_q.surface[adj[0]] || pu.pu_q.surface[adj[1]]) {
+					return;
+				}
 				let index1 = pu.centerlist.indexOf(adj[0]);
 				if (index1 !== -1) {
 					pu.centerlist.splice(index1, 1);
+					delete pu.pu_q.deletelineE[k];
 				}
 				let index2 = pu.centerlist.indexOf(adj[1]);
 				if (index2 !== -1) {
 					pu.centerlist.splice(index2, 1);
+					delete pu.pu_q.deletelineE[k];
 				}
-			}
+				// was already removed from centerlist
+				if (index1 === -1 && index2 === -1) {
+					delete pu.pu_q.deletelineE[k];
+				}
+			});
 		}
 		else {
-			// In case there is no frame and no grid lines
-			// then rrecreate centerlist from lineE lines.
-			// No grid lines, and no frame
-			if (pu.mode.grid[0] === '3' && pu.mode.grid[2] === '2') {
+			// In case there is no frame and no grid lines and no grid points
+			// then always recreate centerlist from lineE lines.
+			// Should have no grid lines, no frame, and no grid points
+			if (noFrame && noGridLines && noGridPoints) {
 				// recreate centerlist based on lineE
 				let cl = {};
 				let lineE = pu.pu_q.lineE;
@@ -400,37 +421,40 @@ const PenpaRegions = (() => {
 					}
 				}
 				// Add to centerlist when surrounded by 4 lines.
-				pu.centerlist.length = 0;
-				pu.centerlist.push(...Object.keys(cl).filter(p => cl[p] >= 4));
-			}
-		}
-
-		// Remove black(-ish) surfaces from centerlist
-		let surface = pu.pu_q.surface;
-		for(let k in surface) {
-			if([1, 4].includes(surface[k])) {
-				let index = pu.centerlist.indexOf(Number(k));
-				if (index !== -1) {
-					pu.centerlist.splice(index, 1);
+				let centerlist = Object.keys(cl).filter(p => cl[p] >= 4).map(Number);
+				if (centerlist.length > 10) { // Some arbitrary limit
+					pu.centerlist.length = 0;
+					pu.centerlist.push(...centerlist);
 				}
 			}
 		}
 
+		// // Remove black(-ish) surfaces from centerlist
+		// let surface = pu.pu_q.surface;
+		// for(let k in surface) {
+		// 	if([1, 4].includes(surface[k])) {
+		// 		let index = pu.centerlist.indexOf(Number(k));
+		// 		if (index !== -1) {
+		// 			pu.centerlist.splice(index, 1);
+		// 		}
+		// 	}
+		// }
+
 	}
-	
+
 	C.findSudokuSquares = function(pu) {
-		const {point2matrix, matrix2point, getBoundsRC} = PenpaTools;		
-		
+		const {point2matrix, matrix2point, getBoundsRC} = PenpaTools;
+
 		// Get combined edge lines (LineE) plus the outside frame.
-		// Exclude the thin grid lines (=1).
+		// Exclude thin or dash grid lines (=1 or 11).
 		let edge_elements = Object.assign({}, pu.frame, pu.pu_q.lineE);
-		Object.keys(edge_elements).filter(k => edge_elements[k] === 1).forEach(k => delete edge_elements[k]);
-		
-		const [top, left, height, width] = getBoundsRC(pu.centerlist, point2matrix);
+		Object.keys(edge_elements).filter(k => [1, 11].includes(edge_elements[k])).forEach(k => delete edge_elements[k]);
+
+		const {top, left, height, width} = getBoundsRC(pu.centerlist, point2matrix);
 		let regions = extractRegionData(top, left, height, width, edge_elements, undefined, pu.centerlist);
 
 		console.log('regions', regions);
-		
+
 		const squares = [];
 		while(findNextSquare(squares, pu.centerlist, height, width)) { }
 
@@ -450,7 +474,7 @@ const PenpaRegions = (() => {
 				for (let r = 0; r < sq.size; r++) {
 					for (let c = 0; c < sq.size; c++) {
 						points.push(matrix2point(r + sq.r, c + sq.c));
-					}				
+					}
 				}
 				return points;
 			}));
@@ -501,10 +525,10 @@ const PenpaRegions = (() => {
 	}
 
 
-	C.findSudokuRegions = function(squares, pu) {
+	C.findSudokuRegions = function(pu, squares) {
 		const {matrix2point} = PenpaTools;
 		const lineE = pu.pu_q.lineE;
-		
+
 		// Single square found.
 		// For single squares all regions should be fully defined by fat edge lines.
 		// If not all regions are resolved then don't look further, just return as-is.
@@ -571,7 +595,7 @@ const PenpaRegions = (() => {
 			// Use different tactic when not all squares are resolved
 			if(squares.some(sq => Object.keys(sq.regions).length !== sq.size || Object.keys(sq.regions).some(reg => sq.regions[reg].length !== sq.size))) {
 				// Remove all square and region outlines
-				let todoSquares = [];
+				let failedSquares = [];
 				let noFrameEdges = Object.assign({}, pu.pu_q.lineE);
 				let noRegionEdges = Object.assign({}, pu.pu_q.lineE);
 				for(let sq of squares) {
@@ -585,12 +609,12 @@ const PenpaRegions = (() => {
 						}
 					});
 					if (Object.keys(sq.regions).length !== sq.size) {
-						todoSquares.push(sq);
+						failedSquares.push(sq);
 					}
 				}
 
 				// Revisit failed squares, but now with selectively erased lines.
-				for(let sq of todoSquares) {
+				for(let sq of failedSquares) {
 					let validRegionOutlines = [];
 					let resolved = [noFrameEdges, noRegionEdges].some(noEdges => {
 						// try again with erased lines

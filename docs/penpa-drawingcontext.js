@@ -29,11 +29,6 @@ const DrawingContext = (() => {
     C.ctcSize = 64;
     C.penpaSize = 38;
 
-    function isTransparent(color) {
-        if (typeof color !== 'string') debugger
-        return color.slice(7) === '00';
-    }
-
     //helper function to map canvas-textAlign to svg-textAnchor
     function getTextAnchor(textAlign) {
         const mapping = { "left": "start", "right": "end", "center": "middle", "start": "start", "end": "end" };
@@ -59,8 +54,12 @@ const DrawingContext = (() => {
         this.y = y;
     }
     P.lineTo = function(x, y) {
-        //this.path.push(['L', x, y]);
-        this.path.push(['l', x - this.x, y - this.y]);
+        let dx = x - this.x;
+        let dy = y - this.y;
+        if (dx === 0 && dy === 0) {
+            return;
+        }
+        this.path.push(['l', dx, dy]);
         this.x = x;
         this.y = y;
     }
@@ -73,19 +72,25 @@ const DrawingContext = (() => {
         }
         const fullCircle = Math.round((endAngle - startAngle) * 180 / Math.PI) === 360;
         if (fullCircle) {
-            this.arc(x, y, radius, 0, Math.PI, ccw)
-            this.arc(x, y, radius, Math.PI, 0, ccw)
-            this.path.push(['z']);
-            return;
+            if (radius > 0.06) {
+                this.arc(x, y, radius, 0, Math.PI, ccw)
+                this.arc(x, y, radius, Math.PI, 0, ccw)
+                this.path.push(['z']);
+                return;
+            }
+            startAngle += ccw ? -0.1 : 0.1;
+            // endAngle += 0.1;
         }
         let start = polarToCartesian(x, y, radius, endAngle);
         let end = polarToCartesian(x, y, radius, startAngle);
-
-        let largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
-        if (!this._strokeStarted)
+        if (!this._strokeStarted) {
             this.moveTo(start.x, start.y)
-        else
+        }
+        else {
             this.lineTo(start.x, start.y)
+        }
+
+        const largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
         const sweep = ccw ? 1 : 0
         this.path.push(['a', radius, radius, 1, largeArcFlag, sweep, end.x - this.x, end.y - this.y]);
         this.x = end.x;
@@ -134,7 +139,7 @@ const DrawingContext = (() => {
 
         if(controlPoints.length === 6 && cp[1] < 0.1) {
             if (this.fillStyle === this.strokeStyle
-                || isTransparent(this.strokeStyle)
+                || PenpaTools.ColorIsTransparent(this.strokeStyle)
                 || this.strokeStyle === Color.WHITE) {
                 // simple narrow arrow drawable with a single line
                 return this._arrowLine(startX, startY, endX, endY, controlPoints);
@@ -240,15 +245,54 @@ const DrawingContext = (() => {
         }
     }
 
+    P.convertPathToWaypoints = function(path = this.path) {
+        const {round3} = PenpaTools;
+        const scale1 = (d) => round3(d);
+        
+        //return null;
+
+        if (path.length < 2) return null;// || path.length > 10) return null;
+        let wp = [];
+        let started = false;
+        let x = 0;
+        let y = 0;
+        let startx = 0;
+        let starty = 0;
+        for(let p of path) {
+            switch (p[0]) {
+                case 'M': {
+                    if (started) return null;
+                    started = true;
+                    startx = x = p[1];
+                    starty = y = p[2];                    
+                    wp.push([scale1(y), scale1(x)]);
+                    break;
+                }
+                case 'l': {
+                    x = x + p[1];
+                    y = y + p[2];
+                    wp.push([scale1(y), scale1(x)]);
+                    break;
+                }
+                case 'Z': 
+                case 'z': 
+                    wp.push([scale1(starty), scale1(startx)]);
+                    break;
+
+                default:
+                    return null;
+            }            
+        }
+        return started ? wp : null;
+    }
+
     P.getIntent = function() {
         if (this.path.length > 0)
             return 'line';
         else if (this._text)
             return 'text';
-        else if (this.fillStyle && !isTransparent(this.fillStyle))
+        else if (this.fillStyle && !PenpaTools.ColorIsTransparent(this.fillStyle))
             return  'surface';
-        else if (this.lineWidth)
-            return 'line';
 
         return undefined;
     }
@@ -258,7 +302,7 @@ const DrawingContext = (() => {
         let opts = {};
         intent = intent || this.getIntent()
         if (intent === 'line') {
-            if (this.lineWidth && this.strokeStyle && !isTransparent(this.strokeStyle)) {
+            if (this.lineWidth && this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
                 opts.thickness = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                 opts.color = this.strokeStyle;
             }
@@ -268,7 +312,13 @@ const DrawingContext = (() => {
                     opts['stroke-linejoin'] = this.lineJoin;
             }
             if (this.path.length > 0) {
-                opts.d = this.path.map(d => mapPathToPuzzle(d, this.ctcSize)).join('');
+                let wayPoints = this.convertPathToWaypoints(this.path);
+                if (wayPoints) {
+                    opts.wayPoints = wayPoints;
+                }
+                else {
+                    opts.d = this.path.map(d => mapPathToPuzzle(d, this.ctcSize)).join('');
+                }
                 this.path.length = 0; // path consumed
             }
             if (this._fill) {
@@ -276,7 +326,7 @@ const DrawingContext = (() => {
             }
         }
         else {
-            if (this.strokeStyle && !isTransparent(this.strokeStyle)) {
+            if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
                 if (this.strokeStyle !== this.fillStyle) {
                     opts.borderColor = this.strokeStyle;
                 }
@@ -297,7 +347,7 @@ const DrawingContext = (() => {
                     opts['stroke-width'] = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                 }
                 if (this._text) {
-                    if (this.strokeStyle && !isTransparent(this.strokeStyle)) {
+                    if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
                          opts.textStroke = this.strokeStyle;
                     }
                     opts.text = this._text;
@@ -323,10 +373,17 @@ const DrawingContext = (() => {
                         opts.borderSize = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                     }
                 }
-                if (this.fillStyle && !isTransparent(this.fillStyle)) {
+                if (this.fillStyle && !PenpaTools.ColorIsTransparent(this.fillStyle)) {
                     opts.backgroundColor = this.fillStyle;
                 }
             }
+            if (this.angle) {
+                opts.angle = this.angle;
+                this.angle = 0;
+                // opts['clip-path'] = "circle(40px at 10% 50%)";
+            }
+            // opts['clip-path'] = "polygon(0% 0%, 100% 0%, 0% 100%)";
+            
         }
 
         if (this.lineDash.length > 0) {

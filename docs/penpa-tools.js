@@ -386,36 +386,39 @@ const PenpaTools = (() => {
 		if (Array.isArray(num)) return num.map(C.round3);
 		return Math.round((num + Number.EPSILON) * 1000) / 1000;
 	}
+	C.round256 = function(num) {
+		if (Array.isArray(num)) return num.map(C.round256);
+		return Math.round((num + Number.EPSILON) * 256) / 256;
+	}
 	C.round = function(num) { return C.round3(num); }
 
 
 	C.isBoardCell = function(rc) {
 		const [r, c] = rc;
-		return (r >= 0 && r < C.doc.height && c >= 0 && c <= C.doc.width);
+		return (r >= 0 && r < C.doc.height && c >= 0 && c < C.doc.width);
 	}
 
-	C.point2cell = function(p) {
-		const point = C.doc.point[p];
-		const r = Math.floor(point.y) - 2 - C.doc.row0;
-		const c = Math.floor(point.x) - 2 - C.doc.col0;
-		return [r, c];
-	}
 	C.point2RC = function(p) {
 		const point = C.doc.point[p];
 		const r = point.y - 2 - C.doc.row0;
 		const c = point.x - 2 - C.doc.col0;
 		return [r, c];
 	}
+	C.point2cell = function(p) {
+		let [r, c] = C.point2RC(p);
+		return [Math.floor(r), Math.floor(c)];
+	}
+
 	C.point = function(p) {
 		return C.doc.point[p];
 	}
+
 	C.point2matrix = function(p) {
 		p = C.point2centerPoint(p);
 		let x = (p % C.doc.nx0); //column
 		let y = Math.floor(p / C.doc.nx0); //row
 		return [y - 2, x - 2];
 	}
-
 	C.matrix2point = function(y, x, type = 0) {
 		if (Array.isArray(y)) {
 			[y, x] = y;
@@ -454,8 +457,43 @@ const PenpaTools = (() => {
 		const [top, left, bottom, right] = C.getMinMaxRC(list, mapper);
 		const width = right - left + 1;
 		const height = bottom - top + 1;
-		return [top, left, height, width];
+		return {top, left, bottom, right, height, width};
 	};
+
+
+	C.ColorRgba2Hex = function(rgba) {
+		let rgb = rgba.replace(/\s/g, '').match(/^rgba?\((\d+),(\d+),(\d+),?([^,\s)]+)?/i);
+		let alpha = (rgb && rgb[4]) || '';
+		let hex = !rgb ? rgba : '#' +
+			(rgb[1] | 1 << 8).toString(16).slice(1) +
+			(rgb[2] | 1 << 8).toString(16).slice(1) +
+			(rgb[3] | 1 << 8).toString(16).slice(1);
+
+		if (alpha !== '' && alpha < 1) {
+		  hex = hex + (Math.floor(alpha * 256) | 1 << 8).toString(16).slice(1);
+		}
+		return hex.toUpperCase();
+	}
+
+	C.ColorApplyAlpha = function(hex, alpha) {
+		let r = parseInt(hex.slice(1, 3), 16);
+		let g = parseInt(hex.slice(3, 5), 16);
+		let b = parseInt(hex.slice(5, 7), 16);
+		let newR = alpha * r + (1 - alpha) * 255;
+		let newG = alpha * g + (1 - alpha) * 255;
+		let newB = alpha * b + (1 - alpha) * 255;
+
+		let newHex = '#' +
+			(newR | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(newG | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(newB | 1 << 8).toString(16).slice(1).toUpperCase();
+		return newHex;
+	}
+
+    C.ColorIsTransparent = function(color) {
+        if (typeof color !== 'string') debugger
+        return color.slice(7) === '00';
+    }
 
 	return C;
 })();

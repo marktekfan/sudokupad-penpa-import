@@ -19,8 +19,7 @@
 	var oldHandler = btn.onclick;
 	btn.onclick = function() {
 		let urltext = document.getElementById('penpa-url')
-		let urlstring = urltext.value;
-		localStorage.setItem('testurl', urlstring);
+		localStorage.setItem('testurl', urltext.value);
 
 		// call the original
 		oldHandler.apply(this, arguments);
