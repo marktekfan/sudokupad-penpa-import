@@ -1184,7 +1184,7 @@ const PenpaDecoder = (() => {
 			applyDefaultMeta(pu, puzzle, 'msgcorrect', pu._document.custom_message);
 		}
 
-		console.log(pu, puzzle);
+		// console.log(pu, puzzle);
 		return puzzle;
 	};
 
