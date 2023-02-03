@@ -20,7 +20,8 @@ const Color = {
     GREY_DARK: "#777777",
     GREY_DARK_LIGHT: "#B3B3B3",
     GREY_DARK_VERY: "#444444",
-    GREY_LIGHT: "#CCCCCC",
+    // GREY_LIGHT: "#CCCCCC",
+    GREY_LIGHT: "#CFCFCF", // ML Opaque color in SP
     GREY_LIGHT_VERY: "#F0F0F0",
     ORANGE_LIGHT: "#FFCC80",
     ORANGE_TRANSPARENT: "#FF670099", //"rgba(255, 103, 0, 0.6)",
@@ -113,12 +114,12 @@ function set_line_style(ctx, type, ccolor = "none") {
         case 2:
             ctx.lineCap = "round";
             ctx.strokeStyle = Color.BLACK;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 3 * 0.85; //ML
             break;
         case 21:
             ctx.lineCap = "round";
             ctx.strokeStyle = Color.BLACK;
-            ctx.lineWidth = 5;
+            ctx.lineWidth = 5 * 0.85; //ML
             break;
         case 3:
             ctx.lineCap = "round";

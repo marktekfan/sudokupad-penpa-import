@@ -1,6 +1,7 @@
 const DrawingContext = (() => {
     "use strict";
     function _constructor() {
+        this._stack = [];
         this.reset();
     }
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
@@ -11,7 +12,7 @@ const DrawingContext = (() => {
         this.lineWidth = 0;
         this.fillStyle = Color.TRANSPARENTWHITE;
         this.strokeStyle = Color.TRANSPARENTWHITE;
-        this.font = undefined;
+        this.font = null;
         this.lineCap = "round";
         this.textAlign = "center";
         this.textBaseline = "middle";
@@ -19,19 +20,16 @@ const DrawingContext = (() => {
         this.penpaSize = Math.min(Math.max(Number(C.penpaSize), 28), 42);
         this.path = []
         this._strokeStarted = false;
-        this._fill = false;
+        this.isFill = false;
         this._text = null;
         this.x = 0;
         this.y = 0;
+        this.target = null;
     }
 
     // Injectable constants
     C.ctcSize = 64;
     C.penpaSize = 38;
-
-    function isTransparent(color) {
-        return color.slice(7) === '00';
-    }
 
     //helper function to map canvas-textAlign to svg-textAnchor
     function getTextAnchor(textAlign) {
@@ -43,7 +41,18 @@ const DrawingContext = (() => {
         const mapping = { "alphabetic": "alphabetic", "hanging": "hanging", "top": "text-before-edge", "bottom": "text-after-edge", "middle": "middle" };
         return mapping[textBaseline] || mapping.alphabetic;
     }
-
+    P.push = function() {
+        let state = Object.assign({}, this);
+        delete state._stack;
+        delete state.path;
+        this._stack.push(state);
+    }
+    P.pop = function() {
+        if (this._stack.length > 0) {
+            let state = this._stack.pop();
+            Object.assign(this, state);
+        }
+    }
     P.setLineDash = function(dash) {
         this.lineDash = dash;
     }
@@ -58,8 +67,12 @@ const DrawingContext = (() => {
         this.y = y;
     }
     P.lineTo = function(x, y) {
-        //this.path.push(['L', x, y]);
-        this.path.push(['l', x - this.x, y - this.y]);
+        let dx = x - this.x;
+        let dy = y - this.y;
+        if (dx === 0 && dy === 0) {
+            return;
+        }
+        this.path.push(['l', dx, dy]);
         this.x = x;
         this.y = y;
     }
@@ -72,21 +85,27 @@ const DrawingContext = (() => {
         }
         const fullCircle = Math.round((endAngle - startAngle) * 180 / Math.PI) === 360;
         if (fullCircle) {
-            this.arc(x, y, radius, 0, Math.PI, ccw)
-            this.arc(x, y, radius, Math.PI, 0, ccw)
-            this.path.push(['z']);
-            return;
+            if (radius > 0.06) {
+                this.arc(x, y, radius, 0, Math.PI, ccw)
+                this.arc(x, y, radius, Math.PI, 0, ccw)
+                this.path.push(['z']);
+                return;
+            }
+            startAngle += ccw ? -0.1 : 0.1;
+            // endAngle += 0.1;
         }
         let start = polarToCartesian(x, y, radius, endAngle);
         let end = polarToCartesian(x, y, radius, startAngle);
-
-        let largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
-        if (!this._strokeStarted)
+        if (!this._strokeStarted) {
             this.moveTo(start.x, start.y)
-        else
+        }
+        else {
             this.lineTo(start.x, start.y)
+        }
+
+        const largeArcFlag = endAngle - startAngle <= Math.PI ? 0 : 1;
         const sweep = ccw ? 1 : 0
-        this.path.push(['a', radius, radius, 1, largeArcFlag, sweep, end.x - this.x, end.y - this.y]);
+        this.path.push(['a', radius, radius, 1, largeArcFlag, sweep, end.x - this.x, end.y - this.y, [x, y]]);
         this.x = end.x;
         this.y = end.y;
     }
@@ -115,7 +134,7 @@ const DrawingContext = (() => {
     P.stroke = function() {
     }
     P.fill = function() {
-        this._fill = true;
+        this.isFill = true;
     }
     P.text = function(text, x, y) {
         if (!text || text.length === 0) return;
@@ -133,7 +152,7 @@ const DrawingContext = (() => {
 
         if(controlPoints.length === 6 && cp[1] < 0.1) {
             if (this.fillStyle === this.strokeStyle
-                || isTransparent(this.strokeStyle)
+                || PenpaTools.ColorIsTransparent(this.strokeStyle)
                 || this.strokeStyle === Color.WHITE) {
                 // simple narrow arrow drawable with a single line
                 return this._arrowLine(startX, startY, endX, endY, controlPoints);
@@ -210,33 +229,114 @@ const DrawingContext = (() => {
         }
     }
 
-    const mapPathToPuzzle = function(p, size) {
-        const {round1, round3} = PenpaTools;
-        const scale1 = (d) => round1(d * size);
-        const scale2 = (d) => round3(d * size);
-        if(p.length === 1) {
-            return p[0];
+    P.getPathString = function() {
+        const mapPathToPuzzle = function(p, size) {
+            const {round1, round3} = PenpaTools;
+            const scale1 = (d) => round1(d * size);
+            const scale3 = (d) => round3(d * size);
+            if(p.length === 1) {
+                return p[0];
+            }
+            else if('MmLl'.includes(p[0])) {
+                return `${p[0]}${scale1(p[1])} ${scale1(p[2])}`;
+            }
+            else if('Aa'.includes(p[0])) {
+                if (Math.max(p[1], p[2]) > 0.5) // Large radii should round to more decimals for better drawing precision
+                    return `${p[0]}${scale3(p[1])} ${scale3(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale3(p[6])} ${scale3(p[7])}`;
+                else
+                    return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale1(p[6])} ${scale1(p[7])}`;
+            }
+            else if('Qq'.includes(p[0])) {
+                return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${scale1(p[3])} ${scale1(p[4])}`;
+            }
+            else {
+                console.error('UNEXPECTED PATH COMMAND: ', p);
+                // debugger;
+                return p.join(' ');
+            }
         }
-        else if('MmLl'.includes(p[0])) {
-            return `${p[0]}${scale1(p[1])} ${scale1(p[2])}`;
+
+        return this.path.map(d => mapPathToPuzzle(d, this.ctcSize)).join('');
+    }
+
+    P.convertPathToWaypoints = function(path = this.path) {
+        const {round2} = PenpaTools;
+        const round = (d) => round2(d);
+        
+        //return null;
+
+        if (path.length < 2) return null;
+        let wp = [];
+        let started = false;
+        let x = 0;
+        let y = 0;
+        let startx = 0;
+        let starty = 0;
+        for(let p of path) {
+            switch (p[0]) {
+                case 'M':
+                    x = 0;
+                    y = 0;
+                case 'm': {
+                    if (started) return null;
+                    started = true;
+                    startx = x = x + p[1];
+                    starty = y = y + p[2];                    
+                    wp.push([round(y), round(x)]);
+                    break;
+                }
+                case 'L':
+                    x = 0;
+                    y = 0;
+                case 'l': {
+                    x = x + p[1];
+                    y = y + p[2];
+                    wp.push([round(y), round(x)]);
+                    break;
+                }
+                case 'a': {
+                    let [cmd, r1, r2, one, largearc, sweep, x2, y2, center] = p;
+                    if (!Array.isArray(center)) return null;
+                    let [cx, cy] = center;
+                    x2 += x; y2 += y;
+                    var dAx = x - cx;
+                    var dAy = y - cy;
+                    var dBx = x2 - cx;
+                    var dBy = y2 - cy;
+                    var angle = Math.atan2(dAx * dBy - dAy * dBx, dAx * dBx + dAy * dBy);
+                    var angle1 = Math.atan2(dAy, dAx);
+                    if(angle < 0) {
+                        angle = -angle;
+                    }
+                    let length = angle * r1;
+                    let steps = Math.max(2, Math.floor(length * 9));
+                    //let steps = Math.min(12, Math.max(6, Math.floor(1 * angle / r1)));
+                    let step = angle / steps;
+                    step *= sweep ? 1 : -1;
+                    let a = 0;
+                    for (let i = 1; i < steps; i++) {
+                        a += step;
+                        let si = Math.sin(angle1 + a);
+                        let co = Math.cos(angle1 + a);
+                        let xx = cx + r1 * co;
+                        let yy = cy + r1 * si;
+                        wp.push([round(yy), round(xx)]);
+                    }                                        
+                    x = x2;
+                    y = y2;
+                    wp.push([round(y), round(x)]);
+                    break;
+                }
+                case 'Z': 
+                case 'z': 
+                    wp.push([round(starty), round(startx)]);
+                    break;
+
+                default:
+                    return null;
+            }            
         }
-        else if('A'.includes(p[0])) {
-            return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale1(p[6])} ${scale1(p[7])}`;
-        }
-        else if('a'.includes(p[0])) {
-            if (Math.max(p[1], p[2]) > 0.5) // Large radii should round with more decimals for better drawing precision
-                return `${p[0]}${scale2(p[1])} ${scale2(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale2(p[6])} ${scale2(p[7])}`;
-            else
-                return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${p[3]} ${p[4]} ${p[5]} ${scale1(p[6])} ${scale1(p[7])}`;
-        }
-        else if('Qq'.includes(p[0])) {
-            return `${p[0]}${scale1(p[1])} ${scale1(p[2])} ${scale1(p[3])} ${scale1(p[4])}`;
-        }
-        else {
-            console.error('UNEXPECTED PATH COMMAND: ', p);
-            // debugger;
-            return p.join(' ');
-        }
+        return started ? wp : null;
     }
 
     P.getIntent = function() {
@@ -244,20 +344,18 @@ const DrawingContext = (() => {
             return 'line';
         else if (this._text)
             return 'text';
-        else if (this.fillStyle && !isTransparent(this.fillStyle))
+        else if (this.fillStyle && !PenpaTools.ColorIsTransparent(this.fillStyle))
             return  'surface';
-        else if (this.lineWidth)
-            return 'line';
 
         return undefined;
     }
 
     P.toOpts = function(intent) {
-        const {round, round1} = PenpaTools;
+        const {round1, round2} = PenpaTools;
         let opts = {};
         intent = intent || this.getIntent()
         if (intent === 'line') {
-            if (this.lineWidth && this.strokeStyle && !isTransparent(this.strokeStyle)) {
+            if (this.lineWidth && this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
                 opts.thickness = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                 opts.color = this.strokeStyle;
             }
@@ -267,15 +365,21 @@ const DrawingContext = (() => {
                     opts['stroke-linejoin'] = this.lineJoin;
             }
             if (this.path.length > 0) {
-                opts.d = this.path.map(d => mapPathToPuzzle(d, this.ctcSize)).join('');
+                let wayPoints = this.convertPathToWaypoints(this.path);
+                if (wayPoints) {
+                    opts.wayPoints = wayPoints;
+                }
+                else {
+                    opts.d = this.getPathString();
+                }
                 this.path.length = 0; // path consumed
             }
-            if (this._fill) {
+            if (this.isFill) {
                 opts.fill = this.fillStyle;
             }
         }
         else {
-            if (this.strokeStyle && !isTransparent(this.strokeStyle)) {
+            if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
                 if (this.strokeStyle !== this.fillStyle) {
                     opts.borderColor = this.strokeStyle;
                 }
@@ -296,11 +400,11 @@ const DrawingContext = (() => {
                     opts['stroke-width'] = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                 }
                 if (this._text) {
-                    if (this.strokeStyle && !isTransparent(this.strokeStyle)) {
+                    if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
                          opts.textStroke = this.strokeStyle;
                     }
                     opts.text = this._text;
-                    opts.center = [this.y, this.x];
+                    opts.center = [round2(this.y), round2(this.x)];
                     this._text = null; // text consumed
                     //Don't need set font-family
                     // opts["font-family"] = font.family
@@ -322,9 +426,13 @@ const DrawingContext = (() => {
                         opts.borderSize = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                     }
                 }
-                if (this.fillStyle && !isTransparent(this.fillStyle)) {
+                if (this.fillStyle && !PenpaTools.ColorIsTransparent(this.fillStyle)) {
                     opts.backgroundColor = this.fillStyle;
                 }
+            }
+            if (this.angle) {
+                opts.angle = this.angle;
+                this.angle = 0;
             }
         }
 
