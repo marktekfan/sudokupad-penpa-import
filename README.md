@@ -1,3 +1,4 @@
-# sudokupad-penpa-import
+# Penpa+ puzzle importer
 
-SudokuPad Penpa+ puzzle importer
+## Website
+[`https://marktekfan.github.io/sudokupad-penpa-import/`](https://marktekfan.github.io/sudokupad-penpa-import/)
