@@ -1,13 +1,18 @@
-const puzzleLinkConverter = (() => {
+const PenpaDecoder = (() => {
 	"use strict";	
-	let _rnd = 0;
+    function _constructor() {
+    }
+    const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
-	const DEBUG = 0 || document.location.host.startsWith('127.0.0.1');
+	C.useClipPath = false;
+	C.useDoubleLayer = true;
+	C.isDoubleLayer = (ctx) => C.useDoubleLayer && !PenpaTools.ColorIsTransparent(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
+	C.DEBUG = 0// || document.location.host.startsWith('127.0.0.1');
+
+	let _rnd = 0;
 
 	const rePenpaUrl = /\/penpa-edit\//;
 	const rePuzzlinkUrl = /\/puzz\.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p(\.html)?\?/;
-	const reFpuzzlesUrl = /[\.\/]+f-puzzles.com\//;
-	
 
 	class FakeDoc {
 		constructor() { 
@@ -72,7 +77,7 @@ const puzzleLinkConverter = (() => {
 		if(typeof part === 'object' && !Array.isArray(part)) {
 			part = Object.keys(part).reduce((acc, cur) => Object.assign(acc, part[cur] === undefined ? {} : {[cur]: part[cur]}), {});
 		}
-		if (DEBUG && type) part.penpa = type;
+		if (PenpaDecoder.DEBUG && type) part.penpa = type;
 		puzzle[feature].push(part);
 	};
 
@@ -148,12 +153,12 @@ const puzzleLinkConverter = (() => {
 			let stext = JSON.parse(pu.solution);
 			const {width, height} = doc;
 			let sol = Array(height * width).fill('?');
-            // 0 - shading
-            // 1 - Line / FreeLine
-            // 2 - Edge / FreeEdge
-            // 3 - Wall
-            // 4 - Number
-            // 5 - Symbol
+            // 0 = shading
+            // 1 = Line / FreeLine
+            // 2 = Edge / FreeEdge
+            // 3 = Wall
+            // 4 = Number
+            // 5 = Symbol
 			stext[4].forEach(s => {
 				let [point, val] = s.split(',');
 				let [r, c] = point2cell(point);
@@ -378,7 +383,7 @@ const puzzleLinkConverter = (() => {
 	parse.surface = (qa, pu, puzzle) => {
 		const list = pu[qa].surface || [];
 		const listCol = pu[qa + '_col'].surface || [];
-		const {point2RC, isBoardCell} = PenpaTools;
+		const {point2RC, isBoardCell, ColorSaturate} = PenpaTools;
 		const keys = Object.keys(list); //keys.sort();
 		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: Number(k)}));
 		const predicate = (s1, s2) => { return true 
@@ -391,7 +396,7 @@ const puzzleLinkConverter = (() => {
 			set_surface_style(ctx, surface.value);
 			if(listCol[surface.key]) {
 				ctx.fillStyle = listCol[surface.key];
-				ctx.strokeStyle = listCol[surface.key];
+				//ctx.strokeStyle = listCol[surface.key];
 			}
 			// ctx.fillStyle = '#ff000040'
 			if (!pu.centerlist.includes(surface.key)) {
@@ -401,12 +406,19 @@ const puzzleLinkConverter = (() => {
 			 	ctx.fillStyle = '#010101'; // Make darker, which will be lightened by SP with alpha 0.5
 			 	//ctx.target = 'overlay';
 			}
-			puzzleAdd(puzzle, 'underlays', Object.assign(ctx.toOpts(), {
+			else {
+				ctx.fillStyle = ColorSaturate(ctx.fillStyle);
+			}
+			const opts = Object.assign(ctx.toOpts(), {
 				center: surface.center,
 				width: surface.width || 1,
 				height: surface.height || 1,
 				//backgroundColor: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
-			}), 'surface');
+			});
+            if (PenpaDecoder.isDoubleLayer(ctx)) {
+				puzzleAdd(puzzle, 'underlays', opts, 'surface');
+			}
+			puzzleAdd(puzzle, 'underlays', opts, 'surface');
 		});
 	}
 	parse.number = (qa, pu, puzzle, feature = 'number') => {
@@ -428,8 +440,10 @@ const puzzleLinkConverter = (() => {
 		const {point2cell, point2centerPoint} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			const number = list[key];
-			if (number.role !== undefined) return;
 			let ctx = new DrawingContext();
+			if (number.role && number.role !== 'killer-sum') {
+				return;
+			}
 			draw.draw_numberS(ctx, number, key);
 
 			if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
@@ -479,6 +493,11 @@ const puzzleLinkConverter = (() => {
 				drawDoubleLine(ctx, line, puzzle);
 			}
 			else {
+				const isCenter = pu.point[line.keys[0]].type === 0;
+				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.strokeStyle !== Color.BLACK && ctx.lineDash.length === 0) {
+					ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
+					ctx.lineWidth = 6;
+				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
 				}), feature);
@@ -579,21 +598,56 @@ const puzzleLinkConverter = (() => {
 		});
 	}
 	parse.polygon = (qa, pu, puzzle, feature = 'polygon') => {
+		const {point2RC, ColorIsTransparent, ColorSaturate, getMinMaxRC, round1, round3} = PenpaTools;
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			const target = {target: 'underlay'};
 			let points = list[key].map(point2RC);
+			if (points.length < 2) return;
 			let ctx = new DrawingContext();
 			ctx.strokeStyle = listCol[key] || Color.BLACK;
 			ctx.fillStyle = listCol[key] || Color.BLACK;
+			ctx.fillStyle = ColorSaturate(ctx.fillStyle);
 			ctx.lineWidth = 1;
-			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
-		 		'fill-rule': 'nonzero',
-				fill: ctx.fillStyle,
-				wayPoints: PenpaTools.reduceWayPoints(points),
-			}, target), feature);
+
+			ctx.push();
+
+			ctx.moveTo(points[0][1], points[0][0]);
+			for (let i = 1; i < points.length; i++) {
+				ctx.lineTo(points[i][1], points[i][0]);
+			}
+			ctx.fill();
+
+			let wp = ctx.convertPathToWaypoints();
+			if (PenpaDecoder.useClipPath && wp && ctx.fillStyle && !ColorIsTransparent(ctx.fillStyle)) {
+				ctx.push();
+				const [top, left, bottom, right] = getMinMaxRC(wp);
+				let centerx = round3((right + left) / 2);
+				let centery = round3((bottom + top) / 2);
+				let scalex = round3(right - left);
+				let scaley = round3(bottom - top);
+	
+				// Add rect with clippath
+				ctx.lineWidth = 0;
+				ctx.strokeStyle = Color.TRANSPARENTBLACK;
+				let opts = Object.assign(ctx.toOpts('surface'), {
+					center: [centery, centerx],
+					width: scalex,
+					height: scaley,
+					// target: ctx.target || 'underlay',
+					'clip-path': `polygon(${wp.map(([yy, xx]) => `${round1((xx - left) / scalex * 100)}% ${round1((yy - top) / scaley * 100)}%`).join(',')})`,
+				});
+				puzzleAdd(puzzle, 'underlays', opts, feature);
+			}
+			else {
+				ctx.pop();
+				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
+					'fill-rule': 'nonzero',
+					fill: ctx.fillStyle,
+					wayPoints: PenpaTools.reduceWayPoints(points),
+				}, target), feature);
+			}
 		});
 	}
 	const draw_line = (qa, pu, puzzle, feature, target = undefined) => {
@@ -615,6 +669,11 @@ const puzzleLinkConverter = (() => {
 				drawShortLine(ctx, line, puzzle);
 			}
 			else {
+				const isCenter = pu.point[line.keys[0]].type === 0;
+				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.strokeStyle !== Color.BLACK && ctx.lineDash.length === 0) {
+					ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
+					ctx.lineWidth = 6;
+				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
 				}), feature);
@@ -723,16 +782,16 @@ const puzzleLinkConverter = (() => {
 			if (s1 || s2) {
 				let ctx = new DrawingContext();
 				set_surface_style(ctx, s1 || s2);
-				let fillstyle1 = (s1 && surfaceCol[p1]) || ctx.fillStyle;
+				let fillStyle1 = (s1 && surfaceCol[p1]) || ctx.fillStyle;
 				set_surface_style(ctx, s2 || s1);
-				let fillstyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
+				let fillStyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
 				// Don't remove when not visible due to dark background
-				if (darkBackgrounds.includes(fillstyle1) || darkBackgrounds.includes(fillstyle2)) {
+				if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
 					list[l] = 0; // line.value = 0
 				}
 				else {
 					// Pre-calculate line color to make it visually identical to the surface color which has 0.5 alpha in SudokuPad.
-					list[l] = PenpaTools.ColorApplyAlpha(fillStyle1, 0.5);
+					list[l] = PenpaTools.ColorApplyAlpha(PenpaTools.ColorSaturate(fillStyle1));
 				}
 			}
 		});
@@ -935,7 +994,9 @@ const puzzleLinkConverter = (() => {
 		return pu;
 	}
 
-	const loadPenpaPuzzle = urlstring => {
+	C.isPenpaUrl = (url) => url.match(rePenpaUrl) || url.match(rePuzzlinkUrl);
+
+	C.loadPenpaPuzzle = function (urlstring) {
 		let pu;
         if (urlstring.match(rePenpaUrl)) {
 			pu = parsePenpaPuzzle(urlstring);
@@ -997,7 +1058,10 @@ const puzzleLinkConverter = (() => {
 		}
 	}
 
-	function convertPenpaPuzzle(pu) {
+	C.convertPenpaPuzzle = function (pu) {
+		if (typeof pu === 'string') {
+			pu = C.loadPenpaPuzzle(pu);
+		}
 		if (!pu) return;
 
 		const doc = {
@@ -1028,6 +1092,12 @@ const puzzleLinkConverter = (() => {
 		// Convert custom colors to hex
 		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document['custom_color_opt'] === '2');
 		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document['custom_color_opt'] === '2');
+
+		// Make sure to use all uppercase colors, this is important for Sudokupad to create a solid white.
+		Object.keys(Color).forEach(c => {
+			Color[c] = Color[c].trim();
+			if (Color[c][0] === '#') Color[c] = Color[c].toUpperCase();
+		});
 
 		convertFreeline2Line(pu);
 		PenpaRegions.cleanupCenterlist(pu);
@@ -1118,79 +1188,5 @@ const puzzleLinkConverter = (() => {
 		return puzzle;
 	};
 
-	// Make sure to use all uppercase colors, this is important for Sudokupad to create a solid white.
-	Object.keys(Color).forEach(c => {
-		Color[c] = Color[c].trim();
-		if (Color[c][0] === '#') Color[c] = Color[c].toUpperCase();
-	});
-
-	const loadPuzzle = {};
-	// const loadPuzzle = penpaRaw => Promise.resolve(penpaRaw)
-	// 	.then(penpaRaw => penpaRaw.replace(/^penpa/, ''))
-	// 	.then(loadPenpaPuzzle)
-	// 	.then(convertPenpaPuzzle)
-	// 	.then(puzzle => puzzle && PuzzleZipper.zip(JSON.stringify(puzzle)))
-	// 	.catch(err => (console.error('Error fetching penpa:', err), Promise.reject(err)));
-
-	const convertPuzzleUrl = url => {
-		if (url.match(rePenpaUrl)
-		 || url.match(rePuzzlinkUrl)) {
-			let pu = loadPenpaPuzzle(url);
-			let puzzle = convertPenpaPuzzle(pu);
-			if (!puzzle) return null;
-			let settings = Object.entries(puzzle.settings).map(([k, v]) => `setting-${k}=${v}`).join('&');
-			delete puzzle.settings;
-			let puzzleId = 'ctc' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle))) + (settings ? '?' + settings : '');
-			return puzzleId;
-		}
-
-		if (url.match(reFpuzzlesUrl)) {
-			let fpuzzle = url.match(/\?load=([^&]+)/);
-			if (fpuzzle) {
-				return 'fpuzzles' + fpuzzle[1];
-			}
-			return null;
-		}		
-
-		const reCtc = /(app.crackingthecryptic.com\/sudoku\/|sudokupad.app\/(sudoku\/)?)(.+)/
-		let sudokupad = url.match(reCtc)
-		if (sudokupad) {
-			let puzzleid = sudokupad[3].replace(/^\?puzzleid=/, '');
-			return puzzleid;
-		}
-
-		return null;
-	}
-
-	const tinyUrls = [
-		/tinyurl.com\/(.+)/,
-		/f-puzzles.com\/\?id=(.+)/,
-	]
-	const expandShortUrl = function(url) {
-		let short = tinyUrls.map(re => url.match(re)).find(m => m);
-		if(!short) {
-			return url;
-		}
-		return new Promise((resolve, reject) => {
-			//fetch('http://localhost:3000/tinyurl/' + short[1])
-			fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + short[1])
-			.then(res => res.text())
-			.then(text => {
-				console.log('json response:', text)
-				let result = JSON.parse(text)
-				if (result.success) {
-					return resolve(result.longurl);
-				}
-				return resolve(url);
-			})
-			.catch(reject);
-		});
-	}
-
-	loadPuzzle.expandShortUrl = expandShortUrl;
-	loadPuzzle.convertPuzzleUrl = convertPuzzleUrl;
-	loadPuzzle.loadPenpaPuzzle = loadPenpaPuzzle;
-	loadPuzzle.convertPuzzle = convertPenpaPuzzle;
-
-	return loadPuzzle;
+	return C;
 })();

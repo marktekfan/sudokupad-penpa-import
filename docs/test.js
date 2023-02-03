@@ -1385,10 +1385,10 @@ function test_puzzlink() {
 	}
 
 	testCases.forEach((puzzlink_url, i) => {
-		//penpa.decode_puzzlink(puzzlink_url);
 		console.log(i, puzzlink_url[0]);
-		let pu = puzzleLinkConverter.loadPenpaPuzzle(puzzlink_url[1]);
-		let puzzle = puzzleLinkConverter.convertPuzzle(pu);
+		// if (i === 6 || i === 156) debugger;
+		let pu = PenpaDecoder.loadPenpaPuzzle(puzzlink_url[1]);
+		let puzzle = PenpaDecoder.convertPenpaPuzzle(pu);
 		console.log(pu, puzzle);
 	});
 }
