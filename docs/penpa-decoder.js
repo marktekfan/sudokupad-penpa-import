@@ -167,8 +167,10 @@ const PenpaDecoder = (() => {
 					sol[pos] = val;
 				}
 			});
-			let solString = sol.join('');
-			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
+			if (sol.some(n => n !== '?')) {
+				let solString = sol.join('');
+				puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
+			}
 		}
 	}
 
