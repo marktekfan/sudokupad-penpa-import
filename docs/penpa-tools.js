@@ -273,13 +273,13 @@ const PenpaTools = (() => {
 	}
 
 	C.getAdjacentCellsOfELine = function(pu, eline) {
-		const {point2cellPoint} = C;
+		const {point2centerPoint} = C;
 		let [k1, k2] = eline.split(',').map(Number);
 		let p1 = pu.point[k1];
 		let p2 = pu.point[k2];
 		// Find common surrounding cells
-		let adjacent1 = [k1, p1.adjacent[2], p1.adjacent[3], p1.adjacent_dia[3]].map(point2cellPoint);
-		let adjacent2 = [k2, p2.adjacent[2], p2.adjacent[3], p2.adjacent_dia[3]].map(point2cellPoint);
+		let adjacent1 = [k1, p1.adjacent[2], p1.adjacent[3], p1.adjacent_dia[3]].map(point2centerPoint);
+		let adjacent2 = [k2, p2.adjacent[2], p2.adjacent[3], p2.adjacent_dia[3]].map(point2centerPoint);
 		let commonCells = adjacent1.filter(k => adjacent2.includes(k));
 		return commonCells;
 	}
@@ -386,34 +386,53 @@ const PenpaTools = (() => {
 		if (Array.isArray(num)) return num.map(C.round3);
 		return Math.round((num + Number.EPSILON) * 1000) / 1000;
 	}
+	C.round256 = function(num) {
+		if (Array.isArray(num)) return num.map(C.round256);
+		return Math.round((num + Number.EPSILON) * 256) / 256;
+	}
 	C.round = function(num) { return C.round3(num); }
 
 
 	C.isBoardCell = function(rc) {
 		const [r, c] = rc;
-		return (r >= 0 && r < C.doc.height && c >= 0 && c <= C.doc.width);
+		return (r >= 0 && r < C.doc.height && c >= 0 && c < C.doc.width);
 	}
 
-	C.point2cell = function(p) {
-		const point = C.doc.point[p];
-		const r = Math.floor(point.y) - 2 - C.doc.row0;
-		const c = Math.floor(point.x) - 2 - C.doc.col0;
-		return [r, c];
-	}
 	C.point2RC = function(p) {
 		const point = C.doc.point[p];
 		const r = point.y - 2 - C.doc.row0;
 		const c = point.x - 2 - C.doc.col0;
 		return [r, c];
 	}
+	C.point2cell = function(p) {
+		let [r, c] = C.point2RC(p);
+		return [Math.floor(r), Math.floor(c)];
+	}
+
 	C.point = function(p) {
 		return C.doc.point[p];
 	}
 
-	C.point2cellPoint = function(p) {
+	C.point2matrix = function(p) {
+		p = C.point2centerPoint(p);
+		let x = (p % C.doc.nx0); //column
+		let y = Math.floor(p / C.doc.nx0); //row
+		return [y - 2, x - 2];
+	}
+	C.matrix2point = function(y, x, type = 0) {
+		if (Array.isArray(y)) {
+			[y, x] = y;
+			type = 0;
+		}
+		let p = (y + 2) * C.doc.nx0 + (x + 2) + type * (C.doc.nx0 * C.doc.ny0);
+		return p;
+	}
+
+	C.point2centerPoint = function(p) {
 		const point = C.doc.point[p];
 		switch(point.type) {
 			case 0:
+				return p;
 			case 1:
 			case 2:
 			case 3:
@@ -423,6 +442,236 @@ const PenpaTools = (() => {
 				return Math.floor((p - 4 * C.doc.nx0 * C.doc.ny0) / 4) - (point.type - 4) * C.doc.nx0 * C.doc.ny0;			
 		}
 	}
+
+	C.getMinMaxRC = function(list = [], mapper = ([r, c]) => [r, c]) {
+		const rcs = [].concat(list.map(mapper)),
+					rows = rcs.map(([r, c]) => r),
+					cols = rcs.map(([r, c]) => c);
+		return [
+			Math.min(...rows), Math.min(...cols),
+			Math.max(...rows), Math.max(...cols),
+		];
+	};
+
+	C.getBoundsRC = function(list = [], mapper) {
+		const [top, left, bottom, right] = C.getMinMaxRC(list, mapper);
+		const width = right - left + 1;
+		const height = bottom - top + 1;
+		return {top, left, bottom, right, height, width};
+	};
+
+
+
+  /**
+   * Converts an HSL color value to RGB. Conversion formula
+   * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+   * Assumes h, s, and l are contained in the set [0, 1] and
+   * returns r, g, and b in the set [0, 255].
+   *
+   * @param   Number  h       The hue
+   * @param   Number  s       The saturation
+   * @param   Number  l       The lightness
+   * @return  Array           The RGB representation
+   */
+	function HSLtoRGB(h, s, l) {
+	var r, g, b;
+
+	if (s == 0) {
+		r = g = b = l; // achromatic
+	} else {
+		function hue2rgb(p, q, t) {
+		if (t < 0) t += 1;
+		if (t > 1) t -= 1;
+		if (t < 1/6) return p + (q - p) * 6 * t;
+		if (t < 1/2) return q;
+		if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+		return p;
+		}
+
+		var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+		var p = 2 * l - q;
+
+		r = hue2rgb(p, q, h + 1/3);
+		g = hue2rgb(p, q, h);
+		b = hue2rgb(p, q, h - 1/3);
+	}
+
+	return [ r * 255, g * 255, b * 255 ];
+	}
+
+	/**
+	 * Converts an RGB color value to HSL. Conversion formula
+	 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+	 * Assumes r, g, and b are contained in the set [0, 255] and
+	 * returns h, s, and l in the set [0, 1].
+	 *
+	 * @param   Number  r       The red color value
+	 * @param   Number  g       The green color value
+	 * @param   Number  b       The blue color value
+	 * @return  Array           The HSL representation
+	 */
+	function RGBtoHSL(r, g, b) {
+		r /= 255, g /= 255, b /= 255;
+
+		var max = Math.max(r, g, b), min = Math.min(r, g, b);
+		var h, s, l = (max + min) / 2;
+
+		if (max == min) {
+		h = s = 0; // achromatic
+		} else {
+		var d = max - min;
+		s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+		switch (max) {
+			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+			case g: h = (b - r) / d + 2; break;
+			case b: h = (r - g) / d + 4; break;
+		}
+
+		h /= 6;
+		}
+
+		return [ h, s, l ];
+	}
+
+
+  
+//   /**
+//    * Converts an RGB color value to HSV. Conversion formula
+//    * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+//    * Assumes r, g, and b are contained in the set [0, 255] and
+//    * returns h, s, and v in the set [0, 1].
+//    *
+//    * @param   Number  r       The red color value
+//    * @param   Number  g       The green color value
+//    * @param   Number  b       The blue color value
+//    * @return  Array           The HSV representation
+//    */
+// 	function rgbToHsv(r, g, b) {
+// 		r /= 255, g /= 255, b /= 255;
+
+// 		var max = Math.max(r, g, b), min = Math.min(r, g, b);
+// 		var h, s, v = max;
+
+// 		var d = max - min;
+// 		s = max == 0 ? 0 : d / max;
+
+// 		if (max == min) {
+// 			h = 0; // achromatic
+// 		} else {
+// 			switch (max) {
+// 			case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+// 			case g: h = (b - r) / d + 2; break;
+// 			case b: h = (r - g) / d + 4; break;
+// 			}
+
+// 			h /= 6;
+// 		}
+
+// 		return [ h, s, v ];
+// 	}
+
+// 	/**
+// 	 * Converts an HSV color value to RGB. Conversion formula
+// 	 * adapted from http://en.wikipedia.org/wiki/HSV_color_space.
+// 	 * Assumes h, s, and v are contained in the set [0, 1] and
+// 	 * returns r, g, and b in the set [0, 255].
+// 	 *
+// 	 * @param   Number  h       The hue
+// 	 * @param   Number  s       The saturation
+// 	 * @param   Number  v       The value
+// 	 * @return  Array           The RGB representation
+// 	 */
+// 	function hsvToRgb(h, s, v) {
+// 		var r, g, b;
+
+// 		var i = Math.floor(h * 6);
+// 		var f = h * 6 - i;
+// 		var p = v * (1 - s);
+// 		var q = v * (1 - f * s);
+// 		var t = v * (1 - (1 - f) * s);
+
+// 		switch (i % 6) {
+// 			case 0: r = v, g = t, b = p; break;
+// 			case 1: r = q, g = v, b = p; break;
+// 			case 2: r = p, g = v, b = t; break;
+// 			case 3: r = p, g = q, b = v; break;
+// 			case 4: r = t, g = p, b = v; break;
+// 			case 5: r = v, g = p, b = q; break;
+// 		}
+
+// 		return [ r * 255, g * 255, b * 255 ];
+// 	}
+
+	C.ColorRgba2Hex = function(rgba) {
+		let rgb = rgba.replace(/\s/g, '').match(/^rgba?\((\d+),(\d+),(\d+),?([^,\s)]+)?/i);
+		let alpha = (rgb && rgb[4]) || '';
+		let hex = !rgb ? rgba : '#' +
+			(rgb[1] | 1 << 8).toString(16).slice(1) +
+			(rgb[2] | 1 << 8).toString(16).slice(1) +
+			(rgb[3] | 1 << 8).toString(16).slice(1);
+
+		if (alpha !== '' && alpha < 1) {
+		  hex = hex + (Math.floor(alpha * 256) | 1 << 8).toString(16).slice(1);
+		}
+		return hex.toUpperCase();
+	}
+
+	const opaqueColors = ['#000000', '#CFCFCF', '#FFFFFF'];
+	C.ColorIsOpaque = function(hex) {
+		return hex && opaqueColors.includes(hex);
+	}
+	C.ColorApplyAlpha = function(hex, alpha = 0.5) {
+		if (!hex || C.ColorIsOpaque(hex) || C.ColorIsTransparent(hex)) return hex; 
+		let r = parseInt(hex.slice(1, 3), 16);
+		let g = parseInt(hex.slice(3, 5), 16);
+		let b = parseInt(hex.slice(5, 7), 16);
+		let newR = alpha * r + (1 - alpha) * 255;
+		let newG = alpha * g + (1 - alpha) * 255;
+		let newB = alpha * b + (1 - alpha) * 255;
+
+		let newHex = '#' +
+			(newR | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(newG | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(newB | 1 << 8).toString(16).slice(1).toUpperCase();
+		return newHex;
+	}
+
+	C.ColorSaturate = function(hex) {
+		if (!hex || C.ColorIsOpaque(hex) || C.ColorIsTransparent(hex)) return hex; 
+		if (!PenpaDecoder.useDoubleLayer) {
+			if (hex.length === 7) {
+				return hex + 'FF';
+			}
+			if (hex.length === 4) {
+				return hex + 'F';
+			}
+			return hex;
+		}
+		return hex;
+
+		let r = parseInt(hex.slice(1, 3), 16);
+		let g = parseInt(hex.slice(3, 5), 16);
+		let b = parseInt(hex.slice(5, 7), 16);
+
+		let [h, s, l] = RGBtoHSL(r, g, b);
+		const lfactor = 0.9;
+		const sfactor = 2.0;
+		l = l * (lfactor + l * (1 - lfactor))
+		s = Math.min(1, s * sfactor);
+		let [newR, newG, newB] = HSLtoRGB(h, s, l);
+
+		let newHex = '#' +
+			(newR | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(newG | 1 << 8).toString(16).slice(1).toUpperCase() +
+			(newB | 1 << 8).toString(16).slice(1).toUpperCase();
+		return newHex;
+	}
+
+    C.ColorIsTransparent = function(hex) {
+        // if (typeof color !== 'string') debugger
+        return !hex || hex.slice(7) === '00' || (hex.length === 5 && hex.slice(4) === '0');
+    }
 
 	return C;
 })();

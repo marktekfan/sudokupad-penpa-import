@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body>
+		<script>
+			let target = 'http://127.0.0.1:5501/index.html?puzzleid=';
+			let [puzzleid, options] = [
+				'ctcABCD',
+				{ 'setting-conflictchecker': 0 },
+			];
+
+			let url = new URL(target + puzzleid);
+
+			Object.entries(options).forEach(([k, v]) =>
+				url.searchParams.set(k, v)
+			);
+
+			console.log(url.toString());
+		</script>
+	</body>
+</html>
