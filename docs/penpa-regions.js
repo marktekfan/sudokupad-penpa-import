@@ -4,7 +4,8 @@ const PenpaRegions = (() => {
 
 	function getregiondata(r, c, size, edge_elements, borderStyle) {
 		let regions = extractRegionData(r, c, size, size, edge_elements, borderStyle);
-		return finishIncompleteRegions(r, c, size, regions);
+		return regions;
+		// return finishIncompleteRegions(r, c, size, regions);
 	}
 
 	function extractRegionData(r, c, height, width, edge_elements, borderStyle = undefined, centerlist = undefined) {
@@ -176,6 +177,11 @@ const PenpaRegions = (() => {
 				}
 			}
 		}
+
+		if (width === height) {
+			regions = finishIncompleteRegions(r, c, width, regions);
+		}
+	
 		return regions;
 	}
 
@@ -451,19 +457,28 @@ const PenpaRegions = (() => {
 		Object.keys(edge_elements).filter(k => [1, 11].includes(edge_elements[k])).forEach(k => delete edge_elements[k]);
 
 		const {top, left, height, width} = getBoundsRC(pu.centerlist, point2matrix);
-		let regions = extractRegionData(top, left, height, width, edge_elements, undefined, pu.centerlist);
 
-		console.log('regions', regions);
-
+		const edgeStyles = [
+			[2], // Black frame
+			[8], // Thick black frame
+			[21], // Red frame
+			[2, 8, 21], // Combo
+		];
+		for(let edgeStyle of edgeStyles) {			
+			var regions = extractRegionData(top, left, height, width, edge_elements, edgeStyle, pu.centerlist);
+			console.log('regions', regions);
+			
+			// All regions should have equal size.
+			let size = -1;
+			var allEqualSize = Object.keys(regions).length > 0 && Object.keys(regions).every(reg => {
+				if (size === -1) size = regions[reg].length;
+				return regions[reg].length === size;
+			})
+			if (allEqualSize) break;
+		}		
+		
 		const squares = [];
 		while(findNextSquare(squares, pu.centerlist, height, width)) { }
-
-		// All regions should have equal size.
-		let size = -1;
-		let allEqualSize = Object.keys(regions).every(reg => {
-			if (size === -1) size = regions[reg].length;
-			return regions[reg].length === size;
-		})
 
 		if (allEqualSize) {
 			const eqSet = (xs, ys) => xs.size === ys.size && [...xs].every((x) => ys.has(x));
