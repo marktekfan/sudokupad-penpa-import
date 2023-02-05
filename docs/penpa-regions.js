@@ -2,12 +2,6 @@ const PenpaRegions = (() => {
     function _constructor() { }
 	const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
-	function getregiondata(r, c, size, edge_elements, borderStyle) {
-		let regions = extractRegionData(r, c, size, size, edge_elements, borderStyle);
-		return regions;
-		// return finishIncompleteRegions(r, c, size, regions);
-	}
-
 	function extractRegionData(r, c, height, width, edge_elements, borderStyle = undefined, centerlist = undefined) {
 		// 2 = black line
 		// 8 = red line
@@ -181,7 +175,7 @@ const PenpaRegions = (() => {
 		if (width === height) {
 			regions = finishIncompleteRegions(r, c, width, regions);
 		}
-	
+
 		return regions;
 	}
 
@@ -438,6 +432,14 @@ const PenpaRegions = (() => {
 				pu.make_frameline();
 			}
 		}
+
+		// Remove obsolete deletelineE's
+		Object.keys(pu.pu_q.deletelineE).forEach(k => {
+			let adj = getAdjacentCellsOfELine(pu, k);
+			if (!pu.centerlist.includes(adj[0]) && !pu.centerlist.includes(adj[1])) {
+				delete pu.pu_q.deletelineE[k];
+			}
+		});
 	}
 
 	C.findSudokuSquares = function(pu) {
@@ -456,19 +458,30 @@ const PenpaRegions = (() => {
 			[21], // Red frame
 			[2, 8, 21], // Combo
 		];
-		for(let edgeStyle of edgeStyles) {			
+		for(let edgeStyle of edgeStyles) {
 			var regions = extractRegionData(top, left, height, width, edge_elements, edgeStyle, pu.centerlist);
 			console.log('regions', regions);
-			
-			// All regions should have equal size.
-			let size = -1;
-			var allEqualSize = Object.keys(regions).length > 0 && Object.keys(regions).every(reg => {
-				if (size === -1) size = regions[reg].length;
-				return regions[reg].length === size;
-			})
-			if (allEqualSize) break;
-		}		
-		
+
+			let sizes = {};
+			Object.keys(regions).forEach(reg => sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1);
+			let sortedSizes = Object.keys(sizes).map(Number).sort().reverse();
+			for (let size of sortedSizes) {
+				if (size >= 4 && size === sizes[size]) {
+					let selectedRegions = Object.keys(regions).filter(reg => regions[reg].length === size).map(reg => regions[reg]);
+					let squares = [{regions: selectedRegions}];
+					return {regions: selectedRegions, squares};
+				}
+			}	
+			var allEqualSize = false;
+
+			// // All found regions should have equal size.
+			// let size = -1;
+			// var allEqualSize = Object.keys(regions).length > 2 && Object.keys(regions).every(reg => {
+			// 	if (size === -1) size = regions[reg].length;
+			// 	return regions[reg].length === size;
+			// })
+			// if (allEqualSize) break;
+		}
 		const squares = [];
 		while(findNextSquare(squares, pu.centerlist, height, width)) { }
 
@@ -590,10 +603,10 @@ const PenpaRegions = (() => {
 			for(let sq of squares) {
 				let edge_elements = pu.pu_q.lineE;
 				// First pass, try with dominant border linestyle
-				sq.regions = getregiondata(sq.r, sq.c, sq.size, edge_elements, sq.dominantBorderStyle);
+				sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edge_elements, sq.dominantBorderStyle);
 				// When failed then try again with default borderStyle
 				if (Object.keys(sq.regions).length !== sq.size) {
-					sq.regions = getregiondata(sq.r, sq.c, sq.size, edge_elements);
+					sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edge_elements);
 				}
 				createRegionOutlines(pu, sq);
 				// console.log(sq);
@@ -631,7 +644,7 @@ const PenpaRegions = (() => {
 							.forEach(reg => validRegionOutlines.push(sq.region_outline[reg]));
 						// Add all valid region outlines of current square
 						validRegionOutlines.forEach(outline => outline.forEach(k => { edges[k] = 21; })) // draw (thick) outline
-						sq.regions = getregiondata(sq.r, sq.c, sq.size, edges);
+						sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edges);
 						createRegionOutlines(pu, sq);
 						let resolved = Object.keys(sq.regions).length === sq.size;
 						// if (!resolved) pu.pu_q.lineE = edges;

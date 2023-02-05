@@ -1075,6 +1075,44 @@ const PenpaDecoder = (() => {
 		}
 	}
 
+	function expandBoardGridForSudokuPad(pu) {
+		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
+		let bounds = [];
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.number).map(p => PenpaTools.point2centerPoint(p)), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.numberS).map(p => PenpaTools.point2centerPoint(p)), PenpaTools.point2matrix));
+		if (pu.pu_q.killercages) {
+			bounds.push(PenpaTools.getMinMaxRC(pu.pu_q.killercages.flatMap(p => p), PenpaTools.point2matrix));
+		}
+
+		//let {top, left, height, width} = PenpaTools.getBoundsRC(
+		let top = Math.min(...bounds.map(b => b[0]));
+		let left = Math.min(...bounds.map(b => b[1]));
+		let bottom = Math.max(...bounds.map(b => b[2]));
+		let right = Math.max(...bounds.map(b => b[3]));
+
+		if (top < clBounds[0] - 1 || left < clBounds[1] - 1) {
+			let p = PenpaTools.matrix2point(top, left);
+			pu.centerlist.push(p);
+			pu.centerlist.sort();
+
+			for (let i = 0; i < 4; i++) {
+				let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
+				pu.pu_q.deletelineE[k] = 1;
+			}
+		}
+		if (bottom > clBounds[2] + 1 || right > clBounds[3] + 1) {
+			let p = PenpaTools.matrix2point(bottom, right);
+			pu.centerlist.push(p);
+			pu.centerlist.sort();
+			for (let i = 0; i < 4; i++) {
+				let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
+				pu.pu_q.deletelineE[k] = 1;
+			}
+		}
+	}
+
+
+
 	C.convertPenpaPuzzle = function (pu) {
 		if (typeof pu === 'string') {
 			pu = C.loadPenpaPuzzle(pu);
@@ -1110,7 +1148,7 @@ const PenpaDecoder = (() => {
 		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document['custom_color_opt'] === '2');
 		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document['custom_color_opt'] === '2');
 
-		// Make sure to use all uppercase colors, this is important for Sudokupad to create a solid white.
+		// Make sure to use all uppercase colors, this is important for Sudokupad to create solid colors.
 		Object.keys(Color).forEach(c => {
 			Color[c] = Color[c].trim();
 			if (Color[c][0] === '#') Color[c] = Color[c].toUpperCase();
@@ -1128,8 +1166,17 @@ const PenpaDecoder = (() => {
 		// Keep only thick frame lines
 		Object.keys(pu.frame).filter(k => pu.frame[k] !== 2).forEach(k => delete pu.frame[k]);
 		
+		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
+		if (!regions) {
+			PenpaRegions.findSudokuRegions(pu, squares);
+		}
+
+		//TODO: Can this be done before region detection?
+		expandBoardGridForSudokuPad(pu);
+
 		// Determine visual cell grid bounding box
-		const {top, left, height, width} = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);
+		let {top, left, height, width} = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);
+
 		// Update with calculated top-left position
 		doc.col0 = left;
 		doc.row0 = top;
@@ -1141,16 +1188,13 @@ const PenpaDecoder = (() => {
 			settings: {},
 		};
 		createBlankPuzzle(pu, puzzle, width, height);
-		addGivens(pu, puzzle);
 
-		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
-		if (!regions) {
-			PenpaRegions.findSudokuRegions(pu, squares);
-		}
 		addSudokuRegions(pu, puzzle, squares, regions);
 
 		positionBoard(pu, puzzle, doc);
 		createGridLineMask(pu, puzzle, doc);
+
+		addGivens(pu, puzzle);
 
 		let qa = 'pu_q'
 		parse.surface(qa, pu, puzzle);
