@@ -331,14 +331,14 @@ const PenpaRegions = (() => {
 		const {getAdjacentCellsOfELine, point2matrix} = PenpaTools;
 		const {height, width} = PenpaTools.getBoundsRC(pu.centerlist, point2matrix);
 
-		// Cleanup frame
-		for (let k in pu.pu_q.deletelineE) {
-			// Don't delete when replaced with another line
-			if (pu.pu_q.lineE[k] === undefined)
-				delete pu.frame[k];
-		}
-		// Remove deleted/invisible framelines from frame.
-		Object.keys(pu.frame).filter(k => pu.frame[k] === 0).forEach(k => delete pu.frame[k]);
+		// // Cleanup frame
+		// for (let k in pu.pu_q.deletelineE) {
+		// 	// Don't delete when replaced with another line
+		// 	if (pu.pu_q.lineE[k] === undefined)
+		// 		delete pu.frame[k];
+		// }
+		// // Remove deleted/invisible framelines from frame.
+		// Object.keys(pu.frame).filter(k => pu.frame[k] === 0).forEach(k => delete pu.frame[k]);
 
 		const noFrame = pu.mode.grid[0] === '3';
 		const noGridLines = pu.mode.grid[2] === '2';
@@ -401,6 +401,8 @@ const PenpaRegions = (() => {
 					delete pu.pu_q.deletelineE[k];
 				}
 			});
+			// Recreate frame
+			pu.make_frameline();
 		}
 		else {
 			// In case there is no frame and no grid lines and no grid points
@@ -432,20 +434,10 @@ const PenpaRegions = (() => {
 					pu.centerlist.length = 0;
 					pu.centerlist.push(...centerlist);
 				}
+				// Recreate frame
+				pu.make_frameline();
 			}
 		}
-
-		// // Remove black(-ish) surfaces from centerlist
-		// let surface = pu.pu_q.surface;
-		// for(let k in surface) {
-		// 	if([1, 4].includes(surface[k])) {
-		// 		let index = pu.centerlist.indexOf(Number(k));
-		// 		if (index !== -1) {
-		// 			pu.centerlist.splice(index, 1);
-		// 		}
-		// 	}
-		// }
-
 	}
 
 	C.findSudokuSquares = function(pu) {

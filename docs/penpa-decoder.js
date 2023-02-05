@@ -652,6 +652,19 @@ const PenpaDecoder = (() => {
 			}
 		});
 	}
+	parse.frame = (qa, pu, puzzle) => {
+		const list = pu.frame || [];
+		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
+		wpList.forEach(line => {
+			if (line.wayPoints.length < 2) return;
+			let ctx = new DrawingContext();
+			ctx.target = 'overlay';
+			set_line_style(ctx, line.value);
+			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
+				wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
+			}), 'frame');
+		});
+	}
 	const draw_line = (qa, pu, puzzle, feature, target = undefined) => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
@@ -1104,6 +1117,15 @@ const PenpaDecoder = (() => {
 		convertFreeline2Line(pu);
 		PenpaRegions.cleanupCenterlist(pu);
 
+		// Cleanup frame
+		for (let k in pu.pu_q.deletelineE) {
+			// Don't delete when replaced with another line
+			if (pu.pu_q.lineE[k] === undefined)
+				delete pu.frame[k];
+		}
+		// Keep only thick frame lines
+		Object.keys(pu.frame).filter(k => pu.frame[k] !== 2).forEach(k => delete pu.frame[k]);
+		
 		// Determine visual cell grid bounding box
 		const {top, left, height, width} = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);
 		// Update with calculated top-left position
@@ -1137,6 +1159,7 @@ const PenpaDecoder = (() => {
 		parse.arrows(qa, pu, puzzle);
 		parse.wall(qa, pu, puzzle);
 		// draw_frame()
+		parse.frame(qa, pu, puzzle);
 		parse.polygon(qa, pu, puzzle);
 		parse.freeline(qa, pu, puzzle);
 		parse.freelineE(qa, pu, puzzle);
@@ -1151,7 +1174,7 @@ const PenpaDecoder = (() => {
 		parse.numberS(qa, pu, puzzle);
 
 		drawBoardLattice(pu, puzzle, doc);
-		drawBoardOutline(pu, puzzle, doc);
+		// drawBoardOutline(pu, puzzle, doc);
 
 		parse.deletelineE(qa, pu, puzzle);
 
