@@ -396,9 +396,10 @@ const DrawingContext = (() => {
                 if(this['stroke-width'] !== undefined) {
                     opts['stroke-width'] = round1(this['stroke-width']);
                 }
-                else if (this.lineWidth > 0) {
-                    opts['stroke-width'] = round1(this.lineWidth * this.ctcSize / this.penpaSize);
-                }
+                // else if (this.lineWidth > 0) {
+                //     opts['stroke-width'] = round1(this.lineWidth * this.ctcSize / this.penpaSize);
+                // }
+                opts['stroke-width'] = round1((this.lineWidth || 0) * this.ctcSize / this.penpaSize);
                 if (this._text) {
                     if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
                          opts.textStroke = this.strokeStyle;

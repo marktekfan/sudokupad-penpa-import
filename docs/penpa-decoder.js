@@ -801,7 +801,9 @@ const PenpaDecoder = (() => {
 				set_surface_style(ctx, s2 || s1);
 				let fillStyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
 				// Don't remove when not visible due to dark background
-				if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
+				//if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
+				// if (fillStyle1 ||  fillStyle2) {
+				if (s1 !== s2 || fillStyle1 !== fillStyle2) {
 					list[l] = 0; // line.value = 0
 				}
 				else {

@@ -621,7 +621,10 @@ const PenpaTools = (() => {
 	C.ColorIsOpaque = function(hex) {
 		return hex && opaqueColors.includes(hex);
 	}
-	C.ColorApplyAlpha = function(hex, alpha = 0.5) {
+	C.ColorApplyAlpha = function(hex, alpha = undefined) {
+		if (alpha === undefined) {
+			alpha = PenpaDecoder.useDoubleLayer ? 0.75 : 0.5;
+		}
 		if (!hex || C.ColorIsOpaque(hex) || C.ColorIsTransparent(hex)) return hex; 
 		let r = parseInt(hex.slice(1, 3), 16);
 		let g = parseInt(hex.slice(3, 5), 16);
