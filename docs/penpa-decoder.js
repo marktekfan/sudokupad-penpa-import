@@ -174,40 +174,6 @@ const PenpaDecoder = (() => {
 		}
 	}
 
-	function createGridLineMask_old(pu, puzzle, doc) {
-		const {point2cell} = PenpaTools;
-		const {centerlist} = pu;
-
-		// Create 'outside cell mask' only when cells are removed
-		if (centerlist.length !== doc.width * doc.height) {
-			let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
-			let outlinePoints = PenpaTools.getCellOutline(gridCells);	
-			let edgePoints = PenpaTools.normalizePath(outlinePoints).map(p => (p.length === 3) ? [p[0], p[2], p[1]] : p);
-
-			const margin = 0.06;
-			let left = 0 - margin;
-			let top = 0 - margin;
-			let right = doc.width + margin;
-			let bottom = doc.height + margin;
-			let ctx = new DrawingContext();
-			ctx.path = edgePoints;
-			ctx.moveTo(left, top);
-			ctx.lineTo(left, bottom);
-			ctx.lineTo(right, bottom);
-			ctx.lineTo(right, top);
-			ctx.closePath();
-			let opts = Object.assign(ctx.toOpts(), {
-				fill:  '#FFFFFF',
-				//  fill: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
-				'fill-rule': 'evenodd',
-				target: 'cell-grids'//'overlay'
-			});
-			puzzleAdd(puzzle, 'lines', opts, 'outside mask');
-
-			doc.hasCellMask = true;
-		}
-	}
-
 	function createGridLineMask(pu, puzzle, doc) {
 		const {point2matrix, matrix2point, getBoundsRC} = PenpaTools;
 		const {centerlist} = pu;
@@ -259,24 +225,8 @@ const PenpaDecoder = (() => {
 		doc.hasCellMask = true;
 	}
 
-
-	function drawBoardOutline(pu, puzzle, doc) {
-		const {point2cell} = PenpaTools;
-		const {centerlist} = pu;
-
-		// gr = grid line style
-		// ot = outline style
-		let gridStyle = 1; // Solid line
-        let outlineStyle = 2; // Thick line
-        if (pu.mode.grid[0] === '2') {
-            gridStyle = 11; // Dotted line
-        } else if (pu.mode.grid[0] === '3') {
-            gridStyle = 0; // No line
-        }
-        if (pu.mode.grid[2] === '2') { // No Frame
-            outlineStyle = gridStyle; // The line frame is the same line as the inside
-        }
-
+	function drawBoardLattice(pu, puzzle, doc) {
+		const {point2RC} = PenpaTools;
 		// Dotted grid lines
 		if (pu.mode.grid[0] === '2') {
 			puzzle.settings['dashedgrid'] = 1;
@@ -286,42 +236,6 @@ const PenpaDecoder = (() => {
 			puzzle.settings['nogrid'] = 1; // not (yet) implemented
 		}
 		// // Grid points
-		// if (pu.mode.grid[1] === '1') {
-		// 	puzzle.settings['gridpoints'] = 1; // not (yet) implemented
-		// }
-		// // No outside frame
-		// if (pu.mode.grid[2] === '2') {			
-		// 	puzzle.settings['nogridframe'] = 1; // not (yet) implemented
-		// }
-
-		if (outlineStyle !== 0 && outlineStyle !== gridStyle) {
-			// Add frame outine
-			let gridCells = centerlist.map(point2cell).map(c => ({row: c[0], col: c[1]}));
-			let outlinePoints = PenpaTools.getCellOutline(gridCells);
-
-			let wayPoints = [];
-			outlinePoints.forEach(([t, r, c]) => {
-				if (t === 'Z') {
-					wayPoints.push(wayPoints[0]);
-					let ctx = new DrawingContext();
-					set_line_style(ctx, outlineStyle); // thick line
-					let opts = Object.assign(ctx.toOpts('line'), {
-						// color: '#FF0000',
-						wayPoints: PenpaTools.reduceWayPoints(wayPoints),
-						target: 'overlay'
-					});
-					puzzleAdd(puzzle, 'lines', opts, 'outside frame');
-					wayPoints.length = 0;
-				}
-				else {
-					wayPoints.push([r, c]);
-				}
-			});
-		}
-	}
-
-	function drawBoardLattice(pu, puzzle, doc) {
-		const {point2RC} = PenpaTools;
 		if (pu.mode.grid[1] === '1') {
 			let ctx = new DrawingContext();
 			ctx.target = doc.hasCellMask ? 'overlay' : 'cell-grids';
@@ -1220,7 +1134,6 @@ const PenpaDecoder = (() => {
 		parse.numberS(qa, pu, puzzle);
 
 		drawBoardLattice(pu, puzzle, doc);
-		// drawBoardOutline(pu, puzzle, doc);
 
 		parse.deletelineE(qa, pu, puzzle);
 
