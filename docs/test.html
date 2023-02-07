@@ -93,6 +93,13 @@ span.extra {
 #select-destination {
 	font-size: 1.2rem;
 }
+fieldset {
+	width: 30rem;
+	margin-bottom: 1rem;
+}
+fieldset div {
+	margin: 0.3rem;
+}
 		</style>
 		<link rel="stylesheet" href="./style.css">
 	<!-- Google tag (gtag.js) -->
@@ -130,6 +137,25 @@ span.extra {
 						</div>
                     </div>
 					<div id="errortext"> </div>
+					<fieldset>
+						<legend>Converter options</legend>					
+						<div>
+							<input type="checkbox" id="expandGrid" name="expandGrid">
+							<label for="expandGrid">Allow expansion of grid for outside clues</label>
+						</div>
+						<div>
+							<input type="checkbox" id="doubleLayer" name="doubleLayer">
+							<label for="doubleLayer">Doubling of transparant underlay colors</label>
+						</div>
+						<div>
+							<input type="checkbox" id="clipPath" name="clipPath">
+							<label for="clipPath">Use clip-path</label>
+						</div>
+						<div>
+							<input type="checkbox" id="debug" name="debug">
+							<label for="debug">Add penpa debug info to puzzle</label>
+						</div>
+					</fieldset>
 					<p>For any issues, questions or suggestions about this converter contact me:<br />
 						<ul>
 							<li><svg class="iconleft" width="24" height="24" viewBox="0 -29 256 256"><path fill="#5865F2" d="M217 17c-17-8-34-14-53-17l-7 14c-19-3-39-3-58 0L92 0C73 3 56 9 39 17 6 67-3 116 1 165c22 17 44 27 65 33l14-23-22-10 5-5c42 20 88 20 130 0l5 5-22 10 14 23c21-6 43-16 65-33 5-56-9-105-38-148ZM85 135c-12 0-23-12-23-26s11-26 23-26c13 0 24 12 23 26 1 14-10 26-23 26Zm86 0c-13 0-23-12-23-26s10-26 23-26c12 0 23 12 23 26s-11 26-23 26Z"/></svg>
@@ -142,7 +168,6 @@ span.extra {
 								Email: <a href="mailto:MarkTekfan@gmail.com">MarkTekfan@gmail.com</a></li>
 						</ul>
 					</p>
-
 					<!-- <div id="disclaimer">(Beta version, for testing purposes only)</div> -->
 					<div class="footer2">
 						Created by <a href="https://discordapp.com/users/MarkTekfan#8907" target="_blank">Mark Langezaal</a> and <a href="https://svencodes.com" target="_blank">Sven Neumann</a> (&copy; 2023)

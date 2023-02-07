@@ -4,12 +4,15 @@ const PenpaDecoder = (() => {
     }
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
-	C.useClipPath = false;
-	C.useDoubleLayer = true;
-	C.isDoubleLayer = (ctx) => C.useDoubleLayer && !PenpaTools.ColorIsTransparent(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
-	C.DEBUG = 0// || document.location.host.startsWith('127.0.0.1');
-
-	let _rnd = 0;
+	C.flags = {
+		clipPath: false,
+		doubleLayer: true,
+		expandGrid: true,
+		debug: 0// || document.location.host.startsWith('127.0.0.1'),
+	};
+	C.isDoubleLayer = (ctx) => (C.flags.doubleLayer || 0) && !PenpaTools.ColorIsTransparent(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
+	
+	let _rnd = 0; // static random seed
 
 	const rePenpaUrl = /\/penpa-edit\//;
 	const rePuzzlinkUrl = /\/puzz\.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p(\.html)?\?/;
@@ -77,7 +80,7 @@ const PenpaDecoder = (() => {
 		if(typeof part === 'object' && !Array.isArray(part)) {
 			part = Object.keys(part).reduce((acc, cur) => Object.assign(acc, part[cur] === undefined ? {} : {[cur]: part[cur]}), {});
 		}
-		if (PenpaDecoder.DEBUG && type) part.penpa = type;
+		if (PenpaDecoder.flags.debug && type) part.penpa = type;
 		puzzle[feature].push(part);
 	};
 
@@ -536,7 +539,7 @@ const PenpaDecoder = (() => {
 			ctx.fill();
 
 			let wp = ctx.convertPathToWaypoints();
-			if (PenpaDecoder.useClipPath && wp && ctx.fillStyle && !ColorIsTransparent(ctx.fillStyle)) {
+			if (PenpaDecoder.flags.clipPath && wp && ctx.fillStyle && !ColorIsTransparent(ctx.fillStyle)) {
 				ctx.push();
 				const [top, left, bottom, right] = getMinMaxRC(wp);
 				let centerx = round3((right + left) / 2);
@@ -992,11 +995,10 @@ const PenpaDecoder = (() => {
 	function expandBoardGridForSudokuPad(pu) {
 		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
 		let bounds = [];
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.number).map(p => PenpaTools.point2centerPoint(p)), PenpaTools.point2matrix));
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.numberS).map(p => PenpaTools.point2centerPoint(p)), PenpaTools.point2matrix));
-		if (pu.pu_q.killercages) {
-			bounds.push(PenpaTools.getMinMaxRC(pu.pu_q.killercages.flatMap(p => p), PenpaTools.point2matrix));
-		}
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.number), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.numberS), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.symbol), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.killercages || []).flatMap(p => p), PenpaTools.point2matrix));
 
 		//let {top, left, height, width} = PenpaTools.getBoundsRC(
 		let top = Math.min(...bounds.map(b => b[0]));
@@ -1024,8 +1026,6 @@ const PenpaDecoder = (() => {
 			}
 		}
 	}
-
-
 
 	C.convertPenpaPuzzle = function (pu) {
 		if (typeof pu === 'string') {
@@ -1085,8 +1085,10 @@ const PenpaDecoder = (() => {
 			PenpaRegions.findSudokuRegions(pu, squares);
 		}
 
-		//TODO: Can this be done before region detection?
-		expandBoardGridForSudokuPad(pu);
+		if (PenpaDecoder.flags.expandGrid) {
+			//TODO: Can this be done before region detection?
+			expandBoardGridForSudokuPad(pu);
+		}
 
 		// Determine visual cell grid bounding box
 		let {top, left, height, width} = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);

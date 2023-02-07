@@ -8,6 +8,9 @@ const puzzleLinkConverter = (() => {
 	const loadPuzzle = {};
 	
 	const convertPuzzleUrl = url => {
+
+		getPenpaDecoderOptions();
+
 		if (PenpaDecoder.isPenpaUrl(url)) {
 			let puzzle = PenpaDecoder.convertPenpaPuzzle(url);
 			if (!puzzle) return null;
@@ -36,6 +39,20 @@ const puzzleLinkConverter = (() => {
 		return null;
 	}
 
+	function getPenpaDecoderOptions() {
+		let options = document.querySelectorAll('fieldset input[type=checkbox]');
+		for(let option of options) {
+			PenpaDecoder.flags[option.name] = option.checked;
+		}
+	}
+
+	function setPenpaDecoderOptions() {
+		let options = document.querySelectorAll('fieldset input[type=checkbox]');
+		for(let option of options) {
+			option.checked = PenpaDecoder.flags[option.name] ? true : false;
+		}
+	}
+
 	const shortUrls = [
 		/tinyurl.com\/(.+)/,
 		/f-puzzles.com\/\?id=(.+)/,
@@ -60,6 +77,10 @@ const puzzleLinkConverter = (() => {
 			.catch(reject);
 		});
 	}
+
+	document.addEventListener('DOMContentLoaded', () => {
+		setPenpaDecoderOptions();
+	});
 
 	loadPuzzle.expandShortUrl = expandShortUrl;
 	loadPuzzle.convertPuzzleUrl = convertPuzzleUrl;
