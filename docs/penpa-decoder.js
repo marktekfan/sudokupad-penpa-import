@@ -144,12 +144,20 @@ const PenpaDecoder = (() => {
 	const reMetaTagsStripCells = new RegExp(`^(${metaTagsWithoutCells.join('|')}):\\s*([\\s\\S]+)`, 'im');
 
 	function addCageMetadata(pu, puzzle) {
-		const {numberS} = pu.pu_q;
+		const {numberS, killercages} = pu.pu_q;
 		Object.keys(numberS).forEach(pos => {
 			let matches = numberS[pos][0].trim().match(reMetaTagsStripCells);
 			if (matches) {
 				applyDefaultMeta(pu, puzzle, matches[1], matches[2]);
 				delete numberS[pos];
+				// check for obsolete killer cages
+				let killerCell = PenpaTools.point2centerPoint(pos);
+				for (let i = 0; i < killercages.length; i++) {
+					if (killercages[i].length === 1 && killercages[i].includes(killerCell)) {
+						killercages[i].length = 0;
+					}					
+				}
+
 			}
 		});
 	}
