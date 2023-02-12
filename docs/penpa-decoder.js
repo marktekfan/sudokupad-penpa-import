@@ -1,5 +1,5 @@
 const PenpaDecoder = (() => {
-	"use strict";	
+	'use strict';	
     function _constructor() {
     }
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
@@ -34,7 +34,7 @@ const PenpaDecoder = (() => {
 						remove: c => { delete elem.classList.classes[c]; },
 						contains: c => elem.classList.classes[c],
 					},
-					getElementsByClassName: c => [],
+					getElementsByClassName: c => Object.keys(this._elem).filter(id => Object.keys(this._elem[id].classList.classes).includes(c)).map(id => this._elem[id]),
 					addEventListener: e => {},
 				}
 				this._elem[id] = elem;
@@ -53,7 +53,10 @@ const PenpaDecoder = (() => {
 		getValues() {
 			let doc = {};
 			Object.entries(this._elem).forEach(([id, elem]) => {
-				if(elem.value !== undefined) {
+				if(elem.checked !== undefined) {
+					doc[id] = elem.checked;
+				}
+				else if(elem.value !== undefined) {
 					doc[id] = elem.value.toString();
 				}
 			});
@@ -126,6 +129,31 @@ const PenpaDecoder = (() => {
 		}
 	}
 
+	const metaTagsWithoutCells = [
+		'title',
+		'author',
+		'rules',
+		'solution',
+		'foglight',
+		'msgcorrect',
+		'msgincorrect',
+		'msgvalid',
+		'msginvalid',
+		'msgunknown',
+	];
+	const reMetaTagsStripCells = new RegExp(`^(${metaTagsWithoutCells.join('|')}):\\s*([\\s\\S]+)`, 'im');
+
+	function addCageMetadata(pu, puzzle) {
+		const {numberS} = pu.pu_q;
+		Object.keys(numberS).forEach(pos => {
+			let matches = numberS[pos][0].trim().match(reMetaTagsStripCells);
+			if (matches) {
+				applyDefaultMeta(pu, puzzle, matches[1], matches[2]);
+				delete numberS[pos];
+			}
+		});
+	}
+
 	function addSudokuRegions(pu, puzzle, squares, regions) {
 		const {matrix2point, point2cell} = PenpaTools;
 		let enableConflictChecker = false;
@@ -150,19 +178,40 @@ const PenpaDecoder = (() => {
 	}
 
 	function addSolution(pu, puzzle, doc) {
+		if (!pu.solution) return;
+
 		// Add puzzle solution
-		if (pu.solution && !pu.multisolution) {
-			const {point2cell} = PenpaTools;
-			let stext = JSON.parse(pu.solution);
-			const {width, height} = doc;
-			let sol = Array(height * width).fill('?');
-            // 0 = shading
+		let numberSolution = -1;
+
+		if (!pu.multisolution) {
+			// 0 = shading
             // 1 = Line / FreeLine
             // 2 = Edge / FreeEdge
             // 3 = Wall
             // 4 = Number
             // 5 = Symbol
-			stext[4].forEach(s => {
+			numberSolution = 4;
+		}
+		else {
+            var sol_count = -1; // as list indexing starts at 0
+            // loop through and check which 'OR' settings are selected
+    		['surface', 'number', 'loopline', 'loopedge', 'wall', 'square', 'circle', 'tri', 'arrow', 'math', 'battleship', 'tent', 'star', 'akari', 'mine']
+			.forEach(sol_or => {
+				// Get checkbox value
+				if (pu._document['sol_or_' + sol_or] === true) {
+					sol_count++;
+                    if (sol_or === 'number') {
+						numberSolution = sol_count;
+					}
+				}
+			});
+		}
+		
+		if (pu.solution[numberSolution]) {
+			const {point2cell} = PenpaTools;
+			const {width, height} = doc;
+			let sol = Array(height * width).fill('?');
+			pu.solution[numberSolution].forEach(s => {
 				let [point, val] = s.split(',');
 				let [r, c] = point2cell(point);
 				let pos = r * width + c;
@@ -244,7 +293,7 @@ const PenpaDecoder = (() => {
 			ctx.target = doc.hasCellMask ? 'overlay' : 'cell-grids';
 			ctx.strokeStyle = Color.BLACK;
 			ctx.lineWidth = 4;
-			ctx.lineCap = "round";
+			ctx.lineCap = 'round';
 			var verticelist = [];
 			for (let i = 0; i < pu.centerlist.length; i++) {
 				for (let j = 0; j < pu.point[pu.centerlist[i]].surround.length; j++) {
@@ -907,8 +956,15 @@ const PenpaDecoder = (() => {
 		let urlParam = paramMatch[1];
 
 		// Capture global document state
-		let fakedoc = new FakeDoc();
-		let penpaGeneral = PenpaGeneral(fakedoc);
+		let doc = new FakeDoc();
+
+		// Create elements to capture solution settings
+		['sol_surface', 'sol_number', 'sol_loopline', 'sol_ignoreloopline', 'sol_loopedge', 'sol_ignoreborder', 'sol_wall', 'sol_square', 'sol_circle', 'sol_tri', 'sol_arrow', 'sol_math', 'sol_battleship', 'sol_tent', 'sol_star', 'sol_akari', 'sol_mine']
+			.forEach(id => doc.getElementById(id).classList.add('solcheck'));
+		['sol_or_surface', 'sol_or_number', 'sol_or_loopline', 'sol_or_loopedge', 'sol_or_wall', 'sol_or_square', 'sol_or_circle', 'sol_or_tri', 'sol_or_arrow', 'sol_or_math', 'sol_or_battleship', 'sol_or_tent', 'sol_or_star', 'sol_or_akari', 'sol_or_mine']
+			.forEach(id => doc.getElementById(id).classList.add('solcheck_or'));
+
+		let penpaGeneral = PenpaGeneral(doc);
 
 		try {
 			penpaGeneral.load(urlParam, 'local');
@@ -924,7 +980,7 @@ const PenpaDecoder = (() => {
 		}
 
 		let pu = penpaGeneral.get_pu();
-		pu._document = fakedoc.getValues();
+		pu._document = doc.getValues();
 		return pu;
 	}
 
@@ -1109,6 +1165,8 @@ const PenpaDecoder = (() => {
 
 		positionBoard(pu, puzzle, doc);
 		createGridLineMask(pu, puzzle, doc);
+
+		addCageMetadata(pu, puzzle);
 
 		addGivens(pu, puzzle);
 
