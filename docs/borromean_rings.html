@@ -301,6 +301,10 @@ fieldset div {
 	let newBtn = document.createElement('button');
 	newBtn.id = 'btnBorromeanRings';
 	newBtn.onclick = () => {
+		const reFpuzzlesUrl = /[\.\/]+f-puzzles.com\/.*\?load=([^&]+)/;
+		const reSudokuPadUrl = /^sudokupad:\/\/puzzle\/(.+)/;
+		const reCtc = /(app.crackingthecryptic.com\/sudoku\/|sudokupad.app\/(sudoku\/)?)(.+)/
+		
 		let selectElem = document.getElementById('select-destination');
 		let destination = selectElem.value;
 		localStorage.destination = destination;
@@ -452,6 +456,7 @@ fieldset div {
         }
 
         function puzzleAdd(puzzle, feature, part) {
+			if(puzzle[feature] === undefined) puzzle[feature] = [];
             if(typeof part === 'object' && !Array.isArray(part)) {
                 part = Object.keys(part).reduce((acc, cur) => Object.assign(acc, part[cur] === undefined ? {} : {[cur]: part[cur]}), {});
             }
