@@ -189,7 +189,7 @@ const PenpaDecoder = (() => {
 		if (!pu.solution) return;
 
 		// Add puzzle solution
-		let numberSolution = -1;
+		let numberSolution;
 
 		if (!pu.multisolution) {
 			// 0 = shading
@@ -198,7 +198,8 @@ const PenpaDecoder = (() => {
             // 3 = Wall
             // 4 = Number
             // 5 = Symbol
-			numberSolution = 4;
+			let stext = JSON.parse(pu.solution);
+			numberSolution = stext[4];
 		}
 		else {
             var sol_count = -1; // as list indexing starts at 0
@@ -209,17 +210,17 @@ const PenpaDecoder = (() => {
 				if (pu._document['sol_or_' + sol_or] === true) {
 					sol_count++;
                     if (sol_or === 'number') {
-						numberSolution = sol_count;
+						numberSolution = pu.solution[sol_count];
 					}
 				}
 			});
 		}
 		
-		if (pu.solution[numberSolution]) {
+		if (numberSolution) {
 			const {point2cell} = PenpaTools;
 			const {width, height} = doc;
 			let sol = Array(height * width).fill('?');
-			pu.solution[numberSolution].forEach(s => {
+			numberSolution.forEach(s => {
 				let [point, val] = s.split(',');
 				let [r, c] = point2cell(point);
 				let pos = r * width + c;
