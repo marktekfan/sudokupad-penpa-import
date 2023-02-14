@@ -420,8 +420,8 @@ const PenpaSymbol = (() => {
 		let factor = "abcdefghijklmnopqrstuvwxyz".indexOf(text) === -1 ? 1 : 0;
 		if (p.slice(-1) === 'E') p = slice(0, -1);
 		let [p_y, p_x] = point2RC(p);
-		// Vertex numbers/circles (point.type=1 or 2) should be drawn over gridlines
-		if (point(p).type === 1 || point(p).type === 2) {
+		// Vertex numbers/circles (point.type=1, 2 or 3) should be drawn over gridlines
+		if ([1, 2, 3].includes(point(p).type)) {
 			ctx.target =  'overlay'
 		}
 		switch(number[2]) {
