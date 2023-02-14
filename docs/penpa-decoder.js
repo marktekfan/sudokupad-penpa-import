@@ -1142,6 +1142,16 @@ const PenpaDecoder = (() => {
 			if (pu.pu_q.lineE[k] === undefined)
 				delete pu.frame[k];
 		}
+		// Remove lines which are identical to the corresponding frame line.
+		// (Line style 12 == frame style 11)
+		Object.keys(pu.pu_q.lineE).forEach(k => {
+			if (pu.frame[k]) {
+				let style = pu.pu_q.lineE[k];
+				if (pu.frame[k] === (style === 12 ? 11 : style)) {
+					delete pu.pu_q.lineE[k];
+				}
+			}
+		});
 		// Keep only thick frame lines
 		Object.keys(pu.frame).filter(k => pu.frame[k] !== 2).forEach(k => delete pu.frame[k]);
 		
