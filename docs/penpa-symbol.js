@@ -420,10 +420,6 @@ const PenpaSymbol = (() => {
 		let factor = "abcdefghijklmnopqrstuvwxyz".indexOf(text) === -1 ? 1 : 0;
 		if (p.slice(-1) === 'E') p = slice(0, -1);
 		let [p_y, p_x] = point2RC(p);
-		// Vertex numbers/circles (point.type=1, 2 or 3) should be drawn over gridlines
-		if ([1, 2, 3].includes(point(p).type)) {
-			ctx.target =  'overlay'
-		}
 		switch(number[2]) {
 			case "1": //normal
 				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.42);
@@ -472,7 +468,7 @@ const PenpaSymbol = (() => {
                     var w2 = 3 / ctx.penpaSize; // tail width
                     var ri = -0.22; // head length
                     this.draw_arrow(ctx, arrow.dir, p_x + arrow.midarrow[0], p_y + arrow.midarrow[1], len1, len2, w1, w2, ri, 0);
-                    ctx.target = 'cell-grids'; // This is the correct z-order for number arrows
+                    ctx.target = 'cell-givens'; // number arrows must be above 'overlay'!
                     this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), 'number arrow:' + JSON.stringify(number));
 				}
                 else {
@@ -569,6 +565,7 @@ const PenpaSymbol = (() => {
 		let rc = point2RC(p)
 		if (number[1] === 5) { // WHITE
 			set_circle_style(ctx, 7);
+			ctx.target = 'overlay';
 			this.draw_rect_elem(ctx, rc[1], rc[0], 0.40, 0.40);
 		} else if (number[1] === 6) { // WHITE + BLACK border
 			set_circle_style(ctx, 1);
@@ -617,9 +614,9 @@ const PenpaSymbol = (() => {
 			height: round3(2 * r),
 		});
         if (PenpaDecoder.isDoubleLayer(ctx)) {
-            this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, 'number cicle');
+            this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number cicle');
         }
-        this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, 'number cicle');
+        this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number cicle');
     }
 
 	P.draw_rect = function(ctx, x, y, w, h) {
