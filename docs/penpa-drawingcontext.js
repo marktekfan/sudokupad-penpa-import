@@ -396,9 +396,6 @@ const DrawingContext = (() => {
                 if(this['stroke-width'] !== undefined) {
                     opts['stroke-width'] = round1(this['stroke-width']);
                 }
-                // else if (this.lineWidth > 0) {
-                //     opts['stroke-width'] = round1(this.lineWidth * this.ctcSize / this.penpaSize);
-                // }
                 opts['stroke-width'] = round1((this.lineWidth || 0) * this.ctcSize / this.penpaSize);
                 if (this._text) {
                     if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
@@ -406,7 +403,7 @@ const DrawingContext = (() => {
                     }
                     opts.text = this._text;
                     opts.center = [round2(this.y), round2(this.x)];
-                    this._text = null; // text consumed
+                    this._text = null; // text is consumed
                     //Don't need set font-family
                     // opts["font-family"] = font.family
                     if (this.textBaseline && this.textBaseline !== 'middle') {

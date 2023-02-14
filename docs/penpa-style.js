@@ -339,7 +339,7 @@ function set_font_style(ctx, size, type, ccolor = "none") {
         case 6:
             ctx.fillStyle = Color.BLACK;
             ctx.strokeStyle = Color.TRANSPARENTWHITE;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 0; //ML
             break;
         case 7:
             ctx.fillStyle = Color.WHITE;
@@ -397,7 +397,7 @@ function set_circle_style(ctx, num, ccolor = "none") {
                 ctx.fillStyle = Color.GREY_LIGHT;
             }
             ctx.strokeStyle = Color.TRANSPARENTBLACK;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0; //ML
             break;
         case 4:
             ctx.setLineDash([4 / 38, 4 / 38]);
@@ -435,7 +435,7 @@ function set_circle_style(ctx, num, ccolor = "none") {
                 ctx.fillStyle = Color.WHITE;
             }
             ctx.strokeStyle = Color.TRANSPARENTWHITE;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0; //ML
             break;
         case 8:
             if (ccolor !== "none") {
@@ -488,7 +488,7 @@ function set_circle_style(ctx, num, ccolor = "none") {
         default:
             ctx.fillStyle = Color.TRANSPARENTWHITE;
             ctx.strokeStyle = Color.TRANSPARENTWHITE;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0; //ML
             break;
     }
 }

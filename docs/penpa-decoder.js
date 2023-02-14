@@ -448,7 +448,7 @@ const PenpaDecoder = (() => {
 			let isMaskedCell = doc.hasCellMask && !pu.centerlist.includes(Number(key)) && isBoardCell(point2RC(key));
 			// In front of lines or on an outside/masked cell.
 			if (symbol[2] === 2 || isMaskedCell) {
-				ctx.target = 'cell-grids';//'overlay';
+				ctx.target = 'overlay';
 			}
 			const [r, c] = point2RC(key);
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], listCol[key]);
