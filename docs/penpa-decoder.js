@@ -722,7 +722,7 @@ const PenpaDecoder = (() => {
 			}
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 				wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
-				target: 'cages'
+				target: 'cell-grids', // Above cages
 			}), feature + ' line');
 		});
 	}
