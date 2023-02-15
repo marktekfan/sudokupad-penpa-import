@@ -1040,23 +1040,6 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-
-	function convertCustomColors(list, cc) {
-		for(let i in list) {
-			if (!cc) {
-				delete list[i]; // remove custom color
-			}
-			else if (typeof list[i] === 'string') {
-				list[i] = PenpaTools.ColorRgba2Hex(list[i]);
-			}
-			else {
-				if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
-					delete list[i]; // remove invalid color
-				}
-			}
-		}
-	}
-
 	function expandBoardGridForSudokuPad(pu) {
 		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
 		let bounds = [];
@@ -1092,6 +1075,62 @@ const PenpaDecoder = (() => {
 		}
 	}
 
+	function convertCustomColors(list, cc) {
+		for(let i in list) {
+			if (!cc) {
+				delete list[i]; // remove custom color
+			}
+			else if (typeof list[i] === 'string') {
+				list[i] = PenpaTools.ColorRgba2Hex(list[i]);
+			}
+			else {
+				if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
+					delete list[i]; // remove invalid color
+				}
+			}
+		}
+	}
+
+	function cleanupPu(pu) {
+		// Convert custom colors to hex
+		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document['custom_color_opt'] === '2');
+		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document['custom_color_opt'] === '2');
+
+		// Make sure to use all uppercase colors, this is important for Sudokupad to create solid colors.
+		Object.keys(Color).forEach(c => {
+			Color[c] = Color[c].trim();
+			if (Color[c][0] === '#') Color[c] = Color[c].toUpperCase();
+		});
+
+		// Delete features with invalid points
+		['number', 'numberS', 'symbol', 'surface'].forEach(feature => {
+			Object.keys(pu.pu_q[feature]).forEach(p => {
+				if (!pu.point[p]) {
+					delete pu.pu_q[feature][p];
+				}
+			});
+		});
+		['lineE', 'freelineE', 'deletelineE'].forEach(feature => {
+			Object.keys(pu.pu_q[feature]).forEach(p => {
+				let [p1, p2] = p.split(',');
+				if (!pu.point[p1] || pu.point[p1].type !== 1) {
+					delete pu.pu_q[feature][p];
+				}
+				else if (!pu.point[p2] || pu.point[p2].type !== 1) {
+					delete pu.pu_q[feature][p];
+				}
+			});
+		});
+		['line', 'freeline', 'cage', 'wall'].forEach(feature => {
+			Object.keys(pu.pu_q[feature]).forEach(p => {
+				let [p1, p2] = p.split(',');
+				if (!pu.point[p1] || !pu.point[p2]) {
+					delete pu.pu_q[feature][p];
+				}
+			});
+		});
+	}
+
 	C.convertPenpaPuzzle = function (pu) {
 		if (typeof pu === 'string') {
 			pu = C.loadPenpaPuzzle(pu);
@@ -1123,24 +1162,7 @@ const PenpaDecoder = (() => {
 		DrawingContext.ctcSize = 64;
 		DrawingContext.penpaSize = pu._size;
 
-		// Convert custom colors to hex
-		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document['custom_color_opt'] === '2');
-		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document['custom_color_opt'] === '2');
-
-		// Make sure to use all uppercase colors, this is important for Sudokupad to create solid colors.
-		Object.keys(Color).forEach(c => {
-			Color[c] = Color[c].trim();
-			if (Color[c][0] === '#') Color[c] = Color[c].toUpperCase();
-		});
-
-		// Delete features with invalid points
-		['number', 'numberS', 'symbol', 'surface'].forEach(feature => {
-			Object.keys(pu.pu_q[feature]).forEach(p => {
-				if (!pu.point[p]) {
-					delete pu.pu_q[feature][p];
-				}
-			});
-		});
+		cleanupPu(pu);
 
 		convertFreeline2Line(pu);
 		PenpaRegions.cleanupCenterlist(pu);
