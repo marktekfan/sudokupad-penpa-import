@@ -689,7 +689,7 @@ const PenpaDecoder = (() => {
 		const {point2centerPoint} = PenpaTools;
 		// Filter out cage lines which are on killer cages.
 		wpLines = wpLines.filter(line => {
-			if (line.value === 16) return true; // always keep solid cage lines
+			if ([7, 107, 16, 116].includes(line.value)) return true; // always keep solid cage lines
 			let ndx1 = cages.findIndex(c => c.includes(point2centerPoint(line.keys[0])));
 			let ndx2 = cages.findIndex(c => c.includes(point2centerPoint(line.keys[1])));
 			if (ndx1 === ndx2 && ndx1 !== -1) {
