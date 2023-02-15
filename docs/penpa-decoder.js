@@ -580,7 +580,7 @@ const PenpaDecoder = (() => {
 		const listCol = pu[qa + '_col'][feature] || [];
 		Object.keys(list).forEach(key => {
 			const target = {target: 'underlay'};
-			let points = list[key].map(point2RC);
+			let points = list[key].filter(p => pu.point[p]).map(point2RC);
 			if (points.length < 2) return;
 			let ctx = new DrawingContext();
 			ctx.strokeStyle = listCol[key] || Color.BLACK;
@@ -1131,6 +1131,15 @@ const PenpaDecoder = (() => {
 		Object.keys(Color).forEach(c => {
 			Color[c] = Color[c].trim();
 			if (Color[c][0] === '#') Color[c] = Color[c].toUpperCase();
+		});
+
+		// Delete features with invalid points
+		['number', 'numberS', 'symbol', 'surface'].forEach(feature => {
+			Object.keys(pu.pu_q[feature]).forEach(p => {
+				if (!pu.point[p]) {
+					delete pu.pu_q[feature][p];
+				}
+			});
 		});
 
 		convertFreeline2Line(pu);
