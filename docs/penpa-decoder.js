@@ -736,8 +736,9 @@ const PenpaDecoder = (() => {
 	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
-		const {point2cell, point2centerPoint} = PenpaTools;
+		const {point2cell, point2centerPoint, point2matrix, matrix2point} = PenpaTools;
 		const {numberS} = pu[qa];
+		const sortTopLeftRC = ([r1, c1], [r2, c2]) => r1 === r2 ? c2 - c1 : r2 - r1;
 		list.forEach((cage, i) => {
 			if (cage.length === 0) return;
 			let cagePart = {unique: true};
@@ -746,24 +747,19 @@ const PenpaDecoder = (() => {
 				cagePart.borderColor = listCol[i];
 			}
 
-			let valueKey = null;
+			const labelCell = matrix2point([...cage.map(point2matrix)].sort(sortTopLeftRC).pop());
 			for(let k in numberS) {
 				if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left cell corner
-					if (cage.includes(point2centerPoint(k))) {
-						let num = numberS[k];
-						if (!isNaN(num[0])) {
-							valueKey = k;
+					if (labelCell === point2centerPoint(k)) {
+						let value = numberS[k];
+						if (!isNaN(value[0])) {
+							cagePart.value = value[0].trim();
+							value.role = 'killer'; // Exclude from rendering
 							break;
 						}
 					}
 				}
 			}
-			if (valueKey) {
-				let rc = point2cell(valueKey);
-				cagePart.cageValue = `r${rc[0] + 1}c${rc[1] + 1}=${numberS[valueKey][0].trim()}`;
-				numberS[valueKey].role = 'killer'; // Exclude from rendering
-			}				
-				
 			puzzleAdd(puzzle, 'cages', cagePart, feature);
 		});
 	}
