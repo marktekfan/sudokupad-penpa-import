@@ -684,19 +684,26 @@ const PenpaDecoder = (() => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature];
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
-		let wpLinesCol = PenpaTools.penpaLines2WaypointLines(listCol);
 		const cages = pu[qa].killercages || [];
 		const {point2centerPoint} = PenpaTools;
 		// Filter out cage lines which are on killer cages.
 		wpLines = wpLines.filter(line => {
-			if ([7, 107, 16, 116].includes(line.value)) return true; // always keep solid cage lines
-			let ndx1 = cages.findIndex(c => c.includes(point2centerPoint(line.keys[0])));
-			let ndx2 = cages.findIndex(c => c.includes(point2centerPoint(line.keys[1])));
-			if (ndx1 === ndx2 && ndx1 !== -1) {
-				// Copy custom color to killercage
-				let cc = wpLinesCol.find(col => col.keys[0] === line.keys[0] && col.keys[1] === line.keys[1]);
-				if (cc) {
-					pu[qa + '_col']['killercages'][ndx1] = cc.value;
+			let p1 = line.keys[0];
+			let p2 = line.keys[1];
+			let ndx1 = cages.findIndex(c => c.includes(point2centerPoint(p1)));
+			let ndx2 = cages.findIndex(c => c.includes(point2centerPoint(p2)));
+			if (ndx1 !== -1 && ndx1 === ndx2) {
+				 // Solid cage lines should be drawn by lines, and make cage invisible
+				if ([7, 107, 16, 116].includes(line.value)) {
+					pu[qa + '_col']['killercages'][ndx1] = Color.TRANSPARENTBLACK;
+					return true;
+				}
+				// Custom color or not black dash
+				if (line.cc || line.value !== 10) {
+					// Copy color to killercage and filter out individual cage line
+					let ctx = new DrawingContext();
+					set_line_style(ctx, line.value, line.cc);
+					pu[qa + '_col']['killercages'][ndx1] = line.cc || ctx.strokeStyle;
 				}
 				return false;
 			}
