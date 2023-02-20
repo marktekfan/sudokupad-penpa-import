@@ -185,12 +185,10 @@ const PenpaDecoder = (() => {
 		}
 	}
 
-	function addSolution(pu, puzzle, doc) {
-		if (!pu.solution) return;
+	function getSolution(pu, constraint = 'number') {
+		if (!pu.solution) return null;
 
-		// Add puzzle solution
-		let numberSolution;
-
+		let numberSolution = null;
 		if (!pu.multisolution) {
 			// 0 = shading
             // 1 = Line / FreeLine
@@ -198,8 +196,15 @@ const PenpaDecoder = (() => {
             // 3 = Wall
             // 4 = Number
             // 5 = Symbol
+			let constraintMap = {
+				'surface': 0,
+				'loopline': 1,
+				'loopedge': 2,
+				'wall': 3,
+				'number': 4,
+			};
 			let stext = JSON.parse(pu.solution);
-			numberSolution = stext[4];
+			numberSolution = stext[constraintMap[constraint]];
 		}
 		else {
             var sol_count = -1; // as list indexing starts at 0
@@ -209,29 +214,45 @@ const PenpaDecoder = (() => {
 				// Get checkbox value
 				if (pu._document['sol_or_' + sol_or] === true) {
 					sol_count++;
-                    if (sol_or === 'number') {
+                    if (sol_or === constraint) {
 						numberSolution = pu.solution[sol_count];
 					}
 				}
 			});
 		}
-		
-		if (numberSolution) {
-			const {point2cell} = PenpaTools;
-			const {width, height} = doc;
-			let sol = Array(height * width).fill('?');
-			numberSolution.forEach(s => {
-				let [point, val] = s.split(',');
+		return numberSolution;
+	}
+
+	// Add puzzle solution
+	function addSolution(pu, puzzle, doc) {
+		const {point2cell} = PenpaTools;
+		const {width, height} = doc;
+		let sol = Array(height * width).fill('?');
+		['surface'].forEach(constraint => {
+			let solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let point = s;
 				let [r, c] = point2cell(point);
+				let pos = r * width + c;
+				if (pos >= 0 && pos < sol.length) {
+					sol[pos] = '.';
+				}
+			});
+		});
+		['number'].forEach(constraint => {
+			let solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let [point, val = '?'] = s.split(',');
+				let [r, c] = point2cell(point);	
 				let pos = r * width + c;
 				if (pos >= 0 && pos < sol.length) {
 					sol[pos] = val;
 				}
 			});
-			if (sol.some(n => n !== '?')) {
-				let solString = sol.join('');
-				puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
-			}
+		});
+		if (sol.some(n => n !== '?')) {
+			let solString = sol.map(n => n.length !== 1 ? '?' : n.toLowerCase()).join('');
+			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
 		}
 	}
 
@@ -1067,15 +1088,15 @@ const PenpaDecoder = (() => {
 				pu.pu_q.deletelineE[k] = 1;
 			}
 		}
-		if (bottom > clBounds[2] + 1 || right > clBounds[3] + 1) {
-			let p = PenpaTools.matrix2point(bottom, right);
-			pu.centerlist.push(p);
-			pu.centerlist.sort();
-			for (let i = 0; i < 4; i++) {
-				let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
-				pu.pu_q.deletelineE[k] = 1;
-			}
-		}
+		// if (bottom > clBounds[2] + 1 || right > clBounds[3] + 1) {
+		// 	let p = PenpaTools.matrix2point(bottom, right);
+		// 	pu.centerlist.push(p);
+		// 	pu.centerlist.sort();
+		// 	for (let i = 0; i < 4; i++) {
+		// 		let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
+		// 		pu.pu_q.deletelineE[k] = 1;
+		// 	}
+		// }
 	}
 
 	function convertCustomColors(list, cc) {
@@ -1193,6 +1214,19 @@ const PenpaDecoder = (() => {
 		if (!regions) {
 			PenpaRegions.findSudokuRegions(pu, squares);
 		}
+
+		// Add solution cells to centerlist
+		['number', 'surface'].forEach(constraint => {
+			const solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let [point, val] = s.split(',');
+				point = Number(point);
+				if (!pu.centerlist.includes(point)) {
+					pu.centerlist.push(point);
+				}
+			});
+			pu.centerlist.sort();
+		})
 
 		if (PenpaDecoder.flags.expandGrid) {
 			//TODO: Can this be done before region detection?
