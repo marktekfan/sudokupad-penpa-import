@@ -14,7 +14,7 @@ const PenpaDecoder = (() => {
 	
 	let _rnd = 0; // static random seed
 
-	const rePenpaUrl = /\/penpa-edit\//;
+	const rePenpaUrl = /\/penpa-edit\//i;
 	const rePuzzlinkUrl = /\/puzz\.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p(\.html)?\?/;
 
 	class FakeDoc {
@@ -63,15 +63,6 @@ const PenpaDecoder = (() => {
 			return doc;
 		}
 	}
-
-	// const getRegionShape = (size = 9) => {
-	// 	if (size > 10) return [3, 3];
-	// 	let height = Math.sqrt(size);
-	// 	if(Number.isInteger(height)) return [height, height];
-	// 	height = Math.floor(height);
-	// 	while(!Number.isInteger(size / height) && height > 1) height--;
-	// 	return height > 0 ? [height, size / height] : [1, 1];
-	// };
 
 	const puzzleHas = (puzzle, feature, part) => {
 		const partStr = JSON.stringify(part);
@@ -130,10 +121,10 @@ const PenpaDecoder = (() => {
 	}
 
 	const metaTagsWithoutCells = [
-		'title',
-		'author',
-		'rules',
-		'solution',
+		// 'title',
+		// 'author',
+		// 'rules',
+		// 'solution',
 		'foglight',
 		'msgcorrect',
 		'msgincorrect',
@@ -188,7 +179,7 @@ const PenpaDecoder = (() => {
 	function getSolution(pu, constraint = 'number') {
 		if (!pu.solution) return null;
 
-		let numberSolution = null;
+		let solution = null;
 		if (!pu.multisolution) {
 			// 0 = shading
             // 1 = Line / FreeLine
@@ -204,7 +195,7 @@ const PenpaDecoder = (() => {
 				'number': 4,
 			};
 			let stext = JSON.parse(pu.solution);
-			numberSolution = stext[constraintMap[constraint]];
+			solution = stext[constraintMap[constraint]];
 		}
 		else {
             var sol_count = -1; // as list indexing starts at 0
@@ -215,12 +206,12 @@ const PenpaDecoder = (() => {
 				if (pu._document['sol_or_' + sol_or] === true) {
 					sol_count++;
                     if (sol_or === constraint) {
-						numberSolution = pu.solution[sol_count];
+						solution = pu.solution[sol_count];
 					}
 				}
 			});
 		}
-		return numberSolution;
+		return solution;
 	}
 
 	// Add puzzle solution
@@ -237,6 +228,19 @@ const PenpaDecoder = (() => {
 				if (pos >= 0 && pos < sol.length) {
 					sol[pos] = '.';
 				}
+			});
+		});
+		['loopline'].forEach(constraint => {
+			let solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let [p1, p2, val] = s.split(',');
+				[p1, p2].forEach(point => {
+					let [r, c] = point2cell(point);
+					let pos = r * width + c;
+					if (pos >= 0 && pos < sol.length) {
+						sol[pos] = '.';
+					}
+				})
 			});
 		});
 		['number'].forEach(constraint => {
@@ -256,7 +260,7 @@ const PenpaDecoder = (() => {
 		}
 	}
 
-	function createGridLineMask(pu, puzzle, doc) {
+	function hideGridLines(pu, puzzle, doc) {
 		const {point2matrix, matrix2point, getBoundsRC} = PenpaTools;
 		const {centerlist} = pu;
 
@@ -1088,15 +1092,15 @@ const PenpaDecoder = (() => {
 				pu.pu_q.deletelineE[k] = 1;
 			}
 		}
-		// if (bottom > clBounds[2] + 1 || right > clBounds[3] + 1) {
-		// 	let p = PenpaTools.matrix2point(bottom, right);
-		// 	pu.centerlist.push(p);
-		// 	pu.centerlist.sort();
-		// 	for (let i = 0; i < 4; i++) {
-		// 		let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
-		// 		pu.pu_q.deletelineE[k] = 1;
-		// 	}
-		// }
+		if (bottom > clBounds[2] + 1 || right > clBounds[3] + 1) {
+			let p = PenpaTools.matrix2point(bottom, right);
+			pu.centerlist.push(p);
+			pu.centerlist.sort();
+			for (let i = 0; i < 4; i++) {
+				let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
+				pu.pu_q.deletelineE[k] = 1;
+			}
+		}
 	}
 
 	function convertCustomColors(list, cc) {
@@ -1226,7 +1230,20 @@ const PenpaDecoder = (() => {
 				}
 			});
 			pu.centerlist.sort();
-		})
+		});
+		['loopline'].forEach(constraint => {
+			const solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let [p1, p2, val] = s.split(',');
+				[p1, p2].forEach(point => {
+					point = Number(point);
+					if (!pu.centerlist.includes(point)) {
+						pu.centerlist.push(point);
+					}
+				})
+			});
+			pu.centerlist.sort();
+		});
 
 		if (PenpaDecoder.flags.expandGrid) {
 			//TODO: Can this be done before region detection?
@@ -1251,7 +1268,7 @@ const PenpaDecoder = (() => {
 		addSudokuRegions(pu, puzzle, squares, regions);
 
 		positionBoard(pu, puzzle, doc);
-		createGridLineMask(pu, puzzle, doc);
+		hideGridLines(pu, puzzle, doc);
 
 		addCageMetadata(pu, puzzle);
 
