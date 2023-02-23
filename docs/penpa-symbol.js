@@ -1326,32 +1326,28 @@ const PenpaSymbol = (() => {
     }
 
     P.draw_arroweight = function(ctx, num, x, y) {
-        var len1 = -0.2; //nemoto
-        var len2 = 0.45; //tip
-        var w1 = 0.032//0.025;
-        var w2 = 0.10;
-        var ri = -0.16//-0.15;
+        var len1 = 0.25; //nemoto
+        var len2 = 0.5; //tip
         for (var i = 0; i < 8; i++) {
             if (num[i] === 1) {
-                this.draw_arrow8(ctx, i + 1, x, y, len1, len2, w1, w2, ri);
-                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), `arroweight`);
+                this.draw_arrow8(ctx, i + 1, x, y, len1, len2);
             }
         }
     }
 
-    P.draw_arrow8 = function(ctx, num, x, y, len1, len2, w1, w2, ri) {
-        var th;
+    P.draw_arrow8 = function(ctx, num, x, y, len1, len2) {
         if (num === 2 || num === 4 || num === 6 || num === 8) {
-            len1 *= 1.3;
-            len2 *= 1.2;
+            len1 += 0.1;
+            len2 += 0.15;
         }
         if (num > 0 && num <= 8) {
-            th = this.rotate_theta((num - 1) * 45 - 180);
-            ctx.beginPath();
-            ctx.arrow(x - len1 * Math.cos(th), y - len1 * Math.sin(th), x + len2 * Math.cos(th), y + len2 * Math.sin(th),
-                [0, w1, ri, w1, ri, w2]);
-            ctx.fill();
-            ctx.stroke();
+            let th = this.rotate_theta((num - 1) * 45 - 180);
+            this.decoder.puzzleAdd(this.puzzle, 'arrows', Object.assign({
+				color: ctx.fillStyle,
+				headLength: 0.16,
+				thickness: 3.2,
+				wayPoints: [[y + len1 * Math.sin(th), x + len1 * Math.cos(th)], [y + len2 * Math.sin(th), x + len2 * Math.cos(th)]],
+			}), `arroweight`);
         }
     }
 
