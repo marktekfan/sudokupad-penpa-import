@@ -334,9 +334,9 @@ const PenpaRegions = (() => {
 		// // Remove deleted/invisible framelines from frame.
 		// Object.keys(pu.frame).filter(k => pu.frame[k] === 0).forEach(k => delete pu.frame[k]);
 
-		const noFrame = pu.mode.grid[0] === '3';
-		const noGridLines = pu.mode.grid[2] === '2';
+		const noGridLines = pu.mode.grid[0] === '3';
 		const noGridPoints = pu.mode.grid[1] === '2';
+		const noFrame = pu.mode.grid[2] === '2';
 		// First determine if cells need to be removed:
 		// remove cells when deletelineE is on the edge of centerlist cells, or on the outer ring when there is no frame.
 		let removeCells = false;
@@ -464,12 +464,15 @@ const PenpaRegions = (() => {
 
 			let sizes = {};
 			Object.keys(regions).forEach(reg => sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1);
-			let sortedSizes = Object.keys(sizes).map(Number).sort().reverse();
+			let sortedSizes = Object.keys(sizes).map(Number).sort((a, b) => a - b).reverse();
 			for (let size of sortedSizes) {
 				if (size >= 4 && size === sizes[size]) {
 					let selectedRegions = Object.keys(regions).filter(reg => regions[reg].length === size).map(reg => regions[reg]);
-					let squares = [{regions: selectedRegions}];
-					return {regions: selectedRegions, squares};
+					const {height, width} = getBoundsRC(selectedRegions.flat());
+					if (height === size && width === size) {
+						let squares = [{regions: selectedRegions}];
+						return {regions: selectedRegions, squares};
+					}
 				}
 			}	
 			var allEqualSize = false;

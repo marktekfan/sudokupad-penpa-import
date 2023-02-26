@@ -444,7 +444,7 @@ const PenpaTools = (() => {
 	}
 
 	C.getMinMaxRC = function(list = [], mapper = ([r, c]) => [r, c]) {
-		const rcs = [].concat(list.filter(p => C.doc.point[p]).map(mapper)),
+		const rcs = [].concat(list.map(mapper)),
 					rows = rcs.map(([r, c]) => r),
 					cols = rcs.map(([r, c]) => c);
 		return [
