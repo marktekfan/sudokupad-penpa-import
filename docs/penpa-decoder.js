@@ -204,56 +204,57 @@ const PenpaDecoder = (() => {
 			});
 		});
 		
-		const {top, left, bottom, right, height, width} = PenpaTools.getBoundsRC(solutionPoints, point2matrix);
-			
-		let sol = Array(height * width).fill('?');
-		['number'].forEach(constraint => {
-			let solution = getSolution(pu, constraint) || [];
-			solution.forEach(s => {
-				let [point, val = '?'] = s.split(',');
-				let [r, c] = point2matrix(point);	
-				let pos = (r - top) * width + (c - left);
-				if (pos >= 0 && pos < sol.length) {
-					sol[pos] = val;
-				}
-			});
-		});
-
 		let uniqueRowsCols = false;
-		let set = new Set();
-		(() => {
-			// Check rows
-			for (let r = 0; r < height; r++) {
-				set.clear();
-				for (let c = 0; c < width; c++) {
-					let n = sol[r * width + c];
-					if (!['?', '.'].includes(n)) {
-						if (set.has(n)) {
-							uniqueRowsCols = false;
-							return;
-						}
-						set.add(n);
-						uniqueRowsCols = true;
+		if (solutionPoints.length !== 0) {
+			const {top, left, bottom, right, height, width} = PenpaTools.getBoundsRC(solutionPoints, point2matrix);
+				
+			let sol = Array(height * width).fill('?');
+			['number'].forEach(constraint => {
+				let solution = getSolution(pu, constraint) || [];
+				solution.forEach(s => {
+					let [point, val = '?'] = s.split(',');
+					let [r, c] = point2matrix(point);	
+					let pos = (r - top) * width + (c - left);
+					if (pos >= 0 && pos < sol.length) {
+						sol[pos] = val;
 					}
-				}
-			}
-			// Check columns
-			for (let c = 0; c < width; c++) {
-				set.clear();
-				for (let r = 0; r < height; r++) {
-					let n = sol[r * width + c];
-					if (!['?', '.'].includes(n)) {
-						if (set.has(n)) {
-							uniqueRowsCols = false;
-							return;
-						}
-						set.add(n);
-						uniqueRowsCols = true;
-					}
-				}
-			}
-		})();
+				});
+			});
 
+			let set = new Set();
+			(() => {
+				// Check rows
+				for (let r = 0; r < height; r++) {
+					set.clear();
+					for (let c = 0; c < width; c++) {
+						let n = sol[r * width + c];
+						if (!['?', '.'].includes(n)) {
+							if (set.has(n)) {
+								uniqueRowsCols = false;
+								return;
+							}
+							set.add(n);
+							uniqueRowsCols = true;
+						}
+					}
+				}
+				// Check columns
+				for (let c = 0; c < width; c++) {
+					set.clear();
+					for (let r = 0; r < height; r++) {
+						let n = sol[r * width + c];
+						if (!['?', '.'].includes(n)) {
+							if (set.has(n)) {
+								uniqueRowsCols = false;
+								return;
+							}
+							set.add(n);
+							uniqueRowsCols = true;
+						}
+					}
+				}
+			})();
+		}
 		return {solutionPoints, uniqueRowsCols};
 	}
 
