@@ -321,19 +321,18 @@ const PenpaRegions = (() => {
 		return null;
 	}
 
-	C.cleanupCenterlist = function(pu) {
+	C.cleanupCenterlist = function(pu, solutionPoints) {
 		const {getAdjacentCellsOfELine, point2matrix} = PenpaTools;
 		const {height, width} = PenpaTools.getBoundsRC(pu.centerlist, point2matrix);
 
-		// // Cleanup frame
-		// for (let k in pu.pu_q.deletelineE) {
-		// 	// Don't delete when replaced with another line
-		// 	if (pu.pu_q.lineE[k] === undefined)
-		// 		delete pu.frame[k];
-		// }
-		// // Remove deleted/invisible framelines from frame.
-		// Object.keys(pu.frame).filter(k => pu.frame[k] === 0).forEach(k => delete pu.frame[k]);
-
+		// Remove obsolete deletelineE's
+		Object.keys(pu.pu_q.deletelineE).forEach(k => {
+			let adj = getAdjacentCellsOfELine(pu, k);
+			if (!pu.centerlist.includes(adj[0]) && !pu.centerlist.includes(adj[1])) {
+				delete pu.pu_q.deletelineE[k];
+			}
+		});
+		
 		const noGridLines = pu.mode.grid[0] === '3';
 		const noGridPoints = pu.mode.grid[1] === '2';
 		const noFrame = pu.mode.grid[2] === '2';
@@ -381,22 +380,14 @@ const PenpaRegions = (() => {
 					return;
 				}
 				let index1 = pu.centerlist.indexOf(adj[0]);
-				if (index1 !== -1) {
+				if (index1 !== -1 && !solutionPoints.includes(adj[0])) {
 					pu.centerlist.splice(index1, 1);
-					delete pu.pu_q.deletelineE[k];
 				}
 				let index2 = pu.centerlist.indexOf(adj[1]);
-				if (index2 !== -1) {
+				if (index2 !== -1 && !solutionPoints.includes(adj[1])) {
 					pu.centerlist.splice(index2, 1);
-					delete pu.pu_q.deletelineE[k];
-				}
-				// was already removed from centerlist
-				if (index1 === -1 && index2 === -1) {
-					delete pu.pu_q.deletelineE[k];
 				}
 			});
-			// Recreate frame
-			pu.make_frameline();
 		}
 		else {
 			// In case there is no frame and no grid lines and no grid points
@@ -428,18 +419,9 @@ const PenpaRegions = (() => {
 					pu.centerlist.length = 0;
 					pu.centerlist.push(...centerlist);
 				}
-				// Recreate frame
-				pu.make_frameline();
 			}
 		}
 
-		// Remove obsolete deletelineE's
-		Object.keys(pu.pu_q.deletelineE).forEach(k => {
-			let adj = getAdjacentCellsOfELine(pu, k);
-			if (!pu.centerlist.includes(adj[0]) && !pu.centerlist.includes(adj[1])) {
-				delete pu.pu_q.deletelineE[k];
-			}
-		});
 	}
 
 	C.findSudokuSquares = function(pu) {

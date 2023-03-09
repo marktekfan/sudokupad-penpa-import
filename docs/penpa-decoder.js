@@ -153,7 +153,7 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-	function addSudokuRegions(pu, puzzle, squares, regions) {
+	function addSudokuRegions(pu, puzzle, squares, regions, uniqueRowsCols) {
 		const {matrix2point, point2cell} = PenpaTools;
 		let enableConflictChecker = false;
 
@@ -171,9 +171,90 @@ const PenpaDecoder = (() => {
 				});
 			}
 		}
-		if (!enableConflictChecker) {
+		if (!uniqueRowsCols && !enableConflictChecker) {
 			puzzle.settings['conflictchecker'] = 0;
 		}
+	}
+
+	function getSolutionInfo(pu) {
+		const {point2matrix} = PenpaTools;
+		// const {width, height} = doc;
+		let solutionPoints = [];
+		['surface'].forEach(constraint => {
+			let solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let point = s;
+				solutionPoints.push(Number(point));
+			});
+		});
+		['loopline'].forEach(constraint => {
+			let solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let [p1, p2, val] = s.split(',');
+				[p1, p2].forEach(point => {
+					solutionPoints.push(Number(point));
+				})
+			});
+		});
+		['number'].forEach(constraint => {
+			let solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let [point, val = '?'] = s.split(',');
+				solutionPoints.push(Number(point));
+			});
+		});
+		
+		const {top, left, bottom, right, height, width} = PenpaTools.getBoundsRC(solutionPoints, point2matrix);
+			
+		let sol = Array(height * width).fill('?');
+		['number'].forEach(constraint => {
+			let solution = getSolution(pu, constraint) || [];
+			solution.forEach(s => {
+				let [point, val = '?'] = s.split(',');
+				let [r, c] = point2matrix(point);	
+				let pos = (r - top) * width + (c - left);
+				if (pos >= 0 && pos < sol.length) {
+					sol[pos] = val;
+				}
+			});
+		});
+
+		let uniqueRowsCols = false;
+		let set = new Set();
+		(() => {
+			// Check rows
+			for (let r = 0; r < height; r++) {
+				set.clear();
+				for (let c = 0; c < width; c++) {
+					let n = sol[r * width + c];
+					if (!['?', '.'].includes(n)) {
+						if (set.has(n)) {
+							uniqueRowsCols = false;
+							return;
+						}
+						set.add(n);
+						uniqueRowsCols = true;
+					}
+				}
+			}
+			// Check columns
+			for (let c = 0; c < width; c++) {
+				set.clear();
+				for (let r = 0; r < height; r++) {
+					let n = sol[r * width + c];
+					if (!['?', '.'].includes(n)) {
+						if (set.has(n)) {
+							uniqueRowsCols = false;
+							return;
+						}
+						set.add(n);
+						uniqueRowsCols = true;
+					}
+				}
+			}
+		})();
+
+		return {solutionPoints, uniqueRowsCols};
 	}
 
 	function getSolution(pu, constraint = 'number') {
@@ -824,10 +905,10 @@ const PenpaDecoder = (() => {
 			let ctx = new DrawingContext();
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 			 	wayPoints: PenpaTools.reduceWayPoints(shortLine),
-				 color: line.value === 1 ? '#FFFFFF' : line.value,
+				color: typeof line.value === 'string' ? line.value : '#FFFFFF',
 				 // color: '#FF40A0'
 				thickness: 4,
-				target: 'cell-grids'
+				target: line.value === 2 ? 'overlay' : 'cell-grids',
 			}), feature);
 		});
 	}
@@ -1193,13 +1274,16 @@ const PenpaDecoder = (() => {
 		cleanupPu(pu);
 
 		convertFreeline2Line(pu);
-		PenpaRegions.cleanupCenterlist(pu);
 
 		// Cleanup frame
 		for (let k in pu.pu_q.deletelineE) {
 			// Don't delete when replaced with another line
-			if (pu.pu_q.lineE[k] === undefined)
+			if (pu.pu_q.lineE[k] === undefined) {
+				if (pu.frame[k] === 2) {
+					pu.pu_q.deletelineE[k] = 2; // outer frame
+				}
 				delete pu.frame[k];
+			}
 		}
 		// Remove lines which are identical to the corresponding frame line.
 		// (Line style 12 == frame style 11)
@@ -1213,7 +1297,10 @@ const PenpaDecoder = (() => {
 		});
 		// Keep only thick frame lines
 		Object.keys(pu.frame).filter(k => pu.frame[k] !== 2).forEach(k => delete pu.frame[k]);
-		
+
+		const {solutionPoints, uniqueRowsCols} = getSolutionInfo(pu);
+		PenpaRegions.cleanupCenterlist(pu, solutionPoints);
+
 		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
 		if (!regions) {
 			PenpaRegions.findSudokuRegions(pu, squares);
@@ -1265,7 +1352,7 @@ const PenpaDecoder = (() => {
 		};
 		createBlankPuzzle(pu, puzzle, width, height);
 
-		addSudokuRegions(pu, puzzle, squares, regions);
+		addSudokuRegions(pu, puzzle, squares, regions, uniqueRowsCols);
 
 		positionBoard(pu, puzzle, doc);
 		hideGridLines(pu, puzzle, doc);
@@ -1274,8 +1361,12 @@ const PenpaDecoder = (() => {
 
 		addGivens(pu, puzzle);
 
-		let qa = 'pu_q'
+		
+		
+		let qa = 'pu_q'		
 		parse.surface(qa, pu, puzzle);
+		parse.deletelineE(qa, pu, puzzle);
+
 		parse.symbol(qa, pu, puzzle, 1);
 		parse.squareframe(qa, pu, puzzle);
 		parse.thermo(qa, pu, puzzle);
@@ -1298,8 +1389,6 @@ const PenpaDecoder = (() => {
 		parse.numberS(qa, pu, puzzle);
 
 		drawBoardLattice(pu, puzzle, doc);
-
-		parse.deletelineE(qa, pu, puzzle);
 
 		if(puzzle.regions.length === 0) {
 			// Create cage to defined the board bounds
