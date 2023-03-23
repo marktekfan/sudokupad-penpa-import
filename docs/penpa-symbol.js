@@ -367,7 +367,7 @@ const PenpaSymbol = (() => {
         const {round1, round3, ColorIsTransparent, ColorIsOpaque, getMinMaxRC, ColorSaturate} = PenpaTools;
         let {lineWidth, fillStyle, strokeStyle} = ctx;
         let wp = ctx.convertPathToWaypoints();
-        if (PenpaDecoder.flags.clipPath && wp && ctx.isFill && fillStyle && !ColorIsTransparent(fillStyle)) {
+        if (PenpaDecoder.flags.useClipPath && wp && ctx.isFill && fillStyle && !ColorIsTransparent(fillStyle)) {
             ctx.push();
             const [top, left, bottom, right] = getMinMaxRC(wp);
             let centerx = round3((right + left) / 2);

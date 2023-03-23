@@ -47,6 +47,7 @@ const puzzleLinkConverter = (() => {
 	}
 
 	function setPenpaDecoderOptions() {
+		PenpaDecoder.ParseUrlSettings();
 		let options = document.querySelectorAll('fieldset input[type=checkbox]');
 		for(let option of options) {
 			option.checked = PenpaDecoder.flags[option.name] ? true : false;

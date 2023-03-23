@@ -5,13 +5,25 @@ const PenpaDecoder = (() => {
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
 	C.flags = {
-		clipPath: false,
-		doubleLayer: true,
+		thickLines: true,
 		expandGrid: true,
-		debug: 0// || document.location.host.startsWith('127.0.0.1'),
+		doubleLayer: true,
+		useClipPath: false,
+		debug: 0 || document.location.host.startsWith('127.0.0.1'),
 	};
 	C.isDoubleLayer = (ctx) => (C.flags.doubleLayer || 0) && !PenpaTools.ColorIsTransparent(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
 	
+	C.ParseUrlSettings = () => {
+		[...new URLSearchParams(document.location.search)].forEach(([key, val]) => {
+			//if(key.match(/^setting-/)) {
+				//let settingName = key.replace(/^setting-/, '');
+				let settingValueTrue = ['true', 't', '1', ''].includes(val.toLowerCase());
+				let settingValueFalse = ['false', 'f', '0'].includes(val.toLowerCase());
+				C.flags[settingName] = settingValueTrue ? true : (settingValueFalse ? false : val);
+			//}
+		});
+	}
+
 	let _rnd = 0; // static random seed
 
 	const rePenpaUrl = /\/penpa-edit\//i;
@@ -577,10 +589,12 @@ const PenpaDecoder = (() => {
 				drawDoubleLine(ctx, line, puzzle);
 			}
 			else {
-				const isCenter = pu.point[line.keys[0]].type === 0;
-				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.strokeStyle !== Color.BLACK && ctx.lineDash.length === 0) {
-					ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
-					ctx.lineWidth = 6;
+				if (PenpaDecoder.flags.thickLines) {
+					const isCenter = pu.point[line.keys[0]].type === 0;
+					if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
+						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
+						ctx.lineWidth = 6;
+					}
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
@@ -704,7 +718,7 @@ const PenpaDecoder = (() => {
 			ctx.fill();
 
 			let wp = ctx.convertPathToWaypoints();
-			if (PenpaDecoder.flags.clipPath && wp && ctx.fillStyle && !ColorIsTransparent(ctx.fillStyle)) {
+			if (PenpaDecoder.flags.useClipPath && wp && ctx.fillStyle && !ColorIsTransparent(ctx.fillStyle)) {
 				ctx.push();
 				const [top, left, bottom, right] = getMinMaxRC(wp);
 				let centerx = round3((right + left) / 2);
@@ -766,10 +780,12 @@ const PenpaDecoder = (() => {
 				drawShortLine(ctx, line, puzzle);
 			}
 			else {
-				const isCenter = pu.point[line.keys[0]].type === 0;
-				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.strokeStyle !== Color.BLACK && ctx.lineDash.length === 0) {
-					ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
-					ctx.lineWidth = 6;
+				if (PenpaDecoder.flags.thickLines) {
+					const isCenter = pu.point[line.keys[0]].type === 0;
+					if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth)  && ctx.lineDash.length === 0) {
+						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
+						ctx.lineWidth = 6;
+					}
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
