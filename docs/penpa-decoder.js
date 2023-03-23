@@ -16,7 +16,7 @@ const PenpaDecoder = (() => {
 	C.ParseUrlSettings = () => {
 		[...new URLSearchParams(document.location.search)].forEach(([key, val]) => {
 			//if(key.match(/^setting-/)) {
-				//let settingName = key.replace(/^setting-/, '');
+				let settingName = key.replace(/^setting-/, '');
 				let settingValueTrue = ['true', 't', '1', ''].includes(val.toLowerCase());
 				let settingValueFalse = ['false', 'f', '0'].includes(val.toLowerCase());
 				C.flags[settingName] = settingValueTrue ? true : (settingValueFalse ? false : val);
