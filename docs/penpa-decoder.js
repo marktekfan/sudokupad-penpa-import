@@ -110,7 +110,7 @@ const PenpaDecoder = (() => {
 				const num = number[pos];
 				if (num && num[1] == 1) { //Black
 					let given = null;
-					if (['1', '10'].includes(num[2]) && num[0].toString().length === 1) { //Normal or Big single digit
+					if (['1', '2', '10'].includes(num[2]) && num[0].toString().length === 1) { //Normal, Arrow or Big single digit
 						given = num[0];
 					}
 					else if (num[2] === '7') { //Sudoku number
