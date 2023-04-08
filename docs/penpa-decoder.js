@@ -348,7 +348,7 @@ const PenpaDecoder = (() => {
 				}
 			});
 		});
-		if (sol.some(n => n !== '?')) {
+		if (sol.some(n => !'?.'.includes(n))) {
 			let solString = sol.map(n => n.length !== 1 ? '?' : n.toLowerCase()).join('');
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
 		}
