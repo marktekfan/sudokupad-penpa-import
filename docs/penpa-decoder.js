@@ -102,32 +102,38 @@ const PenpaDecoder = (() => {
 		}
 	}
 
+	function getGiven(pu, pos) {
+		let given = null;
+		if (pu.centerlist.includes(Number(pos))) {
+			const {number} = pu.pu_q;
+			const num = number[pos];
+			if (num && num[1] == 1) { //Black
+				if (['1', '2', '4', '10'].includes(num[2]) && num[0].toString().length === 1) { //Normal, Arrow, Tapa or Big single digit
+					given = num[0];
+				}
+				else if (num[2] === '7') { //Sudoku number
+					let count = num[0].reduce((n, acc) => n + acc, 0);
+					if (count === 1) {
+						let idx = num[0].findIndex(n => n === 1);
+						given = (idx + 1).toString();
+					}
+				}
+			}
+		}
+		return given;
+	}
+
 	function addGivens(pu, puzzle) {
 		const {number} = pu.pu_q;
 		const {point2cell} = PenpaTools;
 		for (let pos in number) {
-			if (pu.centerlist.includes(Number(pos))) {
-				const num = number[pos];
-				if (num && num[1] == 1) { //Black
-					let given = null;
-					if (['1', '2', '10'].includes(num[2]) && num[0].toString().length === 1) { //Normal, Arrow or Big single digit
-						given = num[0];
-					}
-					else if (num[2] === '7') { //Sudoku number
-						let count = num[0].reduce((n, acc) => n + acc, 0);
-						if (count === 1) {
-							let idx = num[0].findIndex(n => n === 1);
-							given = (idx + 1).toString();
-						}
-					}
-					if (given !== null) {
-						let [r, c] = point2cell(pos);
-						let cell = puzzle.cells[r][c];
-						cell.value = given;
-						cell.given = true;
-						num.role = 'given'; // Exclude from rendering
-					}
-				}
+			let given = getGiven(pu, pos);
+			if (given !== null) {
+				let [r, c] = point2cell(pos);
+				let cell = puzzle.cells[r][c];
+				cell.value = given;
+				cell.given = true;
+				number[pos].role = 'given'; // Exclude from rendering
 			}
 		}
 	}
@@ -193,14 +199,14 @@ const PenpaDecoder = (() => {
 		// const {width, height} = doc;
 		let solutionPoints = [];
 		['surface'].forEach(constraint => {
-			let solution = getSolution(pu, constraint) || [];
+			let solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let point = s;
 				solutionPoints.push(Number(point));
 			});
 		});
 		['loopline'].forEach(constraint => {
-			let solution = getSolution(pu, constraint) || [];
+			let solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let [p1, p2, val] = s.split(',');
 				[p1, p2].forEach(point => {
@@ -209,7 +215,7 @@ const PenpaDecoder = (() => {
 			});
 		});
 		['number'].forEach(constraint => {
-			let solution = getSolution(pu, constraint) || [];
+			let solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let [point, val = '?'] = s.split(',');
 				solutionPoints.push(Number(point));
@@ -222,7 +228,7 @@ const PenpaDecoder = (() => {
 				
 			let sol = Array(height * width).fill('?');
 			['number'].forEach(constraint => {
-				let solution = getSolution(pu, constraint) || [];
+				let solution = getPuSolution(pu, constraint) || [];
 				solution.forEach(s => {
 					let [point, val = '?'] = s.split(',');
 					let [r, c] = point2matrix(point);	
@@ -270,7 +276,7 @@ const PenpaDecoder = (() => {
 		return {solutionPoints, uniqueRowsCols};
 	}
 
-	function getSolution(pu, constraint = 'number') {
+	function getPuSolution(pu, constraint = 'number') {
 		if (!pu.solution) return null;
 
 		let solution = null;
@@ -314,7 +320,7 @@ const PenpaDecoder = (() => {
 		const {width, height} = doc;
 		let sol = Array(height * width).fill('?');
 		['surface'].forEach(constraint => {
-			let solution = getSolution(pu, constraint) || [];
+			let solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let point = s;
 				let [r, c] = point2cell(point);
@@ -325,7 +331,7 @@ const PenpaDecoder = (() => {
 			});
 		});
 		['loopline'].forEach(constraint => {
-			let solution = getSolution(pu, constraint) || [];
+			let solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let [p1, p2, val] = s.split(',');
 				[p1, p2].forEach(point => {
@@ -338,7 +344,7 @@ const PenpaDecoder = (() => {
 			});
 		});
 		['number'].forEach(constraint => {
-			let solution = getSolution(pu, constraint) || [];
+			let solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let [point, val = '?'] = s.split(',');
 				let [r, c] = point2cell(point);	
@@ -348,7 +354,25 @@ const PenpaDecoder = (() => {
 				}
 			});
 		});
+
+		// Any solution digits found?
 		if (sol.some(n => !'?.'.includes(n))) {
+
+			// Replace ? or . with givens
+			const {number} = pu.pu_q;
+			for (let pos in number) {
+				let given = getGiven(pu, pos);
+				if (given !== null) {
+					let [r, c] = point2cell(pos);
+					let solpos = r * width + c;
+					if (solpos >= 0 && solpos < sol.length) {
+						if ('?.'.includes(sol[solpos])) {
+							sol[solpos] = given;
+						}
+					}
+				}
+			}
+
 			let solString = sol.map(n => n.length !== 1 ? '?' : n.toLowerCase()).join('');
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
 		}
@@ -1325,7 +1349,7 @@ const PenpaDecoder = (() => {
 
 		// Add solution cells to centerlist
 		['number', 'surface'].forEach(constraint => {
-			const solution = getSolution(pu, constraint) || [];
+			const solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let [point, val] = s.split(',');
 				point = Number(point);
@@ -1336,7 +1360,7 @@ const PenpaDecoder = (() => {
 			pu.centerlist.sort();
 		});
 		['loopline'].forEach(constraint => {
-			const solution = getSolution(pu, constraint) || [];
+			const solution = getPuSolution(pu, constraint) || [];
 			solution.forEach(s => {
 				let [p1, p2, val] = s.split(',');
 				[p1, p2].forEach(point => {
