@@ -16,7 +16,7 @@ const puzzleLinkConverter = (() => {
 			if (!puzzle) return null;
 			let settings = Object.entries(puzzle.settings).map(([k, v]) => `setting-${k}=${v}`).join('&');
 			delete puzzle.settings;
-			let puzzleId = 'ctc' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle))) + (settings ? '?' + settings : '');
+			let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle))) + (settings ? '?' + settings : '');
 			return puzzleId;
 		}
 

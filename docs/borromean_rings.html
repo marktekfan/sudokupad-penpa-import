@@ -337,7 +337,7 @@ fieldset div {
                 addCircles(puzzle);
                 let settings = Object.entries(puzzle.settings).map(([k, v]) => `setting-${k}=${v}`).join('&');
                 delete puzzle.settings;
-                let puzzleId = 'ctc' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle))) + (settings ? '?' + settings : '');
+                let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle))) + (settings ? '?' + settings : '');
                 return puzzleId;
             }
 
@@ -346,7 +346,7 @@ fieldset div {
                 return loadFPuzzle(fpuzzleData[1])
                 .then(res => JSON.parse(PuzzleZipper.unzip(res)))
                 .then(puzzle => addCircles(puzzle))
-                .then(ctcPuzzle => 'ctc' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(ctcPuzzle))));
+                .then(ctcPuzzle => 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(ctcPuzzle))));
 
                 // return 'fpuzzles' + fpuzzle[1];
             }		
