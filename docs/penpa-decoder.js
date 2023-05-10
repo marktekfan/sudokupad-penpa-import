@@ -1197,6 +1197,7 @@ const PenpaDecoder = (() => {
 		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.numberS), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.symbol), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.killercages || []).flatMap(p => p), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.surface).filter(k => pu.pu_q.surface[k] > 0), PenpaTools.point2matrix));
 
 		//let {top, left, height, width} = PenpaTools.getBoundsRC(
 		let top = Math.min(...bounds.map(b => b[0]));
