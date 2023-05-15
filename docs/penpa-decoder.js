@@ -1190,39 +1190,55 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-	function expandBoardGridForSudokuPad(pu) {
+	const addToCenterlist = function(pu, p) {
+		if (pu.centerlist.includes(p)) return;
+		pu.centerlist.push(p);
+		pu.centerlist.sort();
+		for (let i = 0; i < 4; i++) {
+			let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
+			pu.pu_q.deletelineE[k] = 1;
+		}
+	}
+
+	function expandGridForFillableOutsideFeatures(pu) {
 		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
 		let bounds = [];
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.number), PenpaTools.point2matrix));
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.numberS), PenpaTools.point2matrix));
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.symbol), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.thermo || []).flatMap(p => p), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.killercages || []).flatMap(p => p), PenpaTools.point2matrix));
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.surface).filter(k => pu.pu_q.surface[k] > 0), PenpaTools.point2matrix));
-
-		//let {top, left, height, width} = PenpaTools.getBoundsRC(
+		
+		// bounds for all fillable clues
 		let top = Math.min(...bounds.map(b => b[0]));
 		let left = Math.min(...bounds.map(b => b[1]));
 		let bottom = Math.max(...bounds.map(b => b[2]));
 		let right = Math.max(...bounds.map(b => b[3]));
 
-		if (top < clBounds[0] - 1 || left < clBounds[1] - 1) {
-			let p = PenpaTools.matrix2point(top, left);
-			pu.centerlist.push(p);
-			pu.centerlist.sort();
+		if (top < clBounds[0] || left < clBounds[1]) {
+			addToCenterlist(pu, PenpaTools.matrix2point(top, left));
+		}
+		if (bottom > clBounds[2] || right > clBounds[3]) {
+			addToCenterlist(pu, PenpaTools.matrix2point(bottom, right));
+		}
+	}
 
-			for (let i = 0; i < 4; i++) {
-				let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
-				pu.pu_q.deletelineE[k] = 1;
-			}
+	function expandGridForWideOutsideClues(pu) {
+		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
+		let bounds = [];
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.number), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.numberS), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.symbol), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.surface).filter(k => pu.pu_q.surface[k] > 0), PenpaTools.point2matrix));
+		
+		// bounds for all clues
+		let top = Math.min(...bounds.map(b => b[0]));
+		let left = Math.min(...bounds.map(b => b[1]));
+		let bottom = Math.max(...bounds.map(b => b[2]));
+		let right = Math.max(...bounds.map(b => b[3]));
+		
+		if (top < clBounds[0] - 1 || left < clBounds[1] - 1) {
+			addToCenterlist(pu, PenpaTools.matrix2point(top, left));
 		}
 		if (bottom > clBounds[2] + 1 || right > clBounds[3] + 1) {
-			let p = PenpaTools.matrix2point(bottom, right);
-			pu.centerlist.push(p);
-			pu.centerlist.sort();
-			for (let i = 0; i < 4; i++) {
-				let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
-				pu.pu_q.deletelineE[k] = 1;
-			}
+			addToCenterlist(pu, PenpaTools.matrix2point(bottom, right));
 		}
 	}
 
@@ -1374,9 +1390,11 @@ const PenpaDecoder = (() => {
 			pu.centerlist.sort();
 		});
 
+		expandGridForFillableOutsideFeatures(pu);
+
 		if (PenpaDecoder.flags.expandGrid) {
 			//TODO: Can this be done before region detection?
-			expandBoardGridForSudokuPad(pu);
+			expandGridForWideOutsideClues(pu);
 		}
 
 		// Determine visual cell grid bounding box
