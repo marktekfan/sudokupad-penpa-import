@@ -198,23 +198,27 @@ const PenpaTools = (() => {
 					let endpoint2 = line2.wayPoints[line2.wayPoints.length - 1].toString();
 					if(endpoint2 === endpoint1) {
 						line2.wayPoints.reverse();
+						line2.keys.reverse();
 						endpoint2 = startpoint2;
 						startpoint2 = line2.wayPoints[0].toString();
 					}
 					if(startpoint1 === startpoint2) {
 						line1.wayPoints.reverse();
+						line1.keys.reverse();
 						endpoint1 = startpoint1;
 						startpoint1 = startpoint1 = line1.wayPoints[0].toString();
 					}
 
 					if(endpoint1 === startpoint2) {
 						line1.wayPoints.push(...line2.wayPoints.slice(1));
+						line1.keys.push(...line2.keys.slice(1));
 						line2.value = null;
 						endpoint1 = endpoint2;
 						changes++;
 					}
 					else if(startpoint1 === endpoint2) {
 						line1.wayPoints.unshift(...line2.wayPoints.slice(0, -1));
+						line1.keys.unshift(...line2.keys.slice(0, -1));
 						line2.value = null;
 						startpoint1 = startpoint2;
 						changes++;

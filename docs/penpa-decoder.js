@@ -613,12 +613,13 @@ const PenpaDecoder = (() => {
 				drawDoubleLine(ctx, line, puzzle);
 			}
 			else {
-				if (PenpaDecoder.flags.thickLines) {
-					const isCenter = pu.point[line.keys[0]].type === 0;
-					if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
+				const isCenter = pu.point[line.keys[0]].type === 0;
+				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
+					if (PenpaDecoder.flags.thickLines) {
 						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
 						ctx.lineWidth = 6;
 					}
+					// TODO: properly check for outside lines
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
@@ -804,12 +805,13 @@ const PenpaDecoder = (() => {
 				drawShortLine(ctx, line, puzzle);
 			}
 			else {
-				if (PenpaDecoder.flags.thickLines) {
-					const isCenter = pu.point[line.keys[0]].type === 0;
-					if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth)  && ctx.lineDash.length === 0) {
+				const isCenter = pu.point[line.keys[0]].type === 0;
+				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
+					if (PenpaDecoder.flags.thickLines) {
 						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
 						ctx.lineWidth = 6;
 					}
+					// TODO: properly check for outside lines
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
@@ -937,9 +939,7 @@ const PenpaDecoder = (() => {
 				}
 			}
 		});
-		let comblist = PenpaTools.combineStraightPenpaLines(list);
-		let wpList = PenpaTools.penpaLines2WaypointLines(comblist);
-		let combined = PenpaTools.concatenateEndpoints(wpList);
+		let combined = PenpaTools.reducePenpaLines2WaypointLines(list);
 		combined.forEach(line => {
 			if (line.value === 0) return; // Skip not visible line
 			let shortLine = PenpaTools.shortenLine(line.wayPoints, 2/64, 2/64);
@@ -966,6 +966,7 @@ const PenpaDecoder = (() => {
 		const reduce_diagonal = 0.22;
 		list.forEach((line, i) => {
 			if (line.length < 2) return;
+			// TODO: properly check for outside lines
 			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
 			let cells = line.map(point2RC);
 			if (cells.length >= 2) {
@@ -1390,10 +1391,10 @@ const PenpaDecoder = (() => {
 			pu.centerlist.sort();
 		});
 
+		//TODO: Can/should this be done before region detection?
 		expandGridForFillableOutsideFeatures(pu);
 
 		if (PenpaDecoder.flags.expandGrid) {
-			//TODO: Can this be done before region detection?
 			expandGridForWideOutsideClues(pu);
 		}
 
