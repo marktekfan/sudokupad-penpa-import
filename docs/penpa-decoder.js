@@ -618,7 +618,7 @@ const PenpaDecoder = (() => {
 				drawDoubleLine(ctx, line, puzzle);
 			}
 			else {
-				const isCenter = pu.point[line.keys[0]].type === 0;
+				const isCenter = [0, 2, 3].includes(pu.point[line.keys[0]].type);
 				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
 					if (PenpaDecoder.flags.thickLines) {
 						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
@@ -814,7 +814,7 @@ const PenpaDecoder = (() => {
 				drawShortLine(ctx, line, puzzle);
 			}
 			else {
-				const isCenter = pu.point[line.keys[0]].type === 0;
+				const isCenter = [0, 2, 3].includes(pu.point[line.keys[0]].type);
 				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
 					if (PenpaDecoder.flags.thickLines) {
 						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
@@ -1017,7 +1017,6 @@ const PenpaDecoder = (() => {
 	}		
 	
 	function isMaskedLine(pu, line) {
-		line.reverse();
 		const {doc, point2matrix, matrix2point} = PenpaTools;
 		if (!doc.hasCellMask || line.length < 2) return false;
 		let p = line[0];
@@ -1381,10 +1380,10 @@ const PenpaDecoder = (() => {
 				}
 				else {
 					let [p1, p2] = p.split(',');
-					if (!pu.point[p1] || pu.point[p1].type !== 0) {
+					if (!pu.point[p1] || ![0, 2, 3].includes(pu.point[p1].type)) {
 						delete pu.pu_q[feature][p];
 					}
-					else if (!pu.point[p2] || pu.point[p2].type !== 0) {
+					else if (!pu.point[p2] || ![0, 2, 3].includes(pu.point[p2].type)) {
 						delete pu.pu_q[feature][p];
 					}
 				}
