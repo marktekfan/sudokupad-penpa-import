@@ -182,18 +182,15 @@ const PenpaTools = (() => {
 	C.concatenateEndpoints = function(listwp) {
 		let changes = 0;
 		do {
-			// listwp.forEach(wp => console.log(JSON.stringify(wp.wayPoints), wp.value));
 			changes = 0;
 			listwp.forEach(line1 => {
 				if(line1.value === null || line1.wayPoints.length < 2) return;
 				if(line1.value === 30 || line1.value === 40) return; // dont combine short or double lines
 				let startpoint1 = line1.wayPoints[0].toString();
 				let endpoint1 = line1.wayPoints[line1.wayPoints.length - 1].toString();
-				// console.log('line', line.wayPoints);
 				listwp.forEach(line2 => {
 					if(line1 === line2 || line1.value !== line2.value)  return;
 					if(line1.cc !== line2.cc)  return;
-					// console.log('line2', line2.wayPoints);
 					let startpoint2 = line2.wayPoints[0].toString();
 					let endpoint2 = line2.wayPoints[line2.wayPoints.length - 1].toString();
 					if(endpoint2 === endpoint1) {
@@ -227,7 +224,17 @@ const PenpaTools = (() => {
 			})
 		} while (changes > 0);
 		let filtered = listwp.filter(l => l.value !== null);
-		// filtered.forEach(wp => console.log(JSON.stringify(wp.wayPoints), wp.value))
+		/*
+		filtered.forEach(line => {
+			console.assert(line.wayPoints.length === line.keys.length);
+			for(let i = 0; i < line.keys.length; i++) {
+				let rc = PenpaTools.point2RC(line.keys[i]);
+				let wp = line.wayPoints[i];
+				console.assert(rc[0] === wp[0]);
+				console.assert(rc[1] === wp[1]);
+			}
+		});
+		*/
 		return filtered;
 	}
 

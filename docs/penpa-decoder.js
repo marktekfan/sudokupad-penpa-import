@@ -389,24 +389,24 @@ const PenpaDecoder = (() => {
 		}
 
 		// Mask off non-grid grid lines
-		let outsideCells = [];
+		let maskedCells = [];
 		for (let r = top; r <= bottom; r++) {
 			for (let c = left; c <= right; c++) {
 				let p = matrix2point(r, c);
 				if(!centerlist.includes(p)) {
-					outsideCells.push(p);
+					maskedCells.push(p);
 				}
 			}
 		}
 
 		let {deletelineE} = pu.pu_q;
 
-		for(let c of outsideCells) {
+		for(let c of maskedCells) {
 			const [y, x] = point2matrix(c);
-			let hasleft = outsideCells.includes(pu.point[c].adjacent[1]) || x === left;
-			let hasright = outsideCells.includes(pu.point[c].adjacent[2]) || x === right;
-			let hastop = outsideCells.includes(pu.point[c].adjacent[0]) || y === top;
-			let hasbottom = outsideCells.includes(pu.point[c].adjacent[3]) || y === bottom;
+			let hasleft = maskedCells.includes(pu.point[c].adjacent[1]) || x === left;
+			let hasright = maskedCells.includes(pu.point[c].adjacent[2]) || x === right;
+			let hastop = maskedCells.includes(pu.point[c].adjacent[0]) || y === top;
+			let hasbottom = maskedCells.includes(pu.point[c].adjacent[3]) || y === bottom;
 
 			if (hastop) {
 				const key = matrix2point(y - 1, x - 1, 1) + ',' + matrix2point(y - 1, x, 1);
@@ -588,9 +588,9 @@ const PenpaDecoder = (() => {
             if (key.slice(-1) === 'E') {
                 key = key.slice(0, -1);
             }
-			let isMaskedCell = doc.hasCellMask && !pu.centerlist.includes(Number(key)) && isBoardCell(point2RC(key));
+			let maskedCell = isMaskedCell(pu, key);
 			// In front of lines or on an outside/masked cell.
-			if (symbol[2] === 2 || isMaskedCell) {
+			if (symbol[2] === 2 || maskedCell) {
 				ctx.target = 'overlay';
 			}
 			const [r, c] = point2RC(key);
@@ -604,7 +604,12 @@ const PenpaDecoder = (() => {
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
-			ctx.target = target;
+			if (target) {
+				ctx.target = target;
+			}
+			else if (isMaskedLine(pu, line.keys)) {
+				ctx.target = 'overlay';
+			}
 			set_line_style(ctx, line.value);
 			if(line.cc) {
 				ctx.strokeStyle = line.cc;
@@ -619,7 +624,6 @@ const PenpaDecoder = (() => {
 						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
 						ctx.lineWidth = 6;
 					}
-					// TODO: properly check for outside lines
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
@@ -659,7 +663,7 @@ const PenpaDecoder = (() => {
 		const {point2RC, doc, round3} = PenpaTools;
 		list.forEach((line, i) => {
 			if(line.length < 2) return;
-			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
+			const target = isMaskedLine(pu, line) ? {target: 'overlay'} : {};
 			let points = PenpaTools.reduceWayPoints(line.map(point2RC));
 			let commonend = pu.find_common(pu[qa], i, line[line.length - 1], feature);
 			points = PenpaTools.shortenLine(points, 0.4, commonend ? 0.1 : 0);
@@ -689,7 +693,7 @@ const PenpaDecoder = (() => {
 		const {point2RC, doc} = PenpaTools;
 		list.forEach((line, i) => {
 			if(line.length < 2) return;
-			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
+			const target = isMaskedLine(pu, line) ? {target: 'overlay'} : {};
 			let points = line.map(point2RC);
 			let commonend = pu.find_common(pu[qa], i, line[line.length - 1], feature);
 			points = PenpaTools.shortenLine(points, 0, commonend ? 0.1 : 0);
@@ -708,7 +712,7 @@ const PenpaDecoder = (() => {
 		const {point2RC, doc} = PenpaTools;
 		list.forEach((line, i) => {
 			if (line.length === 0) return;
-			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
+			const target = isMaskedLine(pu, line) ? {target: 'overlay'} : {};
 			let cells = line.map(point2RC);
 			let color = listCol[i] || '#CFCFCF';
 			puzzleAdd(puzzle, 'lines', Object.assign({
@@ -793,7 +797,12 @@ const PenpaDecoder = (() => {
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
-			ctx.target = target;
+			if (target) {
+				ctx.target = target;
+			}				
+			else if (isMaskedLine(pu, line.keys)) {
+				ctx.target = 'overlay';
+			}
 			set_line_style(ctx, line.value);
 			if(line.cc) {
 				ctx.strokeStyle = line.cc;
@@ -811,7 +820,6 @@ const PenpaDecoder = (() => {
 						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
 						ctx.lineWidth = 6;
 					}
-					// TODO: properly check for outside lines
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
@@ -966,8 +974,11 @@ const PenpaDecoder = (() => {
 		const reduce_diagonal = 0.22;
 		list.forEach((line, i) => {
 			if (line.length < 2) return;
-			// TODO: properly check for outside lines
-			const target = doc.hasCellMask && line.some(p => !pu.centerlist.includes(p)) ? {target: 'overlay'} : {};
+			const maskedLine = isMaskedLine(pu, line);
+			const target = maskedLine ? {target: 'overlay'} : {};
+			if (maskedLine) {
+				line.forEach(p => doc.maskedCells.push(p));
+			}
 			let cells = line.map(point2RC);
 			if (cells.length >= 2) {
 				let end = line[line.length - 1];
@@ -993,6 +1004,50 @@ const PenpaDecoder = (() => {
 				}, target), 'thermo line');
 			}
 		});
+	}
+	
+	function isMaskedCell(pu, p) {
+		const {doc, point2RC, isBoardCell} = PenpaTools;
+		if (!doc.hasCellMask) return false;
+		p = Number(p);
+		if (doc.maskedCells.includes(p)) return true;
+		if (pu.centerlist.includes(p)) return false;
+		if (isBoardCell(point2RC(p))) return true;
+		return false;
+	}		
+	
+	function isMaskedLine(pu, line) {
+		line.reverse();
+		const {doc, point2matrix, matrix2point} = PenpaTools;
+		if (!doc.hasCellMask || line.length < 2) return false;
+		let p = line[0];
+		// Must be center line
+		if (doc.point[p].type !== 0) return false;
+		if (doc.maskedCells.includes(p)) return true;
+		let prevMasked = isMaskedCell(pu, p);
+		let [y, x] = point2matrix(p);
+		for (let i = 1; i < line.length; i++) {
+			let pnext = line[i];
+			let [y2, x2] = point2matrix(pnext);
+			do {
+				let dx = x2 - x;
+				let dy = y2 - y;
+				let stepx = Math.sign(dx);
+				let stepy = Math.sign(dy);
+				x += stepx;
+				y += stepy;
+				pnext = matrix2point(y, x);
+				if (doc.maskedCells.includes(pnext)) return true;
+				let masked = isMaskedCell(pu, pnext);
+				if (masked && prevMasked) return true;
+				if (masked !== prevMasked) {
+					// Diagonal border crossing 
+					if (stepx !== 0 && stepy !== 0) return true;
+				}
+				prevMasked = masked;
+			} while (x != x2 || y != y2);
+		}
+		return false;
 	}
 
 	function drawXmarks(qa, pu, puzzle, feature) {
@@ -1157,36 +1212,36 @@ const PenpaDecoder = (() => {
 		return pu;
 	}
 
-	function convertFreeline2Line(pu) {
+	function convertFreeline2Line(pu, freelineFeature, lineFeature) {
 		const {point2matrix} = PenpaTools;
-		const lineE = pu.pu_q.lineE;
-		const freelineE = pu.pu_q.freelineE;
+		const line = pu.pu_q[lineFeature];
+		const freeline = pu.pu_q[freelineFeature];
 
-		Object.keys(freelineE).forEach(key => {
+		Object.keys(freeline).forEach(key => {
 			const p = key.split(',').map(Number);
 			const m1 = point2matrix(p[0]);
 			const m2 = point2matrix(p[1]);
-			// Replace horizontal freelineE with lineE's
+			// Replace horizontal freeline with lines
 			if (m1[0] === m2[0]) {
 				for (let p1 = p[0]; p1 < p[1]; p1 += 1) {
 					let p2 = p1 + 1; // next column
 					let newkey = p1 + ',' + p2;
-					if (lineE[newkey] === undefined) { // freelineE is always under lineE
-						lineE[newkey] = freelineE[key];
+					if (line[newkey] === undefined) { // freeline is always under line
+						line[newkey] = freeline[key];
 					}
 				}				
-				delete freelineE[key];
+				delete freeline[key];
 			}
-			// Replace vertical freelineE with lineE's
+			// Replace vertical freeline with lines
 			else if (m1[1] === m2[1]) {
 				for (let p1 = p[0]; p1 < p[1]; p1 += pu.nx0) {
 					let p2 = p1 + pu.nx0; // next row
 					let newkey = p1 + ',' + p2;
-					if (lineE[newkey] === undefined) { // freelineE is always under lineE
-						lineE[newkey] = freelineE[key];
+					if (line[newkey] === undefined) { // freeline is always under line
+						line[newkey] = freeline[key];
 					}
 				}				
-				delete freelineE[key];
+				delete freeline[key];
 			}
 		});
 	}
@@ -1202,10 +1257,27 @@ const PenpaDecoder = (() => {
 	}
 
 	function expandGridForFillableOutsideFeatures(pu) {
+		function getLineCenterPoints(pu, feature) {
+			let points = [];
+			let lines = pu.pu_q[feature];
+			Object.keys(lines).forEach(key => {
+				let value = lines[key];
+				if ([2, 3, 5, 6, 8, 9].includes(value)) {
+					let [p1, p2] = key.split(',').map(Number);
+					if (pu.point[p1].type === 0 && pu.point[p2].type === 0) {
+						points.push(p1);
+						points.push(p2);
+					}
+				}
+			});	
+			return points;		
+		}
 		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
 		let bounds = [];
 		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.thermo || []).flatMap(p => p), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.killercages || []).flatMap(p => p), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'line'), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'freeline'), PenpaTools.point2matrix));
 		
 		// bounds for all fillable clues
 		let top = Math.min(...bounds.map(b => b[0]));
@@ -1280,16 +1352,45 @@ const PenpaDecoder = (() => {
 		});
 		['lineE', 'freelineE', 'deletelineE'].forEach(feature => {
 			Object.keys(pu.pu_q[feature]).forEach(p => {
-				let [p1, p2] = p.split(',');
-				if (!pu.point[p1] || pu.point[p1].type !== 1) {
-					delete pu.pu_q[feature][p];
+				if (pu.pu_q[feature][p] == 98) { // X-mark on edge
+					if (!pu.point[p] || ![2, 3].includes(pu.point[p].type)) {
+						delete pu.pu_q[feature][p];
+					}
 				}
-				else if (!pu.point[p2] || pu.point[p2].type !== 1) {
-					delete pu.pu_q[feature][p];
+				else {
+					let [p1, p2] = p.split(',');
+					if (!pu.point[p1] || pu.point[p1].type !== 1) {
+						delete pu.pu_q[feature][p];
+					}
+					else if (!pu.point[p2] || pu.point[p2].type !== 1) {
+						delete pu.pu_q[feature][p];
+					}
 				}
 			});
 		});
-		['line', 'freeline', 'cage', 'wall'].forEach(feature => {
+		['line', 'freeline'].forEach(feature => {
+			Object.keys(pu.pu_q[feature]).forEach(p => {
+				if (pu.pu_q[feature][p] == 98) { // X-mark on edge
+					if (pu.point[p] && [2, 3].includes(pu.point[p].type)) {
+						 // Move to lineE (because it's always on an edge) but don't overwrite
+						if (!pu.pu_q['lineE'][p]) {
+							pu.pu_q['lineE'][p] = pu.pu_q[feature][p];
+						}
+					}
+					delete pu.pu_q[feature][p];
+				}
+				else {
+					let [p1, p2] = p.split(',');
+					if (!pu.point[p1] || pu.point[p1].type !== 0) {
+						delete pu.pu_q[feature][p];
+					}
+					else if (!pu.point[p2] || pu.point[p2].type !== 0) {
+						delete pu.pu_q[feature][p];
+					}
+				}
+			});
+		});
+		['cage', 'wall'].forEach(feature => {
 			Object.keys(pu.pu_q[feature]).forEach(p => {
 				let [p1, p2] = p.split(',');
 				if (!pu.point[p1] || !pu.point[p2]) {
@@ -1323,6 +1424,7 @@ const PenpaDecoder = (() => {
 			row0: 0, //  offset of puzzle cell(0,0)
 			width: 0, // number of columns in puzzle (=after translation)
 			height: 0, // number of rows in puzzle (=after translation)
+			maskedCells: []
 		};
 
 		// Inject puzzle/doc metrics into helper classes
@@ -1332,7 +1434,8 @@ const PenpaDecoder = (() => {
 
 		cleanupPu(pu);
 
-		convertFreeline2Line(pu);
+		convertFreeline2Line(pu, 'freeline', 'line');
+		convertFreeline2Line(pu, 'freelineE', 'lineE');
 
 		// Cleanup frame
 		for (let k in pu.pu_q.deletelineE) {
@@ -1345,11 +1448,10 @@ const PenpaDecoder = (() => {
 			}
 		}
 		// Remove lines which are identical to the corresponding frame line.
-		// (Line style 12 == frame style 11)
 		Object.keys(pu.pu_q.lineE).forEach(k => {
 			if (pu.frame[k]) {
 				let style = pu.pu_q.lineE[k];
-				if (pu.frame[k] === (style === 12 ? 11 : style)) {
+				if (pu.frame[k] === (style === 12 ? 11 : style)) { // Line style 12 is frame style 11
 					delete pu.pu_q.lineE[k];
 				}
 			}
@@ -1435,7 +1537,6 @@ const PenpaDecoder = (() => {
 		parse.arrows(qa, pu, puzzle);
 		parse.wall(qa, pu, puzzle);
 		// draw_frame()
-		parse.frame(qa, pu, puzzle);
 		parse.polygon(qa, pu, puzzle);
 		parse.freeline(qa, pu, puzzle);
 		parse.freelineE(qa, pu, puzzle);
@@ -1448,8 +1549,10 @@ const PenpaDecoder = (() => {
 		parse.killercages(qa, pu, puzzle);
 		parse.number(qa, pu, puzzle);
 		parse.numberS(qa, pu, puzzle);
-
+				
 		drawBoardLattice(pu, puzzle, doc);
+		
+		parse.frame(qa, pu, puzzle);
 
 		if(puzzle.regions.length === 0) {
 			// Create cage to defined the board bounds
