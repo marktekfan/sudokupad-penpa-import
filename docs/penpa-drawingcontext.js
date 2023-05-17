@@ -20,6 +20,7 @@ const DrawingContext = (() => {
         this.penpaSize = Math.min(Math.max(Number(C.penpaSize), 28), 42);
         this.path = []
         this._strokeStarted = false;
+        this._strokeCommand = '';
         this.isFill = false;
         this._text = null;
         this.x = 0;
@@ -59,22 +60,25 @@ const DrawingContext = (() => {
 
     P.beginPath = function() {
         this._strokeStarted = false;
+        this._strokeCommand = '';
     }
     P.moveTo = function(x, y) {
         this._strokeStarted = true;
         this.path.push(['M', x, y]);
         this.x = x;
         this.y = y;
+        this._strokeCommand = 'M';
     }
     P.lineTo = function(x, y) {
         let dx = x - this.x;
         let dy = y - this.y;
-        if (dx === 0 && dy === 0) {
+        if (dx === 0 && dy === 0 && this._strokeCommand != 'M') {
             return;
         }
         this.path.push(['l', dx, dy]);
         this.x = x;
         this.y = y;
+        this._strokeCommand = 'L';
     }
     P.arc = function(x, y, radius, startAngle, endAngle, ccw = false) {
         function polarToCartesian(centerX, centerY, radius, angle) {
@@ -108,6 +112,7 @@ const DrawingContext = (() => {
         this.path.push(['a', radius, radius, 1, largeArcFlag, sweep, end.x - this.x, end.y - this.y, [x, y]]);
         this.x = end.x;
         this.y = end.y;
+        this._strokeCommand = 'A';
     }
     P.arcTo = function(x1, y1, x2, y2, radius) {
         let start = {x: x1, y: y1};
@@ -121,15 +126,18 @@ const DrawingContext = (() => {
         this.path.push(['a', radius, radius, 0, largeArcFlag, 1, end.x - this.x, end.y - this.y]);
         this.x = end.x;
         this.y = end.y;
+        this._strokeCommand = 'A';
     }
     P.quadraticCurveTo = function(cpx, cpy, x, y) {
         //this.path.push(['Q', cpx, cpy, x, y]);
         this.path.push(['q', cpx - this.x, cpy - this.y, x - this.x, y - this.y]);
         this.x = x;
         this.y = y;
+        this._strokeCommand = 'A';
     }
     P.closePath = function() {
         this.path.push(['z']);
+        this._strokeCommand = '';
     }
     P.stroke = function() {
     }
