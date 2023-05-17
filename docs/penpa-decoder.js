@@ -1242,6 +1242,18 @@ const PenpaDecoder = (() => {
 				}				
 				delete freeline[key];
 			}
+			// Replace 45 degree freeline to with lines
+			else if (Math.abs(m1[0] - m2[0]) === Math.abs(m1[1] - m2[1])) {
+				let dir = Math.sign(m2[1] - m1[1]);
+				for (let p1 = p[0]; p1 < p[1]; p1 += pu.nx0 + dir) {
+					let p2 = p1 + pu.nx0 + dir; // next row
+					let newkey = p1 + ',' + p2;
+					if (line[newkey] === undefined) { // freeline is always under line
+						line[newkey] = freeline[key];
+					}
+				}				
+				delete freeline[key];
+			}
 		});
 	}
 
