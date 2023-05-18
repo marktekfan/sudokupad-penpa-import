@@ -1211,25 +1211,30 @@ const PenpaDecoder = (() => {
 		return pu;
 	}
 
-	function convertFreeline2Line(pu, freelineFeature, lineFeature) {
+	function convertFeature2Line(pu, fromFeature, lineFeature) {
 		const {point2matrix} = PenpaTools;
+		const fromline = pu.pu_q[fromFeature];
 		const line = pu.pu_q[lineFeature];
-		const freeline = pu.pu_q[freelineFeature];
+		const fromlineCol = pu.pu_q_col[fromFeature] || {};
+		const lineCol = pu.pu_q_col[lineFeature] || {};
 
-		Object.keys(freeline).forEach(key => {
+		Object.keys(fromline).forEach(key => {
 			const p = key.split(',').map(Number);
 			const m1 = point2matrix(p[0]);
 			const m2 = point2matrix(p[1]);
+			const color = fromlineCol[key];
 			// Replace horizontal freeline with lines
 			if (m1[0] === m2[0]) {
 				for (let p1 = p[0]; p1 < p[1]; p1 += 1) {
 					let p2 = p1 + 1; // next column
 					let newkey = p1 + ',' + p2;
 					if (line[newkey] === undefined) { // freeline is always under line
-						line[newkey] = freeline[key];
+						line[newkey] = fromline[key];
+						if (color) lineCol[newkey] = color; // Copy custom color
 					}
 				}				
-				delete freeline[key];
+				delete fromline[key];
+				delete fromlineCol[key];
 			}
 			// Replace vertical freeline with lines
 			else if (m1[1] === m2[1]) {
@@ -1237,22 +1242,34 @@ const PenpaDecoder = (() => {
 					let p2 = p1 + pu.nx0; // next row
 					let newkey = p1 + ',' + p2;
 					if (line[newkey] === undefined) { // freeline is always under line
-						line[newkey] = freeline[key];
+						line[newkey] = fromline[key];
+						if (color) lineCol[newkey] = color;
 					}
 				}				
-				delete freeline[key];
+				delete fromline[key];
+				delete fromlineCol[key];
 			}
-			// Replace 45 degree freeline to with lines
+			// Replace 45 degree freeline with lines
 			else if (Math.abs(m1[0] - m2[0]) === Math.abs(m1[1] - m2[1])) {
 				let dir = Math.sign(m2[1] - m1[1]);
 				for (let p1 = p[0]; p1 < p[1]; p1 += pu.nx0 + dir) {
 					let p2 = p1 + pu.nx0 + dir; // next row
 					let newkey = p1 + ',' + p2;
 					if (line[newkey] === undefined) { // freeline is always under line
-						line[newkey] = freeline[key];
+						line[newkey] = fromline[key];
+						if (color) lineCol[newkey] = color;
 					}
 				}				
-				delete freeline[key];
+				delete fromline[key];
+				delete fromlineCol[key];
+			}
+			// All other angles can be copied directly
+			// because they will never overlap with a line(E)
+			else {
+				line[key] = fromline[key];
+				if (color) lineCol[key] = color; // Copy custom color
+				delete fromline[key];
+				delete fromlineCol[key];
 			}
 		});
 	}
@@ -1326,26 +1343,57 @@ const PenpaDecoder = (() => {
 		}
 	}
 
-	function convertCustomColors(list, cc) {
-		for(let i in list) {
-			if (!cc) {
-				delete list[i]; // remove custom color
-			}
-			else if (typeof list[i] === 'string') {
-				list[i] = PenpaTools.ColorRgba2Hex(list[i]);
-			}
-			else {
-				if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
-					delete list[i]; // remove invalid color
+	function cleanupPu(pu) {
+		if (!pu.pu_q_col || pu._document['custom_color_opt'] !== '2') {
+			pu.pu_q_col = {};
+			pu.pu_q_col.surface = {};
+			pu.pu_q_col.number = {};
+			pu.pu_q_col.numberS = {};
+			pu.pu_q_col.symbol = {};
+			pu.pu_q_col.freeline = {};
+			pu.pu_q_col.freelineE = {};
+			pu.pu_q_col.thermo = [];
+			pu.pu_q_col.arrows = [];
+			pu.pu_q_col.direction = [];
+			pu.pu_q_col.squareframe = [];
+			pu.pu_q_col.polygon = [];
+			pu.pu_q_col.line = {};
+			pu.pu_q_col.lineE = {};
+			pu.pu_q_col.wall = {};
+			pu.pu_q_col.cage = {};
+			pu.pu_q_col.deletelineE = {};
+			pu.pu_q_col.killercages = [];
+			pu.pu_q_col.nobulbthermo = [];
+		}
+
+		// Convert custom colors to hex
+		for(let i in pu.pu_q_col) {
+			let list = pu.pu_q_col[i];
+			for(let i in list) {
+				if (typeof list[i] === 'string') {
+					list[i] = PenpaTools.ColorRgba2Hex(list[i]);
+				}
+				else {
+					if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
+						delete list[i]; // remove invalid color
+					}
 				}
 			}
 		}
-	}
 
-	function cleanupPu(pu) {
-		// Convert custom colors to hex
-		if (pu.pu_q_col) for(let i in pu.pu_q_col) convertCustomColors(pu.pu_q_col[i], pu._document['custom_color_opt'] === '2');
-		if (pu.pu_a_col) for(let i in pu.pu_a_col) convertCustomColors(pu.pu_a_col[i], pu._document['custom_color_opt'] === '2');
+		// Make lines with custom colors have consistent style.
+		// This allows them to be concatenated.
+		['line', 'lineE', 'freeline', 'freelineE', 'wall'].forEach(feature => {
+			let col = pu.pu_q_col[feature];
+			let list = pu.pu_q[feature];
+			for(let k in list) {
+				if (col[k]) {
+					if ([2, 3, 5, 8, 9].includes(list[k])) {
+						list[k] = 5; // 5 is arbitrary but consistent style
+					}
+				}
+			}
+		});
 
 		// Make sure to use all uppercase colors, this is important for Sudokupad to create solid colors.
 		Object.keys(Color).forEach(c => {
@@ -1445,8 +1493,10 @@ const PenpaDecoder = (() => {
 
 		cleanupPu(pu);
 
-		convertFreeline2Line(pu, 'freeline', 'line');
-		convertFreeline2Line(pu, 'freelineE', 'lineE');
+		convertFeature2Line(pu, 'freeline', 'line');
+		convertFeature2Line(pu, 'freelineE', 'lineE');
+		convertFeature2Line(pu, 'wall', 'line');
+
 
 		// Cleanup frame
 		for (let k in pu.pu_q.deletelineE) {
