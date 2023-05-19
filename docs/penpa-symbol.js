@@ -1394,6 +1394,7 @@ const PenpaSymbol = (() => {
         var w2 = 0.12;
         var len1 = 0.5 * w1; //nemoto
         var len2 = 0.45; //tip
+        var len3 = 0.55; //tip 45 deg
         var ri = -0.18;
         var th;
         for (var i = 0; i < 4; i++) {
@@ -1401,6 +1402,16 @@ const PenpaSymbol = (() => {
                 th = this.rotate_theta(i * 90 - 180);
                 ctx.beginPath();
                 ctx.arrow(x - len1 * Math.cos(th), y - len1 * Math.sin(th), x + len2 * Math.cos(th), y + len2 * Math.sin(th),
+                    [0, w1, ri, w1, ri, w2]);
+                ctx.fill();
+                this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), `arrowcross`);
+            }
+        }
+        for (var i = 4; i < 8; i++) {
+            if (num[i] === 1) {
+                th = this.rotate_theta(i * 90 - 135);
+                ctx.beginPath();
+                ctx.arrow(x - len1 * Math.cos(th), y - len1 * Math.sin(th), x + len3 * Math.cos(th), y + len3 * Math.sin(th),
                     [0, w1, ri, w1, ri, w2]);
                 ctx.fill();
                 this.decoder.puzzleAdd(this.puzzle, 'lines', ctx.toOpts(), `arrowcross`);
