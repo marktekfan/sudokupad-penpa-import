@@ -231,7 +231,7 @@ function set_line_style(ctx, type, ccolor = "none") {
         case 115: //cage dash
             // var b = pu.size * 0.08;
             // var w = pu.size * 0.1;
-            var b = pu.size * 4/64; //ML
+            var b = pu.size * 4/64 * 0.8; //ML
             var w = pu.size * 4/64;
             ctx.setLineDash([b, w]);
             ctx.lineDashOffset = b * 0.5;

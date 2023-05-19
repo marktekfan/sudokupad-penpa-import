@@ -922,82 +922,151 @@ const PenpaSymbol = (() => {
 
     P.draw_framelinesym = function(ctx, num, x, y, ccolor = "none") {
         var r = 0.32;
+        var r2 = 0.16;
+        var d = 0.08;
         ctx.setLineDash([]);
         ctx.lineCap = "round";
         ctx.fillStyle = Color.TRANSPARENTBLACK;
         ctx.strokeStyle = Color.BLACK;
         ctx.lineWidth = 3;
+        let flip = (this.pu.reflect[0] !== this.pu.reflect[1]) === ((this.pu.theta % 180) === 0);
         switch (num) {
             case 1:
                 set_line_style(ctx, 115, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x + r, y - r);
-                ctx.lineTo(x - r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                } else {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                }
                 ctx.stroke();
                 break;
             case 2:
                 set_line_style(ctx, 15, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x + r, y - r);
-                ctx.lineTo(x - r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                } else {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                }
                 ctx.stroke();
                 break;
             case 3:
                 set_line_style(ctx, 16, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x + r, y - r);
-                ctx.lineTo(x - r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                } else {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                }
                 ctx.stroke();
                 break;
             case 4:
                 set_line_style(ctx, 110, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x + r, y - r);
-                ctx.lineTo(x - r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                } else {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                }
                 ctx.stroke();
                 break;
             case 5:
                 set_line_style(ctx, 115, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x - r, y - r);
-                ctx.lineTo(x + r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                } else {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                }
                 ctx.stroke();
                 break;
             case 6:
                 set_line_style(ctx, 15, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x - r, y - r);
-                ctx.lineTo(x + r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                } else {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                }
                 ctx.stroke();
                 break;
             case 7:
                 set_line_style(ctx, 16, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x - r, y - r);
-                ctx.lineTo(x + r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                } else {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                }
                 ctx.stroke();
                 break;
             case 8:
                 set_line_style(ctx, 110, ccolor)
                 r = r / Math.sqrt(2);
                 ctx.beginPath();
-                ctx.moveTo(x - r, y - r);
-                ctx.lineTo(x + r, y + r);
-                ctx.closePath();
+                if (flip) {
+                    ctx.moveTo(x + r, y - r);
+                    ctx.lineTo(x - r, y + r);
+                } else {
+                    ctx.moveTo(x - r, y - r);
+                    ctx.lineTo(x + r, y + r);
+                }
+                ctx.stroke();
+                break;
+            case 9:
+                set_line_style(ctx, 16, ccolor)
+                r = r / Math.sqrt(2);
+                ctx.beginPath();
+                if (flip) {
+                    ctx.moveTo(x - (r2 + d), y - (r2 - d));
+                    ctx.lineTo(x + (r2 - d), y + (r2 + d));
+                    ctx.moveTo(x - (r2 - d), y - (r2 + d));
+                    ctx.lineTo(x + (r2 + d), y + (r2 - d));
+                } else {
+                    ctx.moveTo(x + (r2 + d), y - (r2 - d));
+                    ctx.lineTo(x - (r2 - d), y + (r2 + d));
+                    ctx.moveTo(x + (r2 - d), y - (r2 + d));
+                    ctx.lineTo(x - (r2 + d), y + (r2 - d));
+                }
+                ctx.stroke();
+                break;
+            case 0:
+                set_line_style(ctx, 16, ccolor)
+                r = r / Math.sqrt(2);
+                ctx.beginPath();
+                if (flip) {
+                    ctx.moveTo(x + (r2 + d), y - (r2 - d));
+                    ctx.lineTo(x - (r2 - d), y + (r2 + d));
+                    ctx.moveTo(x + (r2 - d), y - (r2 + d));
+                    ctx.lineTo(x - (r2 + d), y + (r2 - d));
+                } else {
+                    ctx.moveTo(x - (r2 + d), y - (r2 - d));
+                    ctx.lineTo(x + (r2 - d), y + (r2 + d));
+                    ctx.moveTo(x - (r2 - d), y - (r2 + d));
+                    ctx.lineTo(x + (r2 + d), y + (r2 - d));
+                }
                 ctx.stroke();
                 break;
         }
