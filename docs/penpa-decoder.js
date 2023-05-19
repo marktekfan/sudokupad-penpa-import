@@ -522,13 +522,7 @@ const PenpaDecoder = (() => {
 			if (!pu.centerlist.includes(surface.key)) {
 				// ctx.target = 'overlay';
 			}
-			if (ctx.fillStyle === Color.GREY_DARK_VERY) {
-			 	ctx.fillStyle = '#010101'; // Make darker, which will be lightened by SP with alpha 0.5
-			 	//ctx.target = 'overlay';
-			}
-			else {
-				ctx.fillStyle = ColorSaturate(ctx.fillStyle);
-			}
+			ctx.fillStyle = ColorSaturate(ctx.fillStyle);
 			const opts = Object.assign(ctx.toOpts(), {
 				center: surface.center,
 				width: surface.width || 1,
@@ -1576,6 +1570,7 @@ const PenpaDecoder = (() => {
 		addSudokuRegions(pu, puzzle, squares, regions, uniqueRowsCols);
 
 		positionBoard(pu, puzzle, doc);
+		
 		hideGridLines(pu, puzzle, doc);
 
 		addCageMetadata(pu, puzzle);
