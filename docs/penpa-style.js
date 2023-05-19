@@ -111,12 +111,12 @@ function set_line_style(ctx, type, ccolor = "none") {
             ctx.strokeStyle = Color.BLACK;
             ctx.lineWidth = 0.8;
             break;
-        case 2:
+        case 2: // grid thick
             ctx.lineCap = "round";
             ctx.strokeStyle = Color.BLACK;
             ctx.lineWidth = 3 * 0.85; //ML
             break;
-        case 21:
+        case 21: // grid extra thick
             ctx.lineCap = "round";
             ctx.strokeStyle = Color.BLACK;
             ctx.lineWidth = 5 * 0.85; //ML

@@ -1484,7 +1484,8 @@ const PenpaDecoder = (() => {
 			row0: 0, //  offset of puzzle cell(0,0)
 			width: 0, // number of columns in puzzle (=after translation)
 			height: 0, // number of rows in puzzle (=after translation)
-			maskedCells: []
+			maskedCells: [],
+			id: `penpa${md5Digest(JSON.stringify(pu))}`,
 		};
 
 		// Inject puzzle/doc metrics into helper classes
@@ -1534,9 +1535,7 @@ const PenpaDecoder = (() => {
 			solution.forEach(s => {
 				let [point, val] = s.split(',');
 				point = Number(point);
-				if (!pu.centerlist.includes(point)) {
-					pu.centerlist.push(point);
-				}
+				addToCenterlist(pu, point);
 			});
 			pu.centerlist.sort();
 		});
@@ -1546,9 +1545,7 @@ const PenpaDecoder = (() => {
 				let [p1, p2, val] = s.split(',');
 				[p1, p2].forEach(point => {
 					point = Number(point);
-					if (!pu.centerlist.includes(point)) {
-						pu.centerlist.push(point);
-					}
+					addToCenterlist(pu, point);
 				})
 			});
 			pu.centerlist.sort();
@@ -1571,7 +1568,7 @@ const PenpaDecoder = (() => {
 		doc.height = height;
 
 		let puzzle = {
-			id: `penpa${md5Digest(JSON.stringify(pu))}`,
+			id: doc.id,
 			settings: {},
 		};
 		createBlankPuzzle(pu, puzzle, width, height);
