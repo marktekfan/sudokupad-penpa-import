@@ -1344,6 +1344,7 @@ const PenpaDecoder = (() => {
 	}
 
 	function cleanupPu(pu) {
+		pu.frame = pu.frame || {};
 		if (!pu.pu_q_col || pu._document['custom_color_opt'] !== '2') {
 			pu.pu_q_col = {};
 			pu.pu_q_col.surface = {};
@@ -1375,7 +1376,7 @@ const PenpaDecoder = (() => {
 				}
 				else {
 					if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
-						delete list[i]; // remove invalid color
+						delete list[i]; // remove invalid custom color
 					}
 				}
 			}
@@ -1497,7 +1498,6 @@ const PenpaDecoder = (() => {
 		convertFeature2Line(pu, 'freelineE', 'lineE');
 		convertFeature2Line(pu, 'wall', 'line');
 
-
 		// Cleanup frame
 		for (let k in pu.pu_q.deletelineE) {
 			// Don't delete when replaced with another line
@@ -1585,9 +1585,39 @@ const PenpaDecoder = (() => {
 
 		addGivens(pu, puzzle);
 
+		moveBlackEdgelinesToFrame(pu);
+		function moveBlackEdgelinesToFrame(pu) {
+			const lineE = pu.pu_q.lineE;
+			const frame = pu.frame;
+			const lineECol = pu.pu_q_col.lineE;
+			const styleMap = {2: 2, 21: 21, 80: 1};
+			const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
+			for(let k in lineE) {
+				let style = lineE[k];
+				if (!lineECol[k]) { // Not custom color
+					let frameStyle = styleMap[style];
+					if (frameStyle) {
+						delete lineE[k];
+						frame[k] = frameStyle;
+					}
+					else {
+						if (frame[k]) delete frame[k];
+					}
+				}
+				else if(lineECol[k] === '#000000') { // Black custom color
+					let frameStyle = styleMapCol[style];
+					if (frameStyle) {
+						delete lineE[k];
+						frame[k] = frameStyle;
+					}
+					else {
+						if (frame[k]) delete frame[k];
+					}
+				}
+			}
+		}
 		
-		
-		let qa = 'pu_q'		
+		let qa = 'pu_q';
 		parse.surface(qa, pu, puzzle);
 		parse.deletelineE(qa, pu, puzzle);
 
