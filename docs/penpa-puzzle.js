@@ -102,7 +102,7 @@ class PenpaPuzzle {
 			["\"__a\"", "z_"],
 			["null", "zO"],
 		];
-		this.version = [3, 0, 3]; // Also defined in HTML Script Loading in header tag to avoid Browser Cache Problems
+		this.version = [3, 0, 7]; // Also defined in HTML Script Loading in header tag to avoid Browser Cache Problems
 		this.multisolution = false;
 		this.borderwarning = true;
 		this.user_tags = [];
