@@ -2226,8 +2226,7 @@ const PenpaSymbol = (() => {
     }
 
     P.draw_arc = function(ctx, num, x, y, ccolor = "none") {
-        var r = 0.2,
-            th;
+        var th1, th2, th2a;
         ctx.setLineDash([]);
         ctx.lineCap = "butt";
         if (ccolor !== "none") {
@@ -2237,28 +2236,39 @@ const PenpaSymbol = (() => {
             ctx.fillStyle = Color.BLACK;
             ctx.strokeStyle = Color.BLACK;
         }
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3 * 0.85; //ML
         ctx.lineJoin = "bevel"
         switch (num) {
             case 1:
             case 2:
             case 3:
             case 4:
+                let a = [0, 1, 2, 3], tmp;
+                if ((this.pu.reflect[0] === -1)) { // reflect L-R
+                    [a[0], a[3]] = [a[3], a[0]];
+                    [a[1], a[2]] = [a[2], a[1]];
+                }
+                if ((this.pu.reflect[1] === -1)) { // reflect U-D
+                    [a[0], a[1]] = [a[1], a[0]];
+                    [a[2], a[3]] = [a[3], a[2]];
+                }
+                a.push(...a); // 2x
+                num = a[num - 1 + this.pu.theta / 90] + 1;
                 ctx.beginPath();
-                th = this.rotate_theta(90 * (num - 1) + 180) ;
-                //ctx.moveTo((x + Math.sqrt(2) * 0.5 * Math.cos(th + Math.PI * 0.25)), (y + Math.sqrt(2) * 0.5 * Math.sin(th + Math.PI * 0.25)));
-                // ctx.arcTo( (x + Math.sqrt(2) * 0.5 * Math.cos(th - Math.PI * 0.25)), (y + Math.sqrt(2) * 0.5 * Math.sin(th - Math.PI * 0.25)),
-                //            (x + Math.sqrt(2) * 0.5 * Math.cos(th - Math.PI * 0.75)), (y + Math.sqrt(2) * 0.5 * Math.sin(th - Math.PI * 0.75)), 1);
-                ctx.arc( (x + Math.sqrt(2) * 0.5 * Math.cos(th - Math.PI * 0.25)), (y + Math.sqrt(2) * 0.5 * Math.sin(th - Math.PI * 0.25)), 1,
-                        th + Math.PI * 0.5, th + Math.PI, false);
+                th2a = this.rotate_theta(135 + 90 * (num - 1), 0);
+                th1 = this.rotate_theta(270 + 90 * (num - 1), 0);
+                th2 = this.rotate_theta(0 + 90 * (num - 1), 0);                
+                ctx.arc(x + Math.sqrt(2) * 0.5 * Math.cos(th2a), y + Math.sqrt(2) * 0.5 * Math.sin(th2a), 1, th1, th2);
                 ctx.stroke();
+                console.log(th1 * 180 / Math.PI, th2 * 180 / Math.PI)
                 break;
             case 5:
             case 6:
                 ctx.beginPath();
-                th = this.rotate_theta(90 * (num - 5));
-                ctx.moveTo((x + Math.sqrt(2) * 0.5 * Math.cos(th + Math.PI * 0.25)), (y + Math.sqrt(2) * 0.5 * Math.sin(th + Math.PI * 0.25)));
-                ctx.lineTo((x + Math.sqrt(2) * 0.5 * Math.cos(th - Math.PI * 0.75)), (y + Math.sqrt(2) * 0.5 * Math.sin(th - Math.PI * 0.75)));
+                th1 = this.rotate_theta(45 + 90 * (num - 5));
+                th2 = this.rotate_theta(225 + 90 * (num - 5));
+                ctx.moveTo((x + Math.sqrt(2) * 0.5 * Math.cos(th1)), (y + Math.sqrt(2) * 0.5 * Math.sin(th1)));
+                ctx.lineTo((x + Math.sqrt(2) * 0.5 * Math.cos(th2)), (y + Math.sqrt(2) * 0.5 * Math.sin(th2)));
                 ctx.stroke();
         }
     }
