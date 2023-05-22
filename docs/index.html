@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Sudokupad penpa+ importer 0.1.19</title>
+		<title>Sudokupad penpa+ importer 0.1.20</title>
 		<meta name="author" content="Mark Langezaal, MarkTekfan#8907">
 		<meta name="copyright"content="Mark Langezaal">
 		<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABXFBMVEX////aGk0daJs8fakaZpnhOmfcIVRFg67+/f5nmLvjRG7cI1XbHlDnaovkRnAuc6LhPGjdJ1g0d6Ynb6DgNmP7/P3++vvw9fj3zdhUjrQ5e6gjbZ4gap3qfZrfMmD2+fv+9vj98/XM3emxy92Ut9DztMTwnbNEgq1AgKswdaQqcqHob4/iQWveLl3n7/T87/Pj7PPd6PD75+zC1uS40OD40tyiwdWZutKCrMh/qcd8qMZtnr/xo7ddkrdOiLBIhrChh6iqep7mZYflVXviT3fiS3Tq8PX64uj63+bF2Oanxdn2yNT2xNGHpMHzrsBwn8Dyrb95lribl7Xuk6zukartj6jMiaZFeqaEgKVifKXuiaNveKHNgaBHc6B7dp5Sb53peZbnd5aOa5ReZJLcb5HpcJCiZ4+yZo2eYYukXojcYIW1WIHLWIC9T3rRR3LVQm3lPmrSPGnTM2LXMF5v7Cm9AAABh0lEQVQ4y72S51PCQBDFs5dLciQxjQBSBRGRZu+CdHvvvfde/v8ZwUkAB/KNcb/97r3budt9VJtrvpOQkUFrfUPQ9zI4tmhp8EPOi73uKSvdWYDzqAfHpxzNWihEkRUeUsfYzsmYGyGUa65R7y3rkQIIUkDI0zjGeZFtXLOHGwxKQBIgqYC6HezqsWO6D2E5467rRAHQeVG8Ha5S/zrycWfvpbzT1IfcXyqvQqnTPOiexa8sA+Uxg6ezTzroa6Te0hF+YRmRTRg4g0+fH1f/fquDZRRp1wDXJKKRrdlwNFBDupWBr8E/GBxLWiuDkDYn1UPLTYbLh6tv8Btgi/todGjO0ZxlfFO6MGhUwzS6FhPDptw/U9mGZ/+jdsd1EJXvFFB3glUy9xkN1TvyN5/VNAATISTswVolEZzMNQZGFPwSpCQVilvoN1MTWt9k46PGFihnOgVMJRT3Hhwbd1CDQ83BHEiwYpJ5Q26XZeyLAqgnaJqyqkgAkrmsb4KyrOXeYNdoN6HaWj9O3CwsngKXCwAAAABJRU5ErkJggg==" />
@@ -114,7 +114,7 @@ span.extra {
 					<button class="appmenu" id="appmenubtn"></button>
 				</div>
 				<img src="./images/sudokupad_square_logo.png"> <span>&nbsp;&nbsp;&nbsp;</span>
-				<span>SudokuPad Penpa+ Puzzle Importer v0.1.19</span>
+				<span>SudokuPad Penpa+ Puzzle Importer v0.1.20</span>
 			</div>
 			<div class="penpa">
 				<div">
@@ -159,7 +159,12 @@ span.extra {
 				const queryString = window.location.search;
 				const urlParams = new URLSearchParams(queryString);
 				const url = urlParams.get('url')
-				if (url) {
+				const hash = window.location.hash;
+				if (hash) {
+					urltext.value = hash.substring(1);
+					openInSudokupad(false);
+				}
+				else if (url) {
 					urltext.value = decodeURIComponent(url);
 				}
 				urltext.focus();
@@ -199,7 +204,7 @@ span.extra {
 				}
 			}
 
-			function openInSudokupad(event)
+			function openInSudokupad(openinNewWindow = true)
 			{
 				let selectElem = document.getElementById('select-destination');
 				let destination = selectElem.value;
@@ -233,7 +238,7 @@ span.extra {
 					}
 					let redirect = destination + puzzleid;
 					console.log(redirect, redirect.length);
-					window.open(redirect, '_blank');
+					window.open(redirect, openinNewWindow ? '_blank' : '_self');
 				})
 				.catch(err => {
 					console.error('Unable to convert Penpa puzzle link');
@@ -250,9 +255,7 @@ span.extra {
 					button.disabled = false;
 					button.innerHTML = "Convert url";
 				});
-
 			}
-
 		</script>
 
 	</body>
