@@ -54,29 +54,49 @@ const puzzleLinkConverter = (() => {
 		}
 	}
 
-	const shortUrls = [
+	const tinyurlUrls = [
 		/tinyurl.com\/(.+)/,
 		/f-puzzles.com\/\?id=(.+)/,
 	]
+	const tinypuzUrls = [
+		/tinypuz.com\/(.+)/,
+	]
 	const expandShortUrl = function(url) {
-		let short = shortUrls.map(re => url.match(re)).find(m => m);
-		if(!short) {
-			return url;
+		let short = tinyurlUrls.map(re => url.match(re)).find(m => m);
+		if(short) {
+			return new Promise((resolve, reject) => {
+				//fetch('http://localhost:3000/tinyurl/' + short[1])
+				fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + short[1])
+				.then(res => res.text())
+				.then(text => {
+					console.log('json response:', text)
+					let result = JSON.parse(text)
+					if (result.success) {
+						return resolve(result.longurl);
+					}
+					return resolve(url);
+				})
+				.catch(reject);
+			});
 		}
-		return new Promise((resolve, reject) => {
-			//fetch('http://localhost:3000/tinyurl/' + short[1])
-			fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + short[1])
-			.then(res => res.text())
-			.then(text => {
-				console.log('json response:', text)
-				let result = JSON.parse(text)
-				if (result.success) {
-					return resolve(result.longurl);
-				}
-				return resolve(url);
-			})
-			.catch(reject);
-		});
+		short = tinypuzUrls.map(re => url.match(re)).find(m => m);
+		if(short) {
+			return new Promise((resolve, reject) => {
+				//fetch('http://localhost:3000/tinyurl/' + short[1])
+				fetch('https://marktekfan-api.azurewebsites.net/tinypuz/' + short[1])
+				.then(res => res.text())
+				.then(text => {
+					console.log('json response:', text)
+					let result = JSON.parse(text)
+					if (result.success) {
+						return resolve(result.longurl);
+					}
+					return resolve(url);
+				})
+				.catch(reject);
+			});
+		}
+		return url;
 	}
 
 	document.addEventListener('DOMContentLoaded', () => {
