@@ -1577,6 +1577,22 @@ const PenpaDecoder = (() => {
 
 		addGivens(pu, puzzle);
 
+		cleanupKillercages(pu);
+		function cleanupKillercages(pu) {
+			const {point2centerPoint} = PenpaTools;
+			const list = pu.pu_q.cage || [];
+			let wpLines = PenpaTools.penpaLines2WaypointLines(list);
+			let cageSet = new Set();
+			wpLines.forEach(line => {
+				let p1 = line.keys[0];
+				let p2 = line.keys[1];
+				cageSet.add(point2centerPoint(p1));
+				cageSet.add(point2centerPoint(p2));
+			});
+			const killercages = pu.pu_q.killercages || [];
+			pu.pu_q.killercages = killercages.filter(cage => cage.some(p => cageSet.has(p)));
+		}
+
 		moveBlackEdgelinesToFrame(pu);
 		function moveBlackEdgelinesToFrame(pu) {
 			const lineE = pu.pu_q.lineE;
