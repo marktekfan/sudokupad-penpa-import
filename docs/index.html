@@ -134,7 +134,7 @@ select {
   8% { transform: rotate(0deg); }
   40% { transform: rotate(0deg); }
   42% { transform: rotate(5deg); }
-  44% { transform: rotate(0deg); }
+  44% { transform: rotate(0deg) scale(110%); }
   46% { transform: rotate(-12deg); }
   48% { transform: rotate(0deg); }
   100% { transform: rotate(0deg); }
@@ -180,7 +180,7 @@ select {
 							<select id="select-action" onchange="OnSelectActionChange(this.value)">
 								<option value="open">Open in new tab</option>
 								<option value="create-url">Create URL</option>
-								<option value="create-tinyurl">Create TinyURL</option>
+								<option value="create-tinyurl">Create short TinyPuz.com</option>
 							</select>
 						</div>
 					</div>
@@ -228,7 +228,7 @@ select {
 								</svg>
 								Email: <a href="mailto:MarkTekfan@gmail.com">MarkTekfan@gmail.com</a></li>
 								<li> <img id="kofi-logo" style="position: absolute; margin-left: -8px; margin-top: -7px;" src="images/ko-fi-white.png" width="40"  />
-									<span style="margin-left: 34px;">If this converter was useful for you, consider buying me a <a href="https://ko-fi.com/marktekfan" target="_blank">Ko-fi</a></span></li>
+									<span style="margin-left: 34px;">If this converter was useful for you, consider caffeinate me with some <a href="https://ko-fi.com/marktekfan" target="_blank">Ko-fi</a></span></li>
 						</ul>
 					</p>
 					<div class="footer2">
@@ -353,9 +353,9 @@ select {
 
 							case 'create-tinyurl':
 								textarea.value = '';
-								textarea.placeholder = '...Creating TinyURL...';
+								textarea.placeholder = '...Creating TinyPuz URL...';
 								let newUrl = await request_shortlink(redirect);
-								textarea.value = newUrl || 'Error while creating tinyurl';
+								textarea.value = newUrl || 'Error while creating TinyPuz URL';
 								if (newUrl) {
 									textarea.select();
 									textarea.focus();
@@ -400,10 +400,10 @@ select {
 			async function request_shortlink(url) {
 				try {
 					let res = await fetch('https://tinyurl.com/api-create.php?url=' + url);
-					let text = await res.text();
-					return text;
+					let text = await res.text() || '';
+					return text.replace('tinyurl.com', 'tinypuz.com');
 				} catch (error) {
-					console.log('Error while creating tinyurl');
+					console.log('Error while creating TinyPuz URL');
 					return null;
 				}
 			}
