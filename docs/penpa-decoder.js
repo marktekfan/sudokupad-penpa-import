@@ -1,29 +1,38 @@
 const PenpaDecoder = (() => {
 	'use strict';	
-    function _constructor() {
-    }
+    function _constructor() { }
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
-	C.flags = {
-		thickLines: true,
-		expandGrid: true,
-		doubleLayer: true,
-		useClipPath: false,
-		debug: 0 || document.location.host.startsWith('127.0.0.1'),
+	C.settings = {
+		thickLines:  {defaultValue: true,  title: "Thicken lines to match Sudokupad feature lines"},
+		expandGrid:  {defaultValue: true,  title: "Expand grid for wide outside clues"},
+		removeFrame: {defaultValue: true,  title: "Remove extra Frame lines"},
+		doubleLayer: {defaultValue: true,  title: "Doubling of transparant underlay colors"},
+		useClipPath: {defaultValue: false, title: "Use clip-path for shapes"},
+		debug:       {defaultValue: 0 || document.location.host.startsWith('127.0.0.1'), title: "Add penpa debug info to puzzle"}
 	};
-	C.isDoubleLayer = (ctx) => (C.flags.doubleLayer || 0) && !PenpaTools.ColorIsTransparent(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
-	
+	C.flags = {}; // Will be initalized with C.settings values
+
 	C.ParseUrlSettings = () => {
 		[...new URLSearchParams(document.location.search)].forEach(([key, val]) => {
-			//if(key.match(/^setting-/)) {
-				let settingName = key.replace(/^setting-/, '');
-				let settingValueTrue = ['true', 't', '1', ''].includes(val.toLowerCase());
-				let settingValueFalse = ['false', 'f', '0'].includes(val.toLowerCase());
-				C.flags[settingName] = settingValueTrue ? true : (settingValueFalse ? false : val);
-			//}
+			let settingName = key.replace(/^setting-/, '');
+			// Make case insentitive
+			settingName = Object.keys(C.flags).reduce((prev, cur)=> prev.toLowerCase() === cur.toLowerCase() ? cur : prev, settingName);
+			const settingValueTrue = ['true', 't', '1', ''].includes(val.toLowerCase());
+			const settingValueFalse = ['false', 'f', '0'].includes(val.toLowerCase());
+			const settingValue = settingValueTrue ? true : (settingValueFalse ? false : val);
+			if (C.flags[settingName] === undefined) {
+				console.info(`Extra URL option: ${settingName}=${settingValue}`);
+			}
+			else {
+				console.info(`Extra URL setting: ${settingName}=${settingValue}`);
+			}		
+			C.flags[settingName] = settingValue;
 		});
 	}
 
+	C.isDoubleLayer = (ctx) => (C.flags.doubleLayer || 0) && !PenpaTools.ColorIsTransparent(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
+	
 	let _rnd = 0; // static random seed
 
 	const rePenpaUrl = /\/penpa-edit\//i;
@@ -385,7 +394,7 @@ const PenpaDecoder = (() => {
 		const {top, left, bottom, right, height, width} = getBoundsRC(centerlist, point2matrix);
 		// Create 'outside cell mask' only when cells are removed
 		if (centerlist.length === width * height) {
-			return;
+			return false;
 		}
 
 		// Mask off non-grid grid lines
@@ -427,6 +436,7 @@ const PenpaDecoder = (() => {
 		}
 
 		doc.hasCellMask = true;
+		return true;
 	}
 
 	function drawBoardLattice(pu, puzzle, doc) {
@@ -1000,7 +1010,7 @@ const PenpaDecoder = (() => {
 			}
 		});
 	}
-	
+
 	function isMaskedCell(pu, p) {
 		const {doc, point2RC, isBoardCell} = PenpaTools;
 		if (!doc.hasCellMask) return false;
@@ -1455,6 +1465,70 @@ const PenpaDecoder = (() => {
 		});
 	}
 
+	function moveBlackEdgelinesToFrame(pu) {
+		const lineE = pu.pu_q.lineE;
+		const frame = pu.frame;
+		const lineECol = pu.pu_q_col.lineE;
+		const styleMap = {2: 2, 21: 21, 80: 1};
+		const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
+		for(let k in lineE) {
+			let style = lineE[k];
+			if (!lineECol[k]) { // Not custom color
+				let frameStyle = styleMap[style];
+				if (frameStyle) {
+					delete lineE[k];
+					frame[k] = frameStyle;
+				}
+				else {
+					if (frame[k]) delete frame[k];
+				}
+			}
+			else if(lineECol[k] === '#000000') { // Black custom color
+				let frameStyle = styleMapCol[style];
+				if (frameStyle) {
+					delete lineE[k];
+					frame[k] = frameStyle;
+				}
+				else {
+					if (frame[k]) delete frame[k];
+				}
+			}
+		}
+	}
+
+	function cleanupKillercages(pu) {
+		const {point2centerPoint} = PenpaTools;
+		const list = pu.pu_q.cage || [];
+		let wpLines = PenpaTools.penpaLines2WaypointLines(list);
+		let cageSet = new Set();
+		wpLines.forEach(line => {
+			let p1 = line.keys[0];
+			let p2 = line.keys[1];
+			cageSet.add(point2centerPoint(p1));
+			cageSet.add(point2centerPoint(p2));
+		});
+		const killercages = pu.pu_q.killercages || [];
+		pu.pu_q.killercages = killercages.filter(cage => cage.some(p => cageSet.has(p)));
+	}
+
+	function removeFrameWhenEqualToRegions(pu, puzzle, doc, regions) {
+		if (!regions) return;
+		if (doc.hasCellMask) return;
+
+		// frame must exactly match all regions
+		// Then frame can be removed
+		let frame = Object.assign({}, pu.frame);
+		regions.forEach(reg => {
+			let outline = PenpaRegions.createOutline(pu, reg);
+			outline.forEach(line => delete frame[line]);
+		});
+
+		// Remove frame lines when fully overlapped by regions
+		if (Object.keys(frame).length === 0) {
+			pu.frame = {};
+		}
+	}
+
 	C.convertPenpaPuzzle = function (pu) {
 		if (typeof pu === 'string') {
 			pu = C.loadPenpaPuzzle(pu);
@@ -1493,6 +1567,8 @@ const PenpaDecoder = (() => {
 		convertFeature2Line(pu, 'freeline', 'line');
 		convertFeature2Line(pu, 'freelineE', 'lineE');
 		convertFeature2Line(pu, 'wall', 'line');
+
+		moveBlackEdgelinesToFrame(pu);		
 
 		// Cleanup frame
 		for (let k in pu.pu_q.deletelineE) {
@@ -1568,64 +1644,24 @@ const PenpaDecoder = (() => {
 		};
 		createBlankPuzzle(pu, puzzle, width, height);
 
-		addSudokuRegions(pu, puzzle, squares, regions, uniqueRowsCols);
-
+		
 		positionBoard(pu, puzzle, doc);
 		
-		hideGridLines(pu, puzzle, doc);
+		if (!hideGridLines(pu, puzzle, doc)) {
+			// must be after hideGridLines
+			if (PenpaDecoder.flags.removeFrame) {
+				removeFrameWhenEqualToRegions(pu, puzzle, doc, regions);
+			}
+		}
+		
+		addSudokuRegions(pu, puzzle, squares, regions, uniqueRowsCols);
 
 		addCageMetadata(pu, puzzle);
 
 		addGivens(pu, puzzle);
 
 		cleanupKillercages(pu);
-		function cleanupKillercages(pu) {
-			const {point2centerPoint} = PenpaTools;
-			const list = pu.pu_q.cage || [];
-			let wpLines = PenpaTools.penpaLines2WaypointLines(list);
-			let cageSet = new Set();
-			wpLines.forEach(line => {
-				let p1 = line.keys[0];
-				let p2 = line.keys[1];
-				cageSet.add(point2centerPoint(p1));
-				cageSet.add(point2centerPoint(p2));
-			});
-			const killercages = pu.pu_q.killercages || [];
-			pu.pu_q.killercages = killercages.filter(cage => cage.some(p => cageSet.has(p)));
-		}
 
-		moveBlackEdgelinesToFrame(pu);
-		function moveBlackEdgelinesToFrame(pu) {
-			const lineE = pu.pu_q.lineE;
-			const frame = pu.frame;
-			const lineECol = pu.pu_q_col.lineE;
-			const styleMap = {2: 2, 21: 21, 80: 1};
-			const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
-			for(let k in lineE) {
-				let style = lineE[k];
-				if (!lineECol[k]) { // Not custom color
-					let frameStyle = styleMap[style];
-					if (frameStyle) {
-						delete lineE[k];
-						frame[k] = frameStyle;
-					}
-					else {
-						if (frame[k]) delete frame[k];
-					}
-				}
-				else if(lineECol[k] === '#000000') { // Black custom color
-					let frameStyle = styleMapCol[style];
-					if (frameStyle) {
-						delete lineE[k];
-						frame[k] = frameStyle;
-					}
-					else {
-						if (frame[k]) delete frame[k];
-					}
-				}
-			}
-		}
-		
 		let qa = 'pu_q';
 		parse.surface(qa, pu, puzzle);
 		parse.deletelineE(qa, pu, puzzle);

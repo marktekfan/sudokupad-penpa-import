@@ -496,7 +496,7 @@ const PenpaRegions = (() => {
 		return {squares, regions};
 	}
 
-	function createOutline(pu, regionyx) {
+	C.createOutline = function(pu, regionyx) {
 		const {matrix2point} = PenpaTools;
 		let frame = {};
 		for(let yx of regionyx) {
@@ -518,14 +518,14 @@ const PenpaRegions = (() => {
 		return outline;
 	}
 
-	function createRegionOutlines(pu, sq) {
+	C.createRegionOutlines = function(pu, sq) {
 		sq.region_outline = {};
 		for(let reg in sq.regions) {
 			let region = sq.regions[reg];
 			if (region.length !== sq.size) {
 				continue;
 			}
-			sq.region_outline[reg] = createOutline(pu, region);
+			sq.region_outline[reg] = C.createOutline(pu, region);
 		}
 	}
 
@@ -593,7 +593,7 @@ const PenpaRegions = (() => {
 				if (Object.keys(sq.regions).length !== sq.size) {
 					sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edge_elements);
 				}
-				createRegionOutlines(pu, sq);
+				C.createRegionOutlines(pu, sq);
 				// console.log(sq);
 			}
 
@@ -630,7 +630,7 @@ const PenpaRegions = (() => {
 						// Add all valid region outlines of current square
 						validRegionOutlines.forEach(outline => outline.forEach(k => { edges[k] = 21; })) // draw (thick) outline
 						sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edges);
-						createRegionOutlines(pu, sq);
+						C.createRegionOutlines(pu, sq);
 						let resolved = Object.keys(sq.regions).length === sq.size;
 						// if (!resolved) pu.pu_q.lineE = edges;
 						return resolved;

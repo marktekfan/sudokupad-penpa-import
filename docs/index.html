@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Sudokupad penpa+ importer 0.1.22</title>
+		<title>Sudokupad penpa+ importer 0.23.0</title>
 		<meta name="author" content="Mark Langezaal, MarkTekfan#8907">
 		<meta name="copyright"content="Mark Langezaal">
 		<link rel="icon" type="image/x-icon" href="./favicon.ico">
@@ -43,7 +43,7 @@
 					<button class="appmenu" id="appmenubtn"></button>
 				</div>
 				<img src="./images/SudokupadImport.png"> <span>&nbsp;&nbsp;&nbsp;</span>
-				<span>SudokuPad Penpa+ Puzzle Importer v0.1.22</span>
+				<span>SudokuPad Penpa+ Puzzle Importer v0.23.0</span>
 			</div>
 			<div class="penpa">
 				<div">
@@ -77,32 +77,12 @@
 					</div>
 					<div id="errortext"> </div>
 					<fieldset style="display: none;">
-						<legend>Converter options</legend>					
-						<div>
-							<input type="checkbox" id="thickLines" name="thickLines">
-							<label for="thickLines">Thicken lines to match Sudokupad feature lines</label>
-						</div>
-						<div>
-							<input type="checkbox" id="expandGrid" name="expandGrid">
-							<label for="expandGrid">Expand grid for wide outside clues</label>
-						</div>
-						<div>
-							<input type="checkbox" id="doubleLayer" name="doubleLayer">
-							<label for="doubleLayer">Doubling of transparant underlay colors</label>
-						</div>
-						<div>
-							<input type="checkbox" id="useClipPath" name="useClipPath">
-							<label for="useClipPath">Use clip-path</label>
-						</div>
-						<div>
-							<input type="checkbox" id="debug" name="debug">
-							<label for="debug">Add penpa debug info to puzzle</label>
-						</div>
+						<legend>Importer options</legend>
 					</fieldset>
 					<p>For any issues, questions or suggestions about this converter contact me:<br />
 						<ul>
 							<li><svg class="iconleft" width="24" height="24" viewBox="0 -29 256 256"><path fill="#5865F2" d="M217 17c-17-8-34-14-53-17l-7 14c-19-3-39-3-58 0L92 0C73 3 56 9 39 17 6 67-3 116 1 165c22 17 44 27 65 33l14-23-22-10 5-5c42 20 88 20 130 0l5 5-22 10 14 23c21-6 43-16 65-33 5-56-9-105-38-148ZM85 135c-12 0-23-12-23-26s11-26 23-26c13 0 24 12 23 26 1 14-10 26-23 26Zm86 0c-13 0-23-12-23-26s10-26 23-26c12 0 23 12 23 26s-11 26-23 26Z"/></svg>
-								Discord: <a href="https://discordapp.com/users/MarkTekfan#8907" target="_blank">MarkTekfan#8907</a></li>
+								Discord: <a href="https://discordapp.com/users/MarkTekfan" target="_blank">MarkTekfan</a></li>
 							<li>
 								<svg class="iconleft" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" >
 									<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -122,7 +102,7 @@
 				</div>
 			</div>
 		</div>
-		<!-- <script defer src="./test.js"></script> -->
+		<script defer src="./test.js"></script>
 		<script defer>
 			window.addEventListener('DOMContentLoaded', () => {
 				let urltext = document.getElementById('penpa-url');
@@ -138,6 +118,40 @@
 					urltext.value = decodeURIComponent(url);
 				}
 				urltext.focus();
+
+				let settings = PenpaDecoder.settings;
+				let fieldset = document.querySelector('fieldset');
+				Object.keys(settings).forEach(setting => {
+					// <div>
+					// 	<input type="checkbox" id="thickLines" name="thickLines">
+					// 	<label for="thickLines">Thicken lines to match Sudokupad feature lines</label>
+					// </div>
+					let divElem = document.createElement('div');
+					let inputElem =  document.createElement('input');
+					inputElem.type = 'checkbox';
+					inputElem.id = setting;
+					inputElem.name = setting;
+					
+					let labelElem =  document.createElement('label');
+					labelElem.htmlFor = setting;
+					labelElem.innerText = settings[setting].title;
+					divElem.appendChild(inputElem);
+					divElem.appendChild(labelElem);
+					fieldset.appendChild(divElem);
+
+					PenpaDecoder.flags[setting] = settings[setting].defaultValue;
+				});
+
+				const test = urlParams.get('test');
+				if (test !== null) {
+					fieldset.style.display = 'block';
+				}
+
+				PenpaDecoder.ParseUrlSettings();
+				let options = document.querySelectorAll('fieldset input[type=checkbox]');
+				for(let option of options) {
+					option.checked = PenpaDecoder.flags[option.name] ? true : false;
+				}
 			});
 			function textOnChange(event) {
 				let errortext = document.getElementById('errortext');

@@ -113,6 +113,14 @@ svg.iconright { margin-left: 0.25em }
 	height: 10rem;
 }
 
+fieldset label {
+	font-size: 90%;
+	padding-left: 0.5rem;
+}
+fieldset {
+	margin-bottom: 1rem;
+}
+
 .footer2 {
 	/* display: inline-flex; */
 	flex-direction: row;

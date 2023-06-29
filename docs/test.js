@@ -1,18 +1,19 @@
 'use strict';
 (() => {
-	// create function, it expects 2 values.
-	function insertEnd(newElement, targetElement) {
-		// target is what you want it to go after. Look for this elements parent.
-		let parent = targetElement.parentNode;
 
-		// if the parents lastchild is the targetElement...
-		if (parent.lastChild == targetElement) {
-			// add the newElement after the target element.
-			parent.appendChild(newElement);
-		} else {
-			// else the target has siblings, insert the new element between the target and it's next sibling.
-			parent.insertBefore(newElement, parent.lastChild);
-		}
+	const queryString = window.location.search;
+	const urlParams = new URLSearchParams(queryString);
+	let port = urlParams.get('port') 
+	let test = urlParams.get('test') 
+	if (test !== null) {
+		port = port || test;
+	}
+	if (port !== null) {
+		port = Number(port) > 0 ? Number(port) : 5501;
+		addDestination(`http://127.0.0.1:${port}/index.html?puzzleid=`);
+	}
+	if (test === null) {
+		return;
 	}
 
 	let btn = document.getElementById('btnconvert');
@@ -24,6 +25,20 @@
 		// call the original
 		oldHandler.apply(this, arguments);
 	}
+
+	// function insertEnd(newElement, targetElement) {
+	// 	// target is what you want it to go after. Look for this elements parent.
+	// 	let parent = targetElement.parentNode;
+
+	// 	// if the parents lastchild is the targetElement...
+	// 	if (parent.lastChild == targetElement) {
+	// 		// add the newElement after the target element.
+	// 		parent.appendChild(newElement);
+	// 	} else {
+	// 		// else the target has siblings, insert the new element between the target and it's next sibling.
+	// 		parent.insertBefore(newElement, parent.lastChild);
+	// 	}
+	// }
 
 	// let newBtn = document.createElement('button');
 	// newBtn.id = 'test1';
@@ -48,7 +63,10 @@
 		initTest(urltext);
 	});
 
-	addDestination('http://127.0.0.1:5501/index.html?puzzleid=');
+	let elem = document.querySelector('fieldset');
+	if (elem) {
+		elem.style.display = 'block';
+	}
 })();
 
 function onClickTest() {
