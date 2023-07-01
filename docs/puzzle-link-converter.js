@@ -17,7 +17,7 @@ const puzzleLinkConverter = (() => {
 			if (!puzzle) return null;
 			let settings = Object.entries(puzzle.settings).map(([k, v]) => `setting-${k}=${v}`).join('&');
 			delete puzzle.settings;
-			let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle))) + (settings ? '?' + settings : '');
+			let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(puzzle)) + (settings ? '?' + settings : '');
 			return puzzleId;
 		}
 
@@ -52,7 +52,8 @@ const puzzleLinkConverter = (() => {
 					return puzzleId;
 				}
 				else if (puzzle.size && puzzle.grid) {
-					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle)));
+					//var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle)));
+					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
 					return puzzleId;
 				}
 			}

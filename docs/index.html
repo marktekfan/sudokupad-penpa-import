@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Sudokupad penpa+ importer 0.24.1</title>
+		<title>Sudokupad penpa+ importer 0.24.2</title>
 		<meta name="author" content="Mark Langezaal, MarkTekfan#8907">
 		<meta name="copyright"content="Mark Langezaal">
 		<link rel="icon" type="image/x-icon" href="./favicon.ico">
@@ -43,7 +43,7 @@
 					<button class="appmenu" id="appmenubtn"></button>
 				</div>
 				<img src="./images/SudokupadImport.png"> <span>&nbsp;&nbsp;&nbsp;</span>
-				<span>SudokuPad Penpa+ Puzzle Importer v0.24.1</span>
+				<span>SudokuPad Penpa+ Puzzle Importer v0.24.2</span>
 			</div>
 			<div class="penpa">
 				<div>
@@ -229,7 +229,7 @@
 
 			});
 
-			let lastActionSelection = null;
+			let lastActionSelection = 'open'; // default action
 
 			const reUrl = /^(https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/;
 			const reJSON = /^[\s'"]*\{/;
@@ -315,15 +315,10 @@
 
 				Promise.resolve(urlstring)
 				.then(url => puzzleLinkConverter.expandShortUrl(url))
-				//.then(url => urltext.value = url)
 				.then(url => puzzleLinkConverter.convertPuzzleUrl(url))
 				.then(async puzzleid => {
 					if (!puzzleid) {
-						//let errortext = document.getElementById('errortext');
-						//if (!errortext.innerHTML.trim()) {
-							throw {customMessage: 'Not a recognized puzzle URL'}
-						//}
-						//return;
+						throw {customMessage: 'Not a recognized puzzle URL'}
 					} 
 					if (destination.includes('?')) {
 						puzzleid = puzzleid.replace('?', '&');
@@ -365,8 +360,17 @@
 								let raw = puzzleid.split('&')[0];
 								if (reFPuzPrefix.test(puzzleid)) {
 									raw = stripFPuzPrefix(raw);
-									let json = PuzzleZipper.unzip(await loadFPuzzle(raw));
-									urltext.value = json;
+									let fpuzzle = loadFPuzzle.saveDecodeURIComponent(raw);
+									if(typeof fpuzzle === 'string') {
+										try {
+											fpuzzle = JSON.parse(loadFPuzzle.decompressPuzzle(fpuzzle));
+										}
+										catch {
+											// maybe it was zipped, but this is unlikely
+											fpuzzle = JSON.parse(PuzzleZipper.unzip(loadFPuzzle.decompressPuzzle(fpuzzle)));
+										}
+									}
+									urltext.value = JSON.stringify(fpuzzle);
 									document.getElementById('generated-url').value = '';
 								}
 								else if (puzzleid.startsWith('ctc') || puzzleid.startsWith('scl')) {
