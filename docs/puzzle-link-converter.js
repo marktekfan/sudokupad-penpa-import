@@ -6,6 +6,7 @@ const puzzleLinkConverter = (() => {
 	const reCtc = /(app.crackingthecryptic.com\/sudoku\/|sudokupad.app\/(sudoku\/)?)(.+)/
 
 	const loadPuzzle = {};
+	//const loadFPuzzle = loadFPuzzle;
 	
 	const convertPuzzleUrl = url => {
 
@@ -34,6 +35,31 @@ const puzzleLinkConverter = (() => {
 			let sudokupad = url.match(reCtc)
 			let puzzleid = sudokupad[3].replace(/^\?puzzleid=/, '');
 			return puzzleid;
+		}
+
+		url = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
+		if (url.startsWith('{')) {
+			try {
+				let puzzle = {};
+				try {
+					puzzle = JSON.parse(url);
+				}
+				catch {
+					puzzle = JSON.parse(PuzzleZipper.unzip(url));
+				}
+				if (puzzle.id && puzzle.cells) {
+					var puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle)));
+					return puzzleId;
+				}
+				else if (puzzle.size && puzzle.grid) {
+					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
+					return puzzleId;
+				}
+			}
+			catch(ex) {
+				throw {customMessage: ex.message};
+			}
+			throw {customMessage: "Not a recognized JSON puzzle format"};
 		}
 
 		return null;

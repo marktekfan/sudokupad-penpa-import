@@ -83,10 +83,21 @@ button > svg {
 	top: -0.125rem;
 }
 
+.drophover #penpa-url {
+	background-color: rgb(250, 232, 253);
+}
+
+.drophover {
+	border: 4px dashed gray !important;
+}
+
+/* #btnloadfile { } */
 .penpa {
 	display:flex;
 	font-size: 1.1rem;
-	margin: 1rem;
+	margin: 0.5rem;
+	padding: 4px;
+	border: 4px dashed transparent;
 }
 .penpa button {
 	height: 3rem; line-height: 3rem;
@@ -129,11 +140,22 @@ fieldset {
 	margin: 0.5rem 0 0 0;
 	font-size: 70%;
 }
-#errortext {
+#errorcontainer {
 	margin: 0.5rem;
+	margin-top: 1rem;
 	color: darkred;
-	height: 4rem;
+	height: 3rem;
 }
+#errorcontainer > svg {
+	display:none;
+	margin-bottom: 4px;
+	margin-right: 2px;
+}
+#errorcontainer.error > svg {
+	display:initial;
+}
+
+
 #disclaimer {
 	font-size: 70%;
 }
@@ -162,7 +184,7 @@ select {
 }
 #generated-url-section {
 	display: none;
-	margin-top: 1rem;
+	margin-bottom: 2rem;
 }
 #generated-url-section.visible {
 	display: block;
@@ -181,20 +203,30 @@ select {
 	100% {opacity: 0; margin-left: 1rem;}
 }
 
+#errorcontainer.error {
+	animation-name: error-shift-keyframes;
+	animation-duration: 0.1s;
+	animation-timing-function: linear;
+}
+@keyframes error-shift-keyframes {
+	0% {margin-left: 1rem;}
+	100% {margin-left: 0.2rem;}
+}
+
 #kofi-logo {
-	animation: tilt-shaking 7s infinite ;
+	animation: tilt-shaking 8s infinite ;
 }
 @keyframes tilt-shaking {
   0% { transform: rotate(0deg); }
   2% { transform: rotate(10deg); }
-  4% { transform: rotate(0deg) scale(130%); }
+  4% { transform: rotate(0deg) scale(150%); }
   8% { transform: rotate(-7deg); }
   10% { transform: rotate(0deg); }
   40% { transform: rotate(0deg); }
   42% { transform: rotate(7deg); }
-  44% { transform: rotate(0deg) scale(120%); }
+  44% { transform: rotate(0deg) scale(130%); }
   48% { transform: rotate(-15deg); }
-  50% { transform: rotate(5deg) scale(120%);}
+  50% { transform: rotate(5deg) scale(130%);}
   52% { transform: rotate(-10deg); }
   54% { transform: rotate(5deg); }
   55% { transform: rotate(0deg); }
