@@ -408,7 +408,7 @@ const loadFPuzzle = (() => {
 	};
 	const createBlankPuzzle = (fpuzzle, puzzle) => {
 		puzzle = Object.assign(puzzle, {cellSize: 50, cells: [], regions: []});
-		if(fpuzzle.metaData) puzzle.metaData = Object.assign(fpuzzle.metaData);
+		if(fpuzzle.metadata) puzzle.metadata = Object.assign(fpuzzle.metadata);
 		let regRC = getRegionShape(fpuzzle.size || 9);
 		let regions = {};
 		const convRegion = (r, c, region) => {
@@ -441,14 +441,14 @@ const loadFPuzzle = (() => {
 	const reAllBlankSolution = /^([.]*|0*)$/;
 	const isIntStrict = str => Number.isInteger(Number(str)) && String(Number(str)) === String(str);
 	const puzzleAddMeta = (puzzle, key, val) => {
-		if(puzzle.metaData === undefined) puzzle.metaData = {};
-		let {metaData} = puzzle;
-		if(metaData[key] === undefined) {
-			metaData[key] = val;
+		if(puzzle.metadata === undefined) puzzle.metadata = {};
+		let {metadata} = puzzle;
+		if(metadata[key] === undefined) {
+			metadata[key] = val;
 		}
 		else {
-			if(!Array.isArray(metaData[key])) metaData[key] = [metaData[key]];
-			metaData[key].push(val);
+			if(!Array.isArray(metadata[key])) metadata[key] = [metadata[key]];
+			metadata[key].push(val);
 		}
 	};
 	const isMetaData = cage => {
@@ -464,7 +464,7 @@ const loadFPuzzle = (() => {
 			puzzleAddMeta(puzzle, metaName, metaVal);
 		});
 	};
-	const fpuzzlesParseRC = rc => rc.match(/R([0-9.])C([0-9.]+)/).slice(1, 3).map(Number).map(n => n - 1);
+	const fpuzzlesParseRC = rc => rc.match(/R([0-9]+)C([0-9]+)/).slice(1, 3).map(Number).map(n => n - 1);
 	const offsetRC = (or, oc) => ([r, c]) => [r + or, c + oc];
 	const rcMinMax = rcs => {
 		let min = [999, 999], max = [-999, -999];
@@ -534,12 +534,20 @@ const loadFPuzzle = (() => {
 	parse.author = fpuzzlesParseMeta('author', 'author');
 	parse.ruleset = fpuzzlesParseMeta('ruleset', 'rules');
 	parse.isSolutionBlank = solString => reAllBlankSolution.test(solString);
+	parse.mapSolDigit = (n) => {
+		n = String(n);
+		if(n.length > 1) {
+			console.warn('parsing fpuz: solution value "%s" not supported, substituting "?"', n);
+			n = '?';
+		}
+		return n;
+	};
 	parse.solution = (fpuzzle, puzzle) => {
 		let solution = fpuzzle.solution || [];
 		if(typeof solution === 'string') {
 			solution = solution.split(solution.indexOf(',') !== -1 ? ',' : '');
 		}
-		const solString = solution.map(n => String(n)).join('');
+		const solString = solution.map(parse.mapSolDigit).join('');
 		if(!parse.isSolutionBlank(solString)) {
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`});
 		}
@@ -573,9 +581,9 @@ const loadFPuzzle = (() => {
 	parse.arrow = (fpuzzle, puzzle) => {
 		let customStyle = {};
 		try {
-			customStyle = JSON.parse((puzzle.metaData || {}).customstyle || '{}');
+			customStyle = JSON.parse((puzzle.metadata || {}).customstyle || '{}');
 		} catch (err) {
-			console.warn('Invalid JSON in imported meta data "customStyle":', (puzzle.metaData || {}).customstyle);
+			console.warn('Invalid JSON in imported meta data "customStyle":', (puzzle.metadata || {}).customstyle);
 		}
 		if(customStyle.bulb && customStyle.bulb.color) customStyle.bulb.borderColor = customStyle.bulb.color;
 		(fpuzzle.arrow || []).forEach(part => {
@@ -583,8 +591,8 @@ const loadFPuzzle = (() => {
 				if(line.length <= 1) console.error('Arrow has less than one point!');
 				let points = line.map(fpuzzlesParseRC).map(offsetRC(0.5, 0.5));
 				let dr = points[1][0] - points[0][0], dc = points[1][1] - points[0][1], dist = Math.sqrt(dr * dr + dc * dc);
-				points[0][0] += Math.round(10 * 0.3 * Math.sign(dr) / dist) / 10;
-				points[0][1] += Math.round(10 * 0.3 * Math.sign(dc) / dist) / 10;
+				points[0][0] += Math.round(100 * 0.4 * Math.sign(dr) / dist) / 100;
+				points[0][1] += Math.round(100 * 0.4 * Math.sign(dc) / dist) / 100;
 				puzzleAdd(puzzle, 'arrows', Object.assign({
 					color: '#a1a1a1',
 					headLength: 0.3,
@@ -600,14 +608,14 @@ const loadFPuzzle = (() => {
 					backgroundColor: '#ffffff',
 					center: getPartCenter(part),
 					fontSize: 16,
-					thickness: bulbStrokeThickness,
+					borderSize: bulbStrokeThickness,
 					rounded: true,
 					text: '',
-					width: 0.75 + (max[1] - min[1]), height: 0.75 + (max[0] - min[0]),
+					width: 0.83 + (max[1] - min[1]), height: 0.83 + (max[0] - min[0]),
 				}, customStyle.bulb));
 			}
 			else {
-				let lineThickness = Math.round(bulbSize * getCellSize()); //ML ??? Bug??? getCellSize() is not a function
+				let lineThickness = Math.round(bulbSize * getCellSize());
 				puzzleAdd(puzzle, 'lines', Object.assign({
 					color: '#a1a1a1', thickness: lineThickness, opacity: 0.7,
 					wayPoints: cells
@@ -912,6 +920,7 @@ const loadFPuzzle = (() => {
 			puzzleAdd(puzzle, 'overlays', {
 				backgroundColor: part.baseC,
 				borderColor: part.outlineC,
+				textColor: part.fontC,
 				center: getPartCenter(part),
 				borderSize: 1,
 				rounded: true,
@@ -939,34 +948,62 @@ const loadFPuzzle = (() => {
 			}
 		});
 	};
-	const fixFPuzzleSlashes = data => {
-		const LIMIT = 3000;
-		let uriDecoded = decodeURIComponent(data), reSlash = /(\/)/g, segs = [], matches = [], pats = [];
-		let fixed, combs, pos, seg, bits, m;
-		if(uriDecoded.length < data.length) data = uriDecoded;
-		if(base64Codec.decompress(data) !== null) return data;
-		while((m = reSlash.exec(data)) !== null) matches.push(m.index);
-		matches.length = Math.min(16, matches.length); // Sane limit
-		combs = Math.pow(2, matches.length);
-		for(var i = 0; i < combs; i++) pats.push(i.toString(2).padStart(matches.length, '0'));
-		pats.sort((a, b) => a.replace(/0/g, '').length - b.replace(/0/g, '').length); // Sort by number of replacements
-		if(pats.length > LIMIT) pats.length = LIMIT;
-		for(var i = 0, len = pats.length; i < len; i++) {
-			pos = 0;
-			segs.length = 0;
-			bits = pats[i];
-			for(var i2 = 0, len2 = bits.length; i2 < len2; i2++) {
-				if(bits[i2] === '1') {
-					seg = data.slice(pos, matches[i2]);
-					segs.push(seg, '//');
-					pos += seg.length + 1;
+	parse.disjointgroups = (fpuzzle, puzzle) => {
+		const arrGetMaxLength = (arr = []) => arr.reduce((max, arr) => Math.max(arr.length, max), 0);
+		const {regions = []} = puzzle;
+		let disjointGroups = [],
+				regionCount = regions.length,
+				largestRegion = arrGetMaxLength(regions);
+		for(let c = 0; c < largestRegion; c++) {
+			disjointGroups[c] = [];
+			for(let r = 0; r < regionCount; r++) {
+				if(regions[r][c] !== undefined) {
+					disjointGroups[c].push(regions[r][c]);
 				}
 			}
-			segs.push(data.slice(pos, data.length));
-			fixed = segs.join('');
-			if(base64Codec.decompress(fixed) !== null) return fixed;
 		}
-		return null;
+		disjointGroups.forEach(cells => 
+			puzzleAdd(puzzle, 'cages', {cells, unique: true, type: 'disjoint', style: null})
+		);
+	};
+	const reFPuzPrefix = /^(fpuz(?:zles)?)(.*)/;
+	const stripPrefix = fpuzzle => fpuzzle.replace(reFPuzPrefix, '$2');
+	const fixFPuzzleSlashes = (data, maxTime = 1000, maxChecks = 400) => {
+		const decompressPuzzle = base64Codec.decompress;
+		const reSlashFirst = /^[/](?=([^/]|$))/gm;
+		const reSlash = /[^/][/](?=([^/]|$))/gm;
+		const getSlashIdx = data => {
+			let m, idxs = [];
+			reSlashFirst.lastIndex = 0;
+			if(m = reSlashFirst.exec(data)) idxs.push(m.index);
+			reSlash.lastIndex = 0;
+			while((m = reSlash.exec(data)) !== null) idxs.push(m.index + 1);
+			return idxs;
+		};
+		let checks = 0, time = Date.now();
+		const doubleSlashes = (data, n = 1) => {
+			if(n <= 0) return;
+			if(Date.now() - time >= maxTime) return console.error('fixFPuzzleSlashes timed out after %sms', Date.now() - time);
+			if(checks++ >= maxChecks) return console.error('fixFPuzzleSlashes exceeded %s max checks', checks);
+			let slashes = getSlashIdx(data), len = slashes.length, res;
+			for(let i = 0; i < len; i++) {
+				res = data.substring(0, slashes[i]) + '/' + data.substring(slashes[i]);
+				if(n === 1) {
+					if(decompressPuzzle(res)) return res;
+				}
+				else {
+					res = doubleSlashes(res, n - 1);
+					if(res) return res;
+				}
+			}
+		};
+		if(decompressPuzzle(data)) return data;
+		let n = 1, fixed;
+		while(!fixed && (checks < maxChecks) && (Date.now() - time < maxTime)) {
+			fixed = doubleSlashes(data, n);
+			n++;
+		}
+		return fixed;
 	};
 	const saveDecodeURIComponent = (str, dec) => (dec = decodeURIComponent(str), dec.length < str.length ? dec : str);
 	const parseFPuzzle = fpuzzleRaw => {
@@ -993,16 +1030,15 @@ const loadFPuzzle = (() => {
 			.then(res => res.result);
 	const loadPuzzle = rawId => Promise.resolve()
 		.then(() => fetchRawId(rawId))
-		.then(fpuzzleRaw => fpuzzleRaw.replace(/^fpuzzles/, ''))
+		.then(stripPrefix)
 		.then(parseFPuzzle)
 		.then(puzzle => {
 			if(rawId.length < fpuzzlesTinyIdLength) puzzle.id = rawId;
 			return PuzzleZipper.zip(JSON.stringify(puzzle));
 		})
 		.catch(err => (console.error('Error fetching FPuzzle:', err), Promise.reject(err)));
-
 	const cleanPuzzlePackage = puzzlePackage => {
-		if(puzzlePackage.match(/^fpuzzles/)) {
+		if(puzzlePackage.match(reFPuzPrefix)) {
 			try {
 				let fpuzzle = JSON.parse(loadFPuzzle.decompressPuzzle(saveDecodeURIComponent(puzzlePackage.replace(/^fpuzzles/, ''))));
 				// Remove cells from "customstyle" cages
@@ -1020,9 +1056,10 @@ const loadFPuzzle = (() => {
 	
 	const decodeFPuzzleData = fpuzzleData => JSON.parse(base64Codec.decompress(fixFPuzzleSlashes(saveDecodeURIComponent(fpuzzleData))));
 	const encodeFPuzzleData = fpuzzle => base64Codec.compress(JSON.stringify(fpuzzle));
-	const fpuzzleAddSolution = (fpuzzleData, solution) => encodeFPuzzleData(Object.assign(decodeFPuzzleData(fpuzzleData), {solution}));
+	const addSolution = (fpuzzleData, solution) => encodeFPuzzleData(Object.assign(decodeFPuzzleData(fpuzzleData), {solution}));
 
-
+	loadPuzzle.reFPuzPrefix = reFPuzPrefix;
+	loadPuzzle.stripPrefix = stripPrefix;
 	loadPuzzle.logUnsupported = false;
 	loadPuzzle.fetchRawId = fetchRawId;
 	loadPuzzle.parseFPuzzle = parseFPuzzle;
@@ -1037,7 +1074,7 @@ const loadFPuzzle = (() => {
 	loadPuzzle.cleanPuzzlePackage = cleanPuzzlePackage;
 	loadPuzzle.decodeFPuzzleData = decodeFPuzzleData;
 	loadPuzzle.encodeFPuzzleData = encodeFPuzzleData;
-	loadPuzzle.fpuzzleAddSolution = fpuzzleAddSolution;
+	loadPuzzle.addSolution = addSolution;
 	return loadPuzzle;
 })();
 

@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Sudokupad penpa+ importer 0.24.0</title>
+		<title>Sudokupad penpa+ importer 0.24.1</title>
 		<meta name="author" content="Mark Langezaal, MarkTekfan#8907">
 		<meta name="copyright"content="Mark Langezaal">
 		<link rel="icon" type="image/x-icon" href="./favicon.ico">
@@ -43,7 +43,7 @@
 					<button class="appmenu" id="appmenubtn"></button>
 				</div>
 				<img src="./images/SudokupadImport.png"> <span>&nbsp;&nbsp;&nbsp;</span>
-				<span>SudokuPad Penpa+ Puzzle Importer v0.24.0</span>
+				<span>SudokuPad Penpa+ Puzzle Importer v0.24.1</span>
 			</div>
 			<div class="penpa">
 				<div>
@@ -293,6 +293,9 @@
 				}
 			}
 
+			const reFPuzPrefix = /^(fpuz(?:zles)?)(.*)/;
+			const stripFPuzPrefix = fpuzzle => fpuzzle.replace(reFPuzPrefix, '$2');
+
 			function openInSudokupad(openinNewWindow = true)
 			{
 				let selectElem = document.getElementById('select-destination');
@@ -360,9 +363,9 @@
 							case 'convert-tojson':
 								textarea.value = '';
 								let raw = puzzleid.split('&')[0];
-								if (puzzleid.startsWith('fpuzzles')) {
-									raw = raw.replace(/^fpuzzles/, '');
-									let json = loadFPuzzle.decompressPuzzle(raw);
+								if (reFPuzPrefix.test(puzzleid)) {
+									raw = stripFPuzPrefix(raw);
+									let json = PuzzleZipper.unzip(await loadFPuzzle(raw));
 									urltext.value = json;
 									document.getElementById('generated-url').value = '';
 								}

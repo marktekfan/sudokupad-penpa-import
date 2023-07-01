@@ -52,7 +52,7 @@ const puzzleLinkConverter = (() => {
 					return puzzleId;
 				}
 				else if (puzzle.size && puzzle.grid) {
-					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
+					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle)));
 					return puzzleId;
 				}
 			}
