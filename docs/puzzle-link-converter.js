@@ -85,8 +85,8 @@ const puzzleLinkConverter = (() => {
 		if(short) {
 			return new Promise((resolve, reject) => {
 				//fetch('http://localhost:3000/tinyurl/' + short[1])
-				//fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + short[1])
-				fetch('https://marktekfan-api.azurewebsites.net/tinypuz/' + short[1])
+				fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + short[1])
+				//fetch('https://marktekfan-api.azurewebsites.net/tinypuz/' + short[1])
 				.then(res => res.text())
 				.then(text => {
 					console.log('json response:', text)
