@@ -19,7 +19,7 @@
 	let btn = document.getElementById('btnconvert');
 	var oldHandler = btn.onclick;
 	btn.onclick = function() {
-		let urltext = document.getElementById('penpa-url')
+		let urltext = document.getElementById('input-url')
 		localStorage.setItem('testurl', urltext.value);
 
 		// call the original
@@ -59,7 +59,7 @@
 	// insertEnd(newBtn, btn);
 
 	window.addEventListener('DOMContentLoaded', () => {
-		let urltext = document.querySelector('#penpa-url');
+		let urltext = document.querySelector('#input-url');
 		initTest(urltext);
 	});
 

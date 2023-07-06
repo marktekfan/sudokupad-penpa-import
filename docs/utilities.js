@@ -5,10 +5,16 @@
 		console.error('%s\n%s', (note || 'Error:'), err);
 		throw err;
 	};
-	const bindHandlers = obj =>
-		Object.getOwnPropertyNames(Object.getPrototypeOf(obj))
+	const sleep = ms => res => new Promise(resolve => setTimeout(() => resolve(res), ms));
+	const bindHandlers = (obj, proto) => {
+		if(proto === undefined) proto = Object.getPrototypeOf(obj);
+		if(proto === null) return obj;
+		bindHandlers(obj, Object.getPrototypeOf(proto));
+		Object.getOwnPropertyNames(proto)
 			.filter(prop => /^handle/.test(prop) && typeof obj[prop] === 'function')
 			.forEach(prop => obj[prop] = obj[prop].bind(obj));
+		return obj;
+	};
 	const resolveSelector = sel => {
 		if(typeof sel === 'string') sel = [...document.querySelectorAll(sel)];
 		if(!Array.isArray(sel)) sel = [sel];
@@ -54,20 +60,6 @@
 		};
 		return checkSpace(0, 10e6);
 	};
-	function fetchWithTimeout(url, opts = {}) {
-		const {timeout = 5000} = opts;
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), timeout);
-		return fetch(url, {...opts, signal: controller.signal})
-			.then(res => {
-				clearTimeout(timeoutId);
-				return res;
-			})
-			.catch(err => {
-				if(controller.signal.aborted) throw new Error(`Request for ${JSON.stringify(url)} timed out`);
-				throw err;
-			});
-	}
 	const formatHHMMSS = timeMs => [
 			Math.floor(timeMs / 3600000),
 			Math.floor(timeMs / 60000) % 60,
@@ -143,15 +135,17 @@
 		e.innerHTML = e.textContent.replace(/(\\n|\n)/g, '<br />\n');
 		return e.innerHTML;
 	};
-	async function fetchWithTimeout(resource, options = {}) {
-		const {timeout = 8000} = options;
+	async function fetchWithTimeout(uri, opts = {}) {
+		const {timeout = 8000} = opts;
 		const controller = new AbortController();
 		const id = setTimeout(() => controller.abort(), timeout);
-		const response = await fetch(resource, {...options, signal: controller.signal});
+		const response = await fetch(uri, {...opts, signal: controller.signal});
 		clearTimeout(id);
+		if(response.status !== 200) throw new Error(`fetchWithTimeout response error: ${response.status} / "${response.statusText}"`);
 		return response;
 	}
 	async function sanitizeImageUrl(url, {timeout = 5000} = {}) {
+		// Cannot use "no-cors" as that prevents verifying that the link is indeed an image
 		const respHead = await fetchWithTimeout(url, {timeout, method: 'HEAD'});
 		if(respHead.status !== 200) throw new Error('Unable to fetch image');
 		const isImage = respHead.headers.get('content-type').match(/^image\//);
@@ -160,7 +154,65 @@
 		if(respGet.status !== 200) throw new Error('Unable to fetch image');
 		return URL.createObjectURL(await respGet.blob());
 	};
-	
+	const svgToTinyDataUri = (() => {
+		// Source: https://github.com/tigt/mini-svg-data-uri
+		const reWhitespace = /\s+/g,
+			reUrlHexPairs = /%[\dA-F]{2}/g,
+			hexDecode = {'%20': ' ', '%3D': '=', '%3A': ':', '%2F': '/'},
+			specialHexDecode = match => hexDecode[match] || match.toLowerCase(),
+			svgToTinyDataUri = svg => {
+				svg = String(svg);
+				if(svg.charCodeAt(0) === 0xfeff) svg = svg.slice(1);
+				svg = svg
+					.trim()
+					.replace(reWhitespace, ' ')
+					.replaceAll('"', '\'');
+				svg = encodeURIComponent(svg);
+				svg = svg.replace(reUrlHexPairs, specialHexDecode);
+				return 'data:image/svg+xml,' + svg;
+			};
+		svgToTinyDataUri.toSrcset = svg => svgToTinyDataUri(svg).replace(/ /g, '%20');
+		return svgToTinyDataUri;
+	})();
+
+// Files
+	const loadScript = async (src, sel = 'head', props) => new Promise((onload, onerror) => {
+		let elem = resolveSelector(sel)[0]
+			.appendChild(Object.assign(
+				document.createElement('script'),
+				{src, type: 'text/javascript', onload: () => onload(elem), onerror},
+				props
+			))
+	});
+	const attachStylesheet = async (cssText, sel = 'head') => new Promise((onload, onerror) => {
+		let elem = resolveSelector(sel)[0].appendChild(Object.assign(
+			document.createElement('style'), {textContent: cssText, onload: () => onload(elem), onerror}))
+	});
+	const downloadFile = (data, type, filename) => {
+		let blob = new Blob([data], {type});
+		let link = Object.assign(document.createElement('a'),
+			{href: window.URL.createObjectURL(blob), download: filename});
+		link.dispatchEvent(new MouseEvent('click', {view: window, bubbles: true, cancelable: true}));
+		link.remove();
+		window.URL.revokeObjectURL(blob);
+	};
+	const loadFromFile = (handleFile, opts) => {
+		let btn = Object.assign(document.createElement('input'), {type: 'file', visibility: 'hidden'}, opts);
+		let handleChange = event => {
+			btn.removeEventListener('change', handleChange);
+			handleFile(((event.target || {}).files || [])[0]);
+		};
+		btn.addEventListener('change', handleChange);
+		btn.click();
+		return btn;
+	};
+	const readFile = async file => new Promise((resolve, reject) => {
+		let reader = new FileReader();
+		reader.addEventListener('error', reject);
+		reader.addEventListener('load', resolve);
+		reader.readAsText(file);
+	});
+
 // TODO: Move this into Framework
 let SudokuPadUtilities = (() => {
 	const ScrollElemEventnames = 'mousedown touchstart mousemove touchmove mouseup touchend';
@@ -489,6 +541,42 @@ let SudokuPadUtilities = (() => {
 			}
 		}
 		return md5;
+	})();
+
+// Hide Solution
+	const HideSol = (() => {
+		const HS = {
+			radix: 5,
+			base: 32,
+		};
+		const solMap = sol => sol.split('').map(d => d.match(/[?]/) ? '0' : '1').join('');
+		const solMapEncode = sol => solMap(sol)
+			.padEnd(Math.ceil(sol.length / HS.radix) * HS.radix, '0')
+			.match(new RegExp(`(.{${HS.radix}})`,'g'))
+			.map(set => parseInt(set, 2).toString(HS.base)).join('');
+		const solMapDecode = (map, len) => map
+			.split('')
+			.map(n => parseInt(n, HS.base).toString(2).padStart(HS.radix, '0'))
+			.join('')
+			.slice(0, len);
+		const mapSol = (sol, map) => sol
+			.split('')
+			.reduce((acc, cur, idx) => acc + (map[idx] === '1' ? cur : ''), '');
+		const hideSol = sol => `${solMapEncode(sol)}|${md5Digest(mapSol(sol, solMap(sol)))}`;
+		const checkHiddenSol = (hsol, p81) => {
+			const [map, md5] = hsol.split('|');
+			let decodedMap = solMapDecode(map, p81.length);
+			let p81Mapped = mapSol(p81, decodedMap);
+			let digest = md5Digest(p81Mapped);
+			return digest === md5;
+		};
+		HS.solMap = solMap;
+		HS.encode = solMapEncode;
+		HS.decode = solMapDecode;
+		HS.mapSol = mapSol;
+		HS.hideSol = hideSol;
+		HS.check = checkHiddenSol;
+		return HS;
 	})();
 
 // JSONEditor
