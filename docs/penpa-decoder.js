@@ -884,14 +884,13 @@ const PenpaDecoder = (() => {
 		let cageLines = PenpaTools.concatenateEndpoints(wpLines);
 		cageLines.forEach(line => {
 			let ctx = new DrawingContext();
-			// if (i1 % 4 === 3 || i2 % 4 === 0) ... + 100
 			set_line_style(ctx, line.value, line.cc);
 			if (line.cc) {
 				ctx.strokeStyle = line.cc;
 			}
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 				wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
-				target: 'cell-grids', // Above cages
+				target: 'cages',
 			}), feature + ' line');
 		});
 	}
@@ -1460,6 +1459,16 @@ const PenpaDecoder = (() => {
 				let [p1, p2] = p.split(',');
 				if (!pu.point[p1] || !pu.point[p2]) {
 					delete pu.pu_q[feature][p];
+				}
+			});
+		});
+		// remove leading spaces in numberS
+		['numberS'].forEach(f => {
+			let feature = pu.pu_q[f] || {};
+			Object.keys(feature).forEach(p => {
+				let [n] = feature[p];
+				if (typeof n === 'string') {
+					feature[p][0] = feature[p][0].trim();				
 				}
 			});
 		});
