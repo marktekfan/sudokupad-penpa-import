@@ -10,7 +10,7 @@
 	}
 	if (port !== null) {
 		port = Number(port) > 0 ? Number(port) : 5501;
-		addDestination(`http://127.0.0.1:${port}/index.html?puzzleid=`);
+		addDestination(`http://127.0.0.1:${port}/sudoku.html?puzzleid=`);
 	}
 	if (test === null) {
 		return;
