@@ -416,7 +416,7 @@ const PenpaSymbol = (() => {
 
 	P.draw_number = function(ctx, number, p) {
 		const {point2RC, point} = PenpaTools;
-		let text = number[0];
+		let text = String(number[0]).trim();
 		let factor = "abcdefghijklmnopqrstuvwxyz".indexOf(text) === -1 ? 1 : 0;
 		if (p.slice(-1) === 'E') p = slice(0, -1);
 		let [p_y, p_x] = point2RC(p);
