@@ -571,6 +571,9 @@ const PenpaDecoder = (() => {
 			}
 			draw.draw_numberS(ctx, number, key);
 
+			if (number[0] === 'FOGLIGHT') {
+				return;
+			}			
 			if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
 				if(pu.centerlist.includes(point2centerPoint(key))) { // top-left cell corner
 					let rc = point2cell(key);
