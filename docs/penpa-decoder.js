@@ -534,6 +534,7 @@ const PenpaDecoder = (() => {
 				// ctx.target = 'overlay';
 			}
 			ctx.fillStyle = ColorSaturate(ctx.fillStyle);
+			ctx.role = surface.role;
 			const opts = Object.assign(ctx.toOpts(), {
 				center: surface.center,
 				width: surface.width || 1,
@@ -559,6 +560,7 @@ const PenpaDecoder = (() => {
 			draw.draw_number(ctx, number, key);
 		});
 	}
+	// Must be rendered after killercages
 	parse.numberS = (qa, pu, puzzle, feature = 'numberS') => {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
@@ -570,15 +572,13 @@ const PenpaDecoder = (() => {
 				return;
 			}
 			draw.draw_numberS(ctx, number, key);
-
-			if (number[0] === 'FOGLIGHT') {
-				return;
-			}			
-			if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
-				if(pu.centerlist.includes(point2centerPoint(key))) { // top-left cell corner
-					let rc = point2cell(key);
-					let cell = puzzle.cells[rc[0]][rc[1]];
-					cell.pencilMarks = [' '];
+			if (number[0] !== 'FOGLIGHT') {
+				if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
+					if(pu.centerlist.includes(point2centerPoint(key))) { // top-left cell corner
+						let rc = point2cell(key);
+						let cell = puzzle.cells[rc[0]][rc[1]];
+						cell.pencilMarks = [' '];
+					}
 				}
 			}
 		});
@@ -588,7 +588,7 @@ const PenpaDecoder = (() => {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC, isBoardCell, doc} = PenpaTools;
+		const {point2RC} = PenpaTools;
 		Object.keys(list).forEach(key => {
 			const symbol = list[key];
 			if (symbol[2] !== layer) return;
@@ -602,6 +602,7 @@ const PenpaDecoder = (() => {
 				ctx.target = 'overlay';
 			}
 			const [r, c] = point2RC(key);
+			ctx.role = symbol.role;
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], listCol[key]);
 		});
 	}
@@ -662,6 +663,7 @@ const PenpaDecoder = (() => {
 				rounded: true,
 				width: 0.85,
 				height: 0.85,
+				role: 'thermobulb'
 			}, feature + ' bulb');
 		});
 	}
@@ -692,7 +694,8 @@ const PenpaDecoder = (() => {
 				rounded: true,
 				width: 0.83, // round3(0.75 + bulbStrokeThickness / 64),
 				height: 0.83, // round3(0.75 + bulbStrokeThickness / 64),
-			}, target), feature + ' bulb');
+				role: 'arrowbulb'
+			}, target), feature + ' circle');
 		});
 	}
 	parse.direction = (qa, pu, puzzle, feature = 'direction') => {
@@ -897,6 +900,7 @@ const PenpaDecoder = (() => {
 			}), feature + ' line');
 		});
 	}
+	// Must be rendered before numberS
 	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
@@ -1523,6 +1527,43 @@ const PenpaDecoder = (() => {
 		pu.pu_q.killercages = killercages.filter(cage => cage.some(p => cageSet.has(p)));
 	}
 
+	function GetCageConnectionCells(pu, key, symbol) {
+		const {point2matrix, point2cell, point2centerPoint} = PenpaTools;
+		if (pu.point[key].type !== 1) return; // must be a corner
+		if (symbol[1] !== 'frameline') return;
+		//:  \
+		if ([5, 6, 7, 8, 0].includes(symbol[0])) {
+			let p1 = point2centerPoint(key);
+			let c1 = p1; // top-left
+			let c2 = pu.point[c1].adjacent_dia[3]; // bottom-right
+			return [c1, c2];
+		}
+		if ([1, 2, 3, 4, 9].includes(symbol[0])) {
+			let p1 = point2centerPoint(key);
+			let c1 = pu.point[p1].adjacent[2]; // top-right
+			let c2 = pu.point[c1].adjacent_dia[2]; // bottom-left
+			return [c1, c2];
+		}
+	}
+
+	function joinDisconnectedKillercages(pu) {
+		const {point2matrix} = PenpaTools;
+		const killercages = pu.pu_q.killercages || [];
+		const symbols = pu.pu_q['symbol'] || [];
+		Object.keys(symbols).forEach(key => {
+			const symbol = symbols[key];
+			let [p1, p2] = GetCageConnectionCells(pu, key, symbol) || [];
+			if (p1 == null || p2 == null) return;
+			let kc1 = killercages.findIndex(cage => cage.some(p => p === p1));
+			let kc2 = killercages.findIndex(cage => cage.some(p => p === p2));
+			if (kc1 === -1 || kc2 === -1 || kc1 === kc2) return;
+
+			killercages[kc1].push(...killercages[kc2]);
+			killercages[kc2] = [];
+			symbol.role = 'cagelink';
+		});
+	}
+
 	function removeFrameWhenEqualToRegions(pu, puzzle, doc, regions) {
 		if (!regions) return;
 		if (doc.hasCellMask) return;
@@ -1673,6 +1714,7 @@ const PenpaDecoder = (() => {
 		addGivens(pu, puzzle);
 
 		cleanupKillercages(pu);
+		joinDisconnectedKillercages(pu)
 
 		let qa = 'pu_q';
 		parse.surface(qa, pu, puzzle);

@@ -26,6 +26,7 @@ const DrawingContext = (() => {
         this.x = 0;
         this.y = 0;
         this.target = null;
+        this.role = null;
     }
 
     // Injectable constants
@@ -353,7 +354,7 @@ const DrawingContext = (() => {
         else if (this._text)
             return 'text';
         else if (this.fillStyle && !PenpaTools.ColorIsTransparent(this.fillStyle))
-            return  'surface';
+            return 'surface';
 
         return undefined;
     }
@@ -452,6 +453,9 @@ const DrawingContext = (() => {
 
         if (this.target) {
             opts.target = this.target;
+        }
+        if (this.role) {
+            opts.role = this.role;
         }
 
         return opts;
