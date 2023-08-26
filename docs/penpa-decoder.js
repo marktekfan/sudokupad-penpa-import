@@ -630,8 +630,8 @@ const PenpaDecoder = (() => {
 				const isCenter = [0, 2, 3].includes(pu.point[line.keys[0]].type);
 				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
 					if (PenpaDecoder.flags.thickLines) {
-						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
-						ctx.lineWidth = 6;
+						ctx.strokeStyle = ctx.strokeStyle === '#999999' ? '#CFCFCF' : PenpaTools.ColorApplyAlpha(ctx.strokeStyle, 0.5);
+						ctx.lineWidth = 14 * ctx.penpaSize / ctx.ctcSize;
 					}
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
@@ -828,8 +828,8 @@ const PenpaDecoder = (() => {
 				const isCenter = [0, 2, 3].includes(pu.point[line.keys[0]].type);
 				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
 					if (PenpaDecoder.flags.thickLines) {
-						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
-						ctx.lineWidth = 6;
+						ctx.strokeStyle = ctx.strokeStyle === '#999999' ? '#CFCFCF' : PenpaTools.ColorApplyAlpha(ctx.strokeStyle, 0.5);
+						ctx.lineWidth = 14 * ctx.penpaSize / ctx.ctcSize;
 					}
 				}
 				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
