@@ -365,10 +365,11 @@ let SudokuPadUtilities = (() => {
 	const isSameRC = (rc1 = [], rc2 = []) => rc1[0] === rc2[0] && rc1[1] === rc2[1];
 	const roundCenter = ([r, c]) => ([Math.floor(r) + 0.5, Math.floor(c) + 0.5]);
 	const getLinePoints = (x0, y0, x1, y1, points = []) => {
-		let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
-		let sx = (x0 < x1) ? 1 : -1, sy = (y0 < y1) ? 1 : -1;
-		let err = dx - dy;
-		while(true) {
+		const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0),
+					sx = (x0 < x1) ? 1 : -1, sy = (y0 < y1) ? 1 : -1,
+					maxSteps = Math.max(dx, dy) + 1;
+		let err = dx - dy, steps = 0;
+		while(steps++ < maxSteps) {
 			points.push([x0, y0]);
 			if((x0 === x1) && (y0 === y1)) break;
 			let e2 = 2*err;
@@ -378,16 +379,24 @@ let SudokuPadUtilities = (() => {
 		return points;
 	};
 	const stepPoints = (x0, y0, x1, y1, handler) => {
-		let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
-		let sx = (x0 < x1) ? 1 : -1, sy = (y0 < y1) ? 1 : -1;
-		let err = dx - dy;
-		while(true) {
+		const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0),
+					sx = (x0 < x1) ? 1 : -1, sy = (y0 < y1) ? 1 : -1,
+					maxSteps = Math.max(dx, dy) + 1;
+		let err = dx - dy, steps = 0;
+		while(steps++ < maxSteps) {
 			handler(x0, y0);
 			if((x0 === x1) && (y0 === y1)) break;
 			let e2 = 2*err;
 			if(e2 > -dy) { err -= dy; x0  += sx; }
 			if(e2 < dx) { err += dx; y0  += sy; }
 		}
+	};
+	const getCellsAlongPoints = points => {
+		const cells = [], rcs = points.map(toRC)
+		for(let i = 0, len = rcs.length - 1; i < len; i++) {
+			cells.push(...getLinePoints(...rcs[i], ...rcs[i + 1]).map(rc => rc.join(':')));
+		}
+		return [...new Set(cells)].map(rc => rc.split(':').map(n => parseInt(n)));
 	};
 
 // Checksum

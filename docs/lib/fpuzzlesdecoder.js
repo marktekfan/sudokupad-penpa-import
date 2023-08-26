@@ -505,7 +505,7 @@ const loadFPuzzle = (() => {
 	const getDefaultTitle = (fpuzzle, puzzle) => 'Untitled';
 	const getDefaultAuthor = (fpuzzle, puzzle) => 'Unknown';
 	const getDefaultRules = (fpuzzle, puzzle) => 'No rules provided for this puzzle. Please check the related video or website for rules.';
-	const getCellSize = typeof SvgRenderer !== 'undefined' ? SvgRenderer.CellSize : 64;
+	const getCellSize = () => typeof SvgRenderer !== 'undefined' ? SvgRenderer.CellSize : 64;
 	const parse = {};
 	parse.size = (fpuzzle, puzzle) => {};
 	parse.disabledlogic = (fpuzzle, puzzle) => {};
@@ -784,6 +784,7 @@ const loadFPuzzle = (() => {
 		});
 	};
 	parse.extraregion = (fpuzzle, puzzle) => {
+		// TODO: Add windoku detection
 		(fpuzzle.extraregion || []).forEach(extraregion => {
 			let cells = extraregion.cells.map(fpuzzlesParseRC);
 			cells.map(offsetRC(0.5, 0.5)).forEach(cell => {
@@ -795,7 +796,7 @@ const loadFPuzzle = (() => {
 					height: 1,
 				});
 			});
-			puzzleAdd(puzzle, 'cages', {cells});
+			puzzleAdd(puzzle, 'cages', {cells, hidden: true});
 		});
 	};
 	parse.clone = (fpuzzle, puzzle) => {
@@ -1007,9 +1008,9 @@ const loadFPuzzle = (() => {
 	};
 	const saveDecodeURIComponent = (str, dec) => (dec = decodeURIComponent(str), dec.length < str.length ? dec : str);
 	const parseFPuzzle = fpuzzleRaw => {
-		let fpuzzle = saveDecodeURIComponent(fpuzzleRaw);
-		if(typeof fpuzzle === 'string') fpuzzle = JSON.parse(base64Codec.decompress(fpuzzle));
-		let puzzle = {id: `fpuzzle${md5Digest(fpuzzleRaw)}`};
+		let fpuzzle = fpuzzleRaw;
+		let puzzle = {id: `fpuzzle${md5Digest(typeof fpuzzle === 'string' ? fpuzzle : JSON.stringify(fpuzzle))}`};
+		if(typeof fpuzzle === 'string') fpuzzle = JSON.parse(base64Codec.decompress(saveDecodeURIComponent(fpuzzle)));
 		createBlankPuzzle(fpuzzle, puzzle);
 		parseMetaData(fpuzzle, puzzle);
 		[...layerOrder, ...Object.keys(fpuzzle).filter(feature => !layerOrder.includes(feature))]

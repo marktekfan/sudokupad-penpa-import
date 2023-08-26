@@ -2,50 +2,49 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Sudokupad penpa+ importer 0.26.0</title>
+		<title>Sudokupad penpa+ importer 0.27.0</title>
 		<meta name="author" content="Mark Langezaal, MarkTekfan#8907">
 		<meta name="copyright"content="Mark Langezaal">
 		<link rel="icon" type="image/x-icon" href="./favicon.ico">
-		<script defer src="./puzzle-link-converter.js"></script>
-		<script defer src="./fpuzzlesdecoder.js"></script>
-		<script defer src="./penpa-style.js"></script>
-		<script defer src="./penpa-puzzle.js"></script>
-		<script defer src="./penpa-drawingcontext.js"></script>
-		<script defer src="./penpa-tools.js"></script>
-		<script defer src="./penpa-regions.js"></script>
-		<script defer src="./penpa-decoder.js"></script>
-		<script defer src="./penpa-symbol.js"></script>
-		<script defer src="./penpa-general.js"></script>
-		<script defer src="./puzzlink.js"></script>
-		<script defer src="./portableevents.js"></script>
-		<script defer src="./utilities.js"></script>
-		<script defer src="./framework.js"></script>
-		<script defer src="./puzzleloader.js"></script>
-		<script defer src="./puzzlezipper.js"></script>
-		<script defer src="./lzipper.js"></script>
-		<script defer src="./zlib.js"></script>
-		<script defer src="./json-stringify-pretty-compact.js"></script>
-		<link rel="stylesheet" href="./style.css?version=0.25.1">
-	<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KNP4FWPNGW"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-KNP4FWPNGW');
-</script>
+		<script defer src="./lib/fpuzzlesdecoder.js?v=0.27.0"></script>
+		<script defer src="./lib/portableevents.js?v=0.27.0"></script>
+		<script defer src="./lib/utilities.js?v=0.27.0"></script>
+		<script defer src="./lib/puzzletools.js?v=0.27.0"></script>
+		<script defer src="./lib/puzzleloader.js?v=0.27.0"></script>
+		<script defer src="./lib/puzzlezipper.js?v=0.27.0"></script>
+		<script defer src="./lib/lzipper.js?v=0.27.0"></script>
+		<script defer src="./lib/zlib.js?v=0.27.0"></script>
+		<script defer src="./lib/json-stringify-pretty-compact.js"></script>
+		<script defer src="./puzzle-link-converter.js?v=0.27.0"></script>
+		<script defer src="./penpa-style.js?v=0.27.0"></script>
+		<script defer src="./penpa-puzzle.js?v=0.27.0"></script>
+		<script defer src="./penpa-drawingcontext.js?v=0.27.0"></script>
+		<script defer src="./penpa-tools.js?v=0.27.0"></script>
+		<script defer src="./penpa-regions.js?v=0.27.0"></script>
+		<script defer src="./penpa-decoder.js?v=0.27.0"></script>
+		<script defer src="./penpa-symbol.js?v=0.27.0"></script>
+		<script defer src="./penpa-general.js?v=0.27.0"></script>
+		<script defer src="./puzzlink.js?v=0.27.0"></script>
+		<script defer src="./test.js?v=0.27.0"></script>
+		<script defer src="./script.js?v=0.27.0"></script>
+		<link rel="stylesheet" href="./style.css?v=0.27.0">
+		<!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-KNP4FWPNGW"></script>
+		<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+		gtag('config', 'G-KNP4FWPNGW');
+		</script>
 	</head>
 	<body>
-
 		<div class="app">
-
 			<div class="topbar">
 				<div class="menu">
 					<button class="appmenu" id="appmenubtn"></button>
 				</div>
 				<img src="./images/SudokupadImport.png"> <span>&nbsp;&nbsp;&nbsp;</span>
-				<span>SudokuPad Penpa+ Puzzle Importer v0.26.0</span>
+				<span>SudokuPad Penpa+ Puzzle Importer v0.27.0</span>
 			</div>
 			<div class="penpa">
 				<div>
@@ -102,8 +101,11 @@
 									<polyline points="22,6 12,13 2,6" />
 								</svg>
 								Email: <a href="mailto:MarkTekfan@gmail.com">MarkTekfan@gmail.com</a></li>
-								<li> <img id="kofi-logo" style="position: absolute; margin-left: -8px; margin-top: -7px;" src="images/ko-fi-white.png" width="40"  />
-									<span style="margin-left: 34px;">If this converter was useful for you, consider caffeinate me with some <a href="https://ko-fi.com/marktekfan" target="_blank">Ko-fi.com/MarkTekfan</a></span></li>
+								<li  style="margin-top: 16px;">
+									<!-- <img id="kofi-logo" style="position: absolute; margin-left: -8px; margin-top: -7px;" src="images/ko-fi-white.png" width="40" /> -->
+									<img id="kofi-logo" style="position: absolute; margin-left: -8px; margin-top: -12px;" src="images/Ko-fi_HEART.gif" width="40" />
+									<span style="margin-left: 40px;">If this is a useful tool for you, consider caffeinate me with some love on <a href="https://ko-fi.com/marktekfan" target="_blank">Ko-fi.com/MarkTekfan</a></span>
+								</li>
 						</ul>
 					</p>
 					<div class="footer2">
@@ -115,349 +117,5 @@
 				</div>
 			</div>
 		</div>
-		<script defer src="./test.js"></script>
-		<script defer>
-			function setError(errormessage) {
-				document.getElementById('errortext').innerHTML = errormessage;
-				let element = document.getElementById('errorcontainer')
-				element.classList.remove('error');
-				void element.offsetWidth; // trigger a DOM reflow to retrigger animation
-				element.classList.add('error');
-			}
-			function clearError() {
-				document.getElementById('errortext').innerHTML = '';
-				document.getElementById('errorcontainer').classList.remove('error');
-			}
-			const urltext = document.getElementById('input-url');
-			window.addEventListener('DOMContentLoaded', () => {
-				const queryString = window.location.search;
-				const urlParams = new URLSearchParams(queryString);
-				const url = urlParams.get('url')
-				const hash = window.location.hash;
-				if (hash) {
-					urltext.value = hash.substring(1);
-					openInSudokupad(false);
-				}
-				else if (url) {
-					urltext.value = decodeURIComponent(url);
-					textOnChange();
-				}
-				urltext.focus();
-
-				let settings = PenpaDecoder.settings;
-				let fieldset = document.querySelector('fieldset');
-				Object.keys(settings).forEach(setting => {
-					// <div>
-					// 	<input type="checkbox" id="thickLines" name="thickLines">
-					// 	<label for="thickLines">Thicken lines to match Sudokupad feature lines</label>
-					// </div>
-					let divElem = document.createElement('div');
-					let inputElem =  document.createElement('input');
-					inputElem.type = 'checkbox';
-					inputElem.id = setting;
-					inputElem.name = setting;
-					
-					let labelElem =  document.createElement('label');
-					labelElem.htmlFor = setting;
-					labelElem.innerText = settings[setting].title;
-					divElem.appendChild(inputElem);
-					divElem.appendChild(labelElem);
-					fieldset.appendChild(divElem);
-
-					PenpaDecoder.flags[setting] = settings[setting].defaultValue;
-				});
-
-				const test = urlParams.get('test');
-				if (test !== null) {
-					fieldset.style.display = 'block';
-				}
-
-				PenpaDecoder.ParseUrlSettings();
-				let options = document.querySelectorAll('fieldset input[type=checkbox]');
-				for(let option of options) {
-					option.checked = PenpaDecoder.flags[option.name] ? true : false;
-				}
-
-				//
-				// DRAG-N-DROP
-				//
-
-				// https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API#drag_events
-				let dropArea = document.querySelector('.penpa');
-				['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-					dropArea.addEventListener(eventName, preventDefaults, false)
-				});
-
-				function preventDefaults(e) {
-					e.preventDefault();
-					e.stopPropagation();
-				}
-
-				['dragenter', 'dragover'].forEach(eventName => {
-					dropArea.addEventListener(eventName, highlight, false)
-				});
-
-				['dragleave', 'drop'].forEach(eventName => {
-					dropArea.addEventListener(eventName, unhighlight, false)
-				});
-
-				let dropdelaytimer = null;
-				function highlight(e) {
-					dropArea.classList.add('drophover')
-					if (dropdelaytimer) clearTimeout(dropdelaytimer);
-					dropdelaytimer = null;
-				}
-
-				function unhighlight(e) {
-					dropdelaytimer = setTimeout(()=>{
-						dropArea.classList.remove('drophover');
-					}, 80);
-				}
-
-				dropArea.addEventListener('drop', handleDrop, false)
-
-				function handleDrop(e) {
-					clearError();
-					const dt = e.dataTransfer;
-					for (let type of dt.types) {
-						// console.log({ type, data: dt.getData(type) });
-						if (type === 'Files') {
-							handleLoadFile(dt.files[0]);
-							break;
-						}
-						else if (type.startsWith('text/')) {
-							urltext.value = dt.getData(type);
-							textOnChange();
-							document.getElementById('generated-url').value = '';
-							break;
-						}
-					}
-				}
-
-			});
-
-			let lastActionSelection = 'open'; // default action
-
-			const reUrl = /^(https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/;
-			const reJSON = /^[\s'"]*\{/;
-			function handleLoadFile(file) {
-				if (file.size > 60000) {
-					setError(`File '${file.name}' is too large`);
-					return;
-				}
-				const reader = new FileReader();
-				reader.onload = function(event) {
-					let result = event.target.result;
-					if (result.match(reUrl) || result.match(reJSON)) {
-						urltext.value = result;
-						textOnChange();
-						document.getElementById('generated-url').value = '';
-					}
-					else {
-						setError(`File '${file.name}' does not contain JSON or URL`);
-					}
-				};
-				reader.readAsText(file);
-			}
-
-			function textOnChange() {
-				clearError();
-				let inputUrlElem = document.getElementById('input-url');
-				let buttonElem = document.querySelector('.textarea-container button');
-				let urlstring = inputUrlElem.value.trim();
-				buttonElem.classList.toggle('hidden', urlstring.length === 0);
-			}
-			function clearInputUrl() {
-				let inputUrlElem = document.getElementById('input-url');
-				inputUrlElem.value = '';
-				textOnChange();
-				inputUrlElem.focus();
-			}
-
-			function OnSelectActionChange(value) {
-				showUrl = value.startsWith('create');
-				let section = document.getElementById('generated-url-section');
-				section.classList.toggle('visible', showUrl);
-				if (!value.includes('json')) {
-					lastActionSelection = value;
-				}
-			}
-
-			const destinations = [
-				'https://sudokupad.app/',
-				'https://beta.sudokupad.app/',
-				'https://alpha.sudokupad.app/',
-			]
-
-			function addDestination(urlPrefix) {
-				let selectElem = document.getElementById('select-destination');
-				let option = document.createElement('option');
-				option.value = urlPrefix;
-				option.innerHTML = urlPrefix.match(/(?:https?:\/\/)?([^\/]+)/)[1]
-				selectElem.appendChild(option);
-			}
-			destinations.forEach(url => addDestination(url));
-
-			let selectElem = document.getElementById('select-destination');
-			let destination = localStorage.destination;
-			selectElem.value = destination;
-			if (selectElem.value !== destination) {
-				selectElem.selectedIndex = 0;
-			}
-
-			// Stub to capture messages
-			const Swal = {
-				fire: function(opts) {
-					setError(opts.html);
-				}
-			}
-
-			const reFPuzPrefix = /^(fpuz(?:zles)?)(.*)/;
-			const stripFPuzPrefix = fpuzzle => fpuzzle.replace(reFPuzPrefix, '$2');
-
-			function openInSudokupad(openinNewWindow = true)
-			{
-				let selectElem = document.getElementById('select-destination');
-				let destination = selectElem.value;
-				localStorage.destination = destination;
-
-				let urltext = document.getElementById('input-url')
-				let urlstring = urltext.value.trim();
-
-				let param = urlstring.substring(urlstring.indexOf('&') + 1);
-				if (param.length === 0)
-					return;
-
-				let button = document.getElementById('btnconvert');
-				button.disabled = true;
-				button.innerHTML = "Converting...";
-
-				Promise.resolve(urlstring)
-				.then(url => puzzleLinkConverter.expandShortUrl(url))
-				.then(url => puzzleLinkConverter.convertPuzzleUrl(url))
-				.then(async puzzleid => {
-					if (!puzzleid) {
-						throw {customMessage: 'Not a recognized puzzle URL'}
-					} 
-					if (destination.includes('?')) {
-						puzzleid = puzzleid.replace('?', '&');
-					}
-					let redirect = destination + puzzleid;
-					console.log(redirect, redirect.length);
-
-					if (!openinNewWindow) {
-						window.open(redirect, '_self');
-					}
-					else {
-						let generatedUrlElem = document.getElementById('generated-url');
-						let actionElem = document.getElementById('select-action');
-						switch(actionElem.value)
-						{
-							case 'create-url':
-								generatedUrlElem.value = redirect;
-								generatedUrlElem.select();
-								generatedUrlElem.focus();
-								var btncopyurl = document.getElementById('btncopyurl');
-								btncopyurl.disabled = !redirect;				
-								break;
-
-							case 'create-tinyurl':
-								generatedUrlElem.value = '';
-								generatedUrlElem.placeholder = '...Creating TinyPuz URL...';
-								let newUrl = await request_shortlink(redirect);
-								generatedUrlElem.value = newUrl || 'Error while creating TinyPuz URL';
-								if (newUrl) {
-									generatedUrlElem.select();
-									generatedUrlElem.focus();
-								}
-								var btncopyurl = document.getElementById('btncopyurl');
-								btncopyurl.disabled = !newUrl;								
-								break;								
-
-							case 'convert-tojson':
-								const {stringify} = JsonStringifyPrettyCompact;
-								const stringifyPretty = (obj) => stringify(obj, {maxLength: 150});
-								generatedUrlElem.value = '';
-								let raw = puzzleid.split('&')[0];
-								if (puzzleid.length < 20) {
-									let ctcPuzzle = await PuzzleLoader.fetchPuzzle(puzzleid);
-									urltext.value = stringifyPretty(ctcPuzzle);
-									document.getElementById('generated-url').value = '';
-								}
-								else if (reFPuzPrefix.test(puzzleid)) {
-									raw = stripFPuzPrefix(raw);
-									let fpuzzle = loadFPuzzle.saveDecodeURIComponent(raw);
-									if(typeof fpuzzle === 'string') {
-										try {
-											fpuzzle = JSON.parse(loadFPuzzle.decompressPuzzle(fpuzzle));
-										}
-										catch {
-											// maybe it was zipped, but this is unlikely
-											fpuzzle = JSON.parse(PuzzleZipper.unzip(loadFPuzzle.decompressPuzzle(fpuzzle)));
-										}
-									}
-									urltext.value = stringifyPretty(fpuzzle);
-									document.getElementById('generated-url').value = '';
-								}
-								else if (puzzleid.startsWith('ctc') || puzzleid.startsWith('scl')) {
-									raw = raw.replace(/^(ctc|scl)/, '');
-									let json = JSON.parse(PuzzleZipper.unzip(loadFPuzzle.decompressPuzzle(raw)));
-									urltext.value = stringifyPretty(json);
-									document.getElementById('generated-url').value = '';
-								}
-								else {
-									setError('Not a recognized JSON puzzle format');
-									break;
-								}
-								if (lastActionSelection) {
-									actionElem.value = lastActionSelection;
-									OnSelectActionChange(lastActionSelection);
-								}
-								break;								
-
-							default:
-								window.open(redirect, '_blank');
-								return;
-						}
-					}
-				})
-				.catch(err => {
-					console.error('Unable to convert Penpa puzzle link');
-					console.log(err);
-					setError(err.customMessage || 'An error occured while processing the URL.<br>');
-				})
-				.then(()=> {
-					button.disabled = false;
-					button.innerHTML = "Convert URL";
-				});
-			}
-
-			function btnLoadFromFile() {
-				console.log('load from file!');
-				loadFromFile(handleLoadFile, {accept: '.json, .txt'});
-			}
-
-			function copyUrl() {
-				let textarea = document.getElementById('generated-url');
-				navigator.clipboard.writeText(textarea.value);
-				let element = document.getElementById('urlIsCopied');
-				// Retrigger animation
-				element.classList.remove("animation");
-				void element.offsetWidth; // trigger a DOM reflow
-				element.classList.add("animation");
-			}
-
-			async function request_shortlink(url) {
-				try {
-					let res = await fetch('https://tinyurl.com/api-create.php?url=' + url);
-					let text = await res.text() || '';
-					return text.replace('tinyurl.com', 'tinypuz.com');
-				} catch (error) {
-					console.log('Error while creating TinyPuz URL');
-					return null;
-				}
-			}
-		</script>
-
 	</body>
 </html>
