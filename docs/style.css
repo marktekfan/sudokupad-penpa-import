@@ -36,7 +36,7 @@ textarea {
 	box-sizing: border-box;
 }
 .textarea-container button {
-	opacity: 60%;
+	/* opacity: 60%; */
 	position: absolute;
 	top: 4px;
 	right: 16px;
@@ -56,16 +56,12 @@ textarea {
 	cursor: pointer;
 	/* white-space: nowrap; */
 	font-family: Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
-
 }
 .textarea-container button:hover {
 	opacity: 100%;
-
 }
 
-.hidden {
-	display: none;
-}
+.hidden { display: none; }
 
 .emoji { font-weight: normal; }
 
