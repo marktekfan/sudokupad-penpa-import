@@ -1317,7 +1317,7 @@ const PenpaDecoder = (() => {
 		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.killercages || []).flatMap(p => p), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'line'), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'freeline'), PenpaTools.point2matrix));
-		
+
 		// bounds for all fillable clues
 		let top = Math.min(...bounds.map(b => b[0]));
 		let left = Math.min(...bounds.map(b => b[1]));
@@ -1528,7 +1528,7 @@ const PenpaDecoder = (() => {
 	}
 
 	function GetCageConnectionCells(pu, key, symbol) {
-		const {point2matrix, point2cell, point2centerPoint} = PenpaTools;
+		const {point2centerPoint} = PenpaTools;
 		if (pu.point[key].type !== 1) return; // must be a corner
 		if (symbol[1] !== 'frameline') return;
 		//:  \
@@ -1547,7 +1547,6 @@ const PenpaDecoder = (() => {
 	}
 
 	function joinDisconnectedKillercages(pu) {
-		const {point2matrix} = PenpaTools;
 		const killercages = pu.pu_q.killercages || [];
 		const symbols = pu.pu_q['symbol'] || [];
 		Object.keys(symbols).forEach(key => {
@@ -1643,7 +1642,7 @@ const PenpaDecoder = (() => {
 			}
 		});
 		// Keep only thick frame lines
-		Object.keys(pu.frame).filter(k => pu.frame[k] !== 2).forEach(k => delete pu.frame[k]);
+		Object.keys(pu.frame).filter(k => ![2, 21].includes(pu.frame[k])).forEach(k => delete pu.frame[k]);
 
 		const {solutionPoints, uniqueRowsCols} = getSolutionInfo(pu);
 		PenpaRegions.cleanupCenterlist(pu, solutionPoints);
