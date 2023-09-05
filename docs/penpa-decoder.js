@@ -164,7 +164,7 @@ const PenpaDecoder = (() => {
 	function addCageMetadata(pu, puzzle) {
 		const {numberS, killercages} = pu.pu_q;
 		Object.keys(numberS).forEach(pos => {
-			let matches = numberS[pos][0].trim().match(reMetaTagsStripCells);
+			let matches = String(numberS[pos][0]).trim().match(reMetaTagsStripCells);
 			if (matches) {
 				applyDefaultMeta(pu, puzzle, matches[1], matches[2]);
 				delete numberS[pos];

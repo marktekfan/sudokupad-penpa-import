@@ -581,8 +581,9 @@ const PenpaSymbol = (() => {
 			set_font_style(ctx, 0.30, number[1]);
 			ctx.textAlign = "center";
 			let [y, x] = point2RC(p);
-            if (number[0].length > 0) {
-                ctx.text(number[0], x, y + 0.03, 0.48);
+            let text = String(number[0]).trim();
+            if (text.length > 0) {
+                ctx.text(text, x, y + 0.03, 0.48);
     			this.decoder.puzzleAdd(this.puzzle, 'overlays', ctx.toOpts(), 'numberS:' + JSON.stringify(number));
             }
 		}
