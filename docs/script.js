@@ -23,13 +23,13 @@ const clearButtonElem = document.querySelector('.textarea-container button');
 const fileDropAreaElem = document.querySelector('.penpa');
 
 if (document.readyState !== 'complete') {
-    window.addEventListener('DOMContentLoaded', doInitialze);
+    window.addEventListener('DOMContentLoaded', doInitialize);
 } else {
     // `DOMContentLoaded` has already fired
-    doInitialze();
+    doInitialize();
 }
 
-function doInitialze() {
+function doInitialize() {
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     const url = urlParams.get('url')
@@ -43,6 +43,9 @@ function doInitialze() {
         OnInputURLChange();
     }
     inputUrlElem.focus();
+
+    // On app reactivate inputUrlElem.value is not always immediatly available
+    setTimeout(OnInputURLChange, 100);
 
     createSettings(document.querySelector('fieldset'), urlParams.get('test'));
     PenpaDecoder.ParseUrlSettings();
