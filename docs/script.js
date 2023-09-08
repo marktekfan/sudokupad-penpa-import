@@ -22,7 +22,7 @@ const urlIsCopiedElem = document.getElementById('urlIsCopied');
 const clearButtonElem = document.querySelector('.textarea-container button');
 const fileDropAreaElem = document.querySelector('.penpa');
 
-if (document.readyState === "loading") {
+if (document.readyState !== 'complete') {
     window.addEventListener('DOMContentLoaded', doInitialze);
 } else {
     // `DOMContentLoaded` has already fired
