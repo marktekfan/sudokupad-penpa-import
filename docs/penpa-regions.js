@@ -450,10 +450,10 @@ const PenpaRegions = (() => {
 			for (let size of sortedSizes) {
 				if (size >= 4 && size === sizes[size]) {
 					let selectedRegions = Object.keys(regions).filter(reg => regions[reg].length === size).map(reg => regions[reg]);
-					const {height, width} = getBoundsRC(selectedRegions.flat());
+					const {top, left, height, width} = getBoundsRC(selectedRegions.flat());
 					if (height === size && width === size) {
-						let squares = [{regions: selectedRegions}];
-						return {regions: selectedRegions, squares};
+						let squares = [{r: top, c: left, size: height, regions: selectedRegions}];
+						return {squares, regions: selectedRegions};
 					}
 				}
 			}	
@@ -532,7 +532,7 @@ const PenpaRegions = (() => {
 
 	C.findSudokuRegions = function(pu, squares) {
 		const {matrix2point} = PenpaTools;
-		const lineE = pu.pu_q.lineE;
+		const lineE = Object.assign({}, pu.pu_q.lineE, pu.frame);
 
 		// Single square found.
 		// For single squares all regions should be fully defined by fat edge lines.
@@ -586,7 +586,8 @@ const PenpaRegions = (() => {
 
 			// Try to find all regions
 			for(let sq of squares) {
-				let edge_elements = pu.pu_q.lineE;
+				//let edge_elements = pu.pu_q.lineE;
+				let edge_elements = lineE;
 				// First pass, try with dominant border linestyle
 				sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edge_elements, sq.dominantBorderStyle);
 				// When failed then try again with default borderStyle
@@ -601,8 +602,8 @@ const PenpaRegions = (() => {
 			if(squares.some(sq => Object.keys(sq.regions).length !== sq.size || Object.keys(sq.regions).some(reg => sq.regions[reg].length !== sq.size))) {
 				// Remove all square and region outlines
 				let failedSquares = [];
-				let noFrameEdges = Object.assign({}, pu.pu_q.lineE);
-				let noRegionEdges = Object.assign({}, pu.pu_q.lineE);
+				let noFrameEdges = Object.assign({}, pu.pu_q.lineE, pu.frame);
+				let noRegionEdges = Object.assign({}, pu.pu_q.lineE, pu.frame);
 				for(let sq of squares) {
 					// Remove square outlines
 					sq.outline.forEach(k => delete noFrameEdges[k]);

@@ -197,6 +197,19 @@ const PenpaDecoder = (() => {
 					puzzleAdd(puzzle, 'regions', region);
 				});
 			}
+			// else if(complete) {
+			// 	enableConflictChecker = true;
+				
+			// 	puzzle.regions = [];
+			// 	squares.forEach(square => {
+			// 		const regions = square.regions;
+
+			// 		Object.keys(regions).forEach(reg => {
+			// 			let region = regions[reg].map(matrix2point).map(point2cell);
+			// 			puzzleAdd(puzzle, 'regions', region);
+			// 		});
+			// 	});
+			// }
 		}
 		if (!uniqueRowsCols && !enableConflictChecker) {
 			puzzle.settings['conflictchecker'] = 0;
@@ -670,7 +683,7 @@ const PenpaDecoder = (() => {
 	parse.arrows = (qa, pu, puzzle, feature = 'arrows') => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC, doc, round3} = PenpaTools;
+		const {point2RC} = PenpaTools;
 		list.forEach((line, i) => {
 			if(line.length < 2) return;
 			const target = isMaskedLine(pu, line) ? {target: 'overlay'} : {};
@@ -701,7 +714,7 @@ const PenpaDecoder = (() => {
 	parse.direction = (qa, pu, puzzle, feature = 'direction') => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC, doc} = PenpaTools;
+		const {point2RC} = PenpaTools;
 		list.forEach((line, i) => {
 			if(line.length < 2) return;
 			const target = isMaskedLine(pu, line) ? {target: 'overlay'} : {};
@@ -720,7 +733,7 @@ const PenpaDecoder = (() => {
 	parse.squareframe = (qa, pu, puzzle, feature = 'squareframe') => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		const {point2RC, doc} = PenpaTools;
+		const {point2RC} = PenpaTools;
 		list.forEach((line, i) => {
 			if (line.length === 0) return;
 			const target = isMaskedLine(pu, line) ? {target: 'overlay'} : {};
@@ -853,7 +866,7 @@ const PenpaDecoder = (() => {
 		const listCol = pu[qa + '_col'][feature];
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
 		const cages = pu[qa].killercages || [];
-		const {point2centerPoint} = PenpaTools;
+		const {point2centerPoint, round3} = PenpaTools;
 		// Filter out cage lines which are on killer cages.
 		wpLines = wpLines.filter(line => {
 			let p1 = line.keys[0];
@@ -883,8 +896,8 @@ const PenpaDecoder = (() => {
 			list.wayPoints.forEach(wp => {
 				let dy = Math.sign(wp[0] - Math.floor(wp[0]) - 0.5);
 				let dx = Math.sign(wp[1] - Math.floor(wp[1]) - 0.5);
-				wp[0] += dy * r;
-				wp[1] += dx * r;
+				wp[0] = round3(wp[0] + dy * r);
+				wp[1] = round3(wp[1] + dx * r);
 			});
         });
 		let cageLines = PenpaTools.concatenateEndpoints(wpLines);
@@ -1311,12 +1324,24 @@ const PenpaDecoder = (() => {
 			});	
 			return points;		
 		}
+		function getCageLinePoints(pu, feature) {
+			let points = [];
+			let lines = pu.pu_q[feature];
+			Object.keys(lines).forEach(key => {
+				let [p1, p2] = key.split(',').map(Number);
+				points.push(p1);
+				points.push(p2);
+			});	
+			return points;		
+		}
+
 		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
 		let bounds = [];
 		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.thermo || []).flatMap(p => p), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC((pu.pu_q.killercages || []).flatMap(p => p), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'line'), PenpaTools.point2matrix));
 		bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'freeline'), PenpaTools.point2matrix));
+		bounds.push(PenpaTools.getMinMaxRC(getCageLinePoints(pu, 'cage'), PenpaTools.point2matrix));
 
 		// bounds for all fillable clues
 		let top = Math.min(...bounds.map(b => b[0]));
@@ -1487,7 +1512,7 @@ const PenpaDecoder = (() => {
 		const lineECol = pu.pu_q_col.lineE;
 		const styleMap = {2: 2, 21: 21, 80: 1};
 		const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
-		for(let k in lineE) {
+		Object.keys(lineE).forEach(k => {
 			let style = lineE[k];
 			if (!lineECol[k]) { // Not custom color
 				let frameStyle = styleMap[style];
@@ -1509,11 +1534,28 @@ const PenpaDecoder = (() => {
 					if (frame[k]) delete frame[k];
 				}
 			}
-		}
+		});
 	}
 
-	function cleanupKillercages(pu) {
-		const {point2centerPoint} = PenpaTools;
+	function cleanupKillercages(pu, puzzle, squares) {
+		const {point2cell, point2centerPoint, doc} = PenpaTools;
+		// Remove cosmetic killercages (=outside regions or width-and-height)
+		// to prevent SudokuPad expanding the board size for these cages.
+		const [top, left, bottom, right] = squares.length !== 1
+				? [0, 0, doc.height - 1, doc.width - 1] 
+				: [squares[0].r, squares[0].c, squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1];
+		const killercages = pu.pu_q.killercages || [];
+		Object.keys(killercages).forEach(k => {
+			let cageOutsideRegions = killercages[k].map(point2cell).some(([r, c]) => 
+				r < top || r > bottom ||
+				c < left || c > right
+			);
+			if (cageOutsideRegions) {
+				delete pu.pu_q.killercages[k];
+			}
+		});
+
+		// Remove killercages which have no visible lines
 		const list = pu.pu_q.cage || [];
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list);
 		let cageSet = new Set();
@@ -1523,7 +1565,6 @@ const PenpaDecoder = (() => {
 			cageSet.add(point2centerPoint(p1));
 			cageSet.add(point2centerPoint(p2));
 		});
-		const killercages = pu.pu_q.killercages || [];
 		pu.pu_q.killercages = killercages.filter(cage => cage.some(p => cageSet.has(p)));
 	}
 
@@ -1531,13 +1572,14 @@ const PenpaDecoder = (() => {
 		const {point2centerPoint} = PenpaTools;
 		if (pu.point[key].type !== 1) return; // must be a corner
 		if (symbol[1] !== 'frameline') return;
-		//:  \
+		// symbol:  \
 		if ([5, 6, 7, 8, 0].includes(symbol[0])) {
 			let p1 = point2centerPoint(key);
 			let c1 = p1; // top-left
 			let c2 = pu.point[c1].adjacent_dia[3]; // bottom-right
 			return [c1, c2];
 		}
+		// symbol:  /
 		if ([1, 2, 3, 4, 9].includes(symbol[0])) {
 			let p1 = point2centerPoint(key);
 			let c1 = pu.point[p1].adjacent[2]; // top-right
@@ -1581,6 +1623,32 @@ const PenpaDecoder = (() => {
 		}
 	}
 
+	function cleanupFrame(pu) {
+		// Cleanup frame
+		for (let k in pu.pu_q.deletelineE) {
+			// Don't delete when replaced with another line
+			if (pu.pu_q.lineE[k] === undefined) {
+				if (pu.frame[k] === 2) {
+					pu.pu_q.deletelineE[k] = 2; // outer frame
+				}
+				delete pu.frame[k];
+			}
+		}
+		// Remove lines which are identical to the corresponding frame line.
+		Object.keys(pu.pu_q.lineE).forEach(k => {
+			if (pu.frame[k]) {
+				let style = pu.pu_q.lineE[k];
+				if (pu.frame[k] === (style === 12 ? 11 : style)) { // Line style 12 is frame style 11
+					delete pu.pu_q.lineE[k];
+				}
+			}
+		});
+		// Keep only thick frame lines
+		const noGridLines = pu.mode.grid[0] === '3';
+		const frameLinesToKeep = noGridLines ? [2, 21, 11, 1] : [2, 21];
+		Object.keys(pu.frame).filter(k => !frameLinesToKeep.includes(pu.frame[k])).forEach(k => delete pu.frame[k]);
+	}
+
 	C.convertPenpaPuzzle = function (pu) {
 		if (typeof pu === 'string') {
 			pu = C.loadPenpaPuzzle(pu);
@@ -1620,29 +1688,8 @@ const PenpaDecoder = (() => {
 		convertFeature2Line(pu, 'freelineE', 'lineE');
 		convertFeature2Line(pu, 'wall', 'line');
 
-		moveBlackEdgelinesToFrame(pu);		
-
-		// Cleanup frame
-		for (let k in pu.pu_q.deletelineE) {
-			// Don't delete when replaced with another line
-			if (pu.pu_q.lineE[k] === undefined) {
-				if (pu.frame[k] === 2) {
-					pu.pu_q.deletelineE[k] = 2; // outer frame
-				}
-				delete pu.frame[k];
-			}
-		}
-		// Remove lines which are identical to the corresponding frame line.
-		Object.keys(pu.pu_q.lineE).forEach(k => {
-			if (pu.frame[k]) {
-				let style = pu.pu_q.lineE[k];
-				if (pu.frame[k] === (style === 12 ? 11 : style)) { // Line style 12 is frame style 11
-					delete pu.pu_q.lineE[k];
-				}
-			}
-		});
-		// Keep only thick frame lines
-		Object.keys(pu.frame).filter(k => ![2, 21].includes(pu.frame[k])).forEach(k => delete pu.frame[k]);
+		moveBlackEdgelinesToFrame(pu);
+		cleanupFrame(pu);
 
 		const {solutionPoints, uniqueRowsCols} = getSolutionInfo(pu);
 		PenpaRegions.cleanupCenterlist(pu, solutionPoints);
@@ -1712,7 +1759,7 @@ const PenpaDecoder = (() => {
 
 		addGivens(pu, puzzle);
 
-		cleanupKillercages(pu);
+		cleanupKillercages(pu, puzzle, squares);
 		joinDisconnectedKillercages(pu)
 
 		let qa = 'pu_q';
@@ -1743,10 +1790,12 @@ const PenpaDecoder = (() => {
 		
 		parse.frame(qa, pu, puzzle);
 
+		// Create cage to defined the board bounds when there are no regions
 		if(puzzle.regions.length === 0) {
-			// Create cage to defined the board bounds
-			const {width, height} = doc;
-			puzzleAdd(puzzle, 'cages', {cells: [[0, 0], [height - 1, width - 1]], unique: false, hidden: true});
+			const [top, left, bottom, right] = squares.length !== 1
+				? [0, 0, doc.height - 1, doc.width - 1] 
+				: [squares[0].r, squares[0].c, squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1];		
+			puzzleAdd(puzzle, 'cages', {cells: [[top, left], [bottom, right]], unique: false, hidden: true});
 		}
 		
 		// Custom patch the puzzle
