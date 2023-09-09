@@ -521,9 +521,7 @@ const PenpaDecoder = (() => {
 	const getDefaultAuthor = (pu, puzzle) => 'Unknown';
 	const getDefaultRules = (pu, puzzle) => 'No rules provided for this puzzle. Please check the related video or website for rules.';
 
-	const parse = {};
-
-	parse.surface = (qa, pu, puzzle) => {
+	function render_surface(qa, pu, puzzle) {
 		const list = pu[qa].surface || [];
 		const listCol = pu[qa + '_col'].surface || [];
 		const {point2RC, isBoardCell, ColorSaturate} = PenpaTools;
@@ -560,7 +558,7 @@ const PenpaDecoder = (() => {
 			puzzleAdd(puzzle, 'underlays', opts, 'surface');
 		});
 	}
-	parse.number = (qa, pu, puzzle, feature = 'number') => {
+	function render_number(qa, pu, puzzle, feature = 'number') {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
 		Object.keys(list).forEach(key => {
@@ -574,7 +572,7 @@ const PenpaDecoder = (() => {
 		});
 	}
 	// Must be rendered after killercages
-	parse.numberS = (qa, pu, puzzle, feature = 'numberS') => {
+	function render_numberS(qa, pu, puzzle, feature = 'numberS') {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
 		const {point2cell, point2centerPoint} = PenpaTools;
@@ -596,7 +594,7 @@ const PenpaDecoder = (() => {
 			}
 		});
 	}
-	parse.symbol = (qa, pu, puzzle, layer = 1) => {
+	function render_symbol(qa, pu, puzzle, layer = 1) {
 		const feature = 'symbol'
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
@@ -654,17 +652,17 @@ const PenpaDecoder = (() => {
 		});
 		drawXmarks(qa, pu, puzzle, feature);
 	}
-	parse.freeline = (qa, pu, puzzle) => {
+	function render_freeline(qa, pu, puzzle) {
 		draw_freeline(qa, pu, puzzle, 'freeline');
 	}
-	parse.freelineE = (qa, pu, puzzle) => {
+	function render_freelineE(qa, pu, puzzle) {
 		draw_freeline(qa, pu, puzzle, 'freelineE', 'overlay');
 	}
-	parse.thermo = (qa, pu, puzzle, feature = 'thermo') => {
+	function render_thermo(qa, pu, puzzle, feature = 'thermo') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		const {point2RC} = PenpaTools;
-		parse.nobulbthermo(qa, pu, puzzle, feature);
+		render_nobulbthermo(qa, pu, puzzle, feature);
 		list.forEach((line, i) => {
 			if (line.length === 0) return;
 			let cells = line.map(point2RC);
@@ -680,7 +678,7 @@ const PenpaDecoder = (() => {
 			}, feature + ' bulb');
 		});
 	}
-	parse.arrows = (qa, pu, puzzle, feature = 'arrows') => {
+	function render_arrows(qa, pu, puzzle, feature = 'arrows') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		const {point2RC} = PenpaTools;
@@ -711,7 +709,7 @@ const PenpaDecoder = (() => {
 			}, target), feature + ' circle');
 		});
 	}
-	parse.direction = (qa, pu, puzzle, feature = 'direction') => {
+	function render_direction(qa, pu, puzzle, feature = 'direction') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		const {point2RC} = PenpaTools;
@@ -730,7 +728,7 @@ const PenpaDecoder = (() => {
 			}, target), feature);
 		});
 	}
-	parse.squareframe = (qa, pu, puzzle, feature = 'squareframe') => {
+	function render_squareframe(qa, pu, puzzle, feature = 'squareframe') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		const {point2RC} = PenpaTools;
@@ -748,7 +746,7 @@ const PenpaDecoder = (() => {
 			}, target), feature);
 		});
 	}
-	parse.polygon = (qa, pu, puzzle, feature = 'polygon') => {
+	function render_polygon(qa, pu, puzzle, feature = 'polygon') {
 		const {point2RC, ColorIsTransparent, ColorSaturate, getMinMaxRC, round1, round3} = PenpaTools;
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
@@ -801,7 +799,7 @@ const PenpaDecoder = (() => {
 			}
 		});
 	}
-	parse.frame = (qa, pu, puzzle) => {
+	function render_frame(qa, pu, puzzle) {
 		const list = pu.frame || [];
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
 		wpList.forEach(line => {
@@ -852,16 +850,16 @@ const PenpaDecoder = (() => {
 		});
 		drawXmarks(qa, pu, puzzle, feature);
 	}
-	parse.line = (qa, pu, puzzle) => {
+	function render_line(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'line');
 	}
-	parse.lineE = (qa, pu, puzzle) => {
+	function render_lineE(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'lineE', 'overlay');
 	}
-	parse.wall = (qa, pu, puzzle) => {
+	function render_wall(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'wall');
 	}
-	parse.cage = (qa, pu, puzzle, feature = 'cage') => {
+	function render_cage(qa, pu, puzzle, feature = 'cage') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature];
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
@@ -914,7 +912,7 @@ const PenpaDecoder = (() => {
 		});
 	}
 	// Must be rendered before numberS
-	parse.killercages = (qa, pu, puzzle, feature = 'killercages') => {
+	function render_killercages(qa, pu, puzzle, feature = 'killercages') {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
 		const {point2cell, point2centerPoint, point2matrix, matrix2point} = PenpaTools;
@@ -944,7 +942,7 @@ const PenpaDecoder = (() => {
 			puzzleAdd(puzzle, 'cages', cagePart, feature);
 		});
 	}
-	parse.deletelineE = (qa, pu, puzzle, feature = 'deletelineE') => {
+	function render_deletelineE(qa, pu, puzzle, feature = 'deletelineE') {
 		const list = pu[qa][feature] || [];
 		const surface = pu[qa].surface;
 		const surfaceCol = pu[qa + '_col'].surface || [];
@@ -985,7 +983,7 @@ const PenpaDecoder = (() => {
 			}), feature);
 		});
 	}
-	parse.nobulbthermo = (qa, pu, puzzle, feature = 'nobulbthermo') => {
+	function render_nobulbthermo(qa, pu, puzzle, feature = 'nobulbthermo') {
 		function find_common(pu, line, endpoint) {
 			if (pu.thermo && pu.thermo.find(l => l !== line && l.includes(endpoint))) return true;
 			if (pu.nobulbthermo && pu.nobulbthermo.find(l => l !== line && l.includes(endpoint))) return true;
@@ -1763,34 +1761,34 @@ const PenpaDecoder = (() => {
 		joinDisconnectedKillercages(pu)
 
 		let qa = 'pu_q';
-		parse.surface(qa, pu, puzzle);
-		parse.deletelineE(qa, pu, puzzle);
+		render_surface(qa, pu, puzzle);
+		render_deletelineE(qa, pu, puzzle);
 
-		parse.symbol(qa, pu, puzzle, 1);
-		parse.squareframe(qa, pu, puzzle);
-		parse.thermo(qa, pu, puzzle);
-		parse.nobulbthermo(qa, pu, puzzle);
-		parse.arrows(qa, pu, puzzle);
-		parse.wall(qa, pu, puzzle);
+		render_symbol(qa, pu, puzzle, 1);
+		render_squareframe(qa, pu, puzzle);
+		render_thermo(qa, pu, puzzle);
+		render_nobulbthermo(qa, pu, puzzle);
+		render_arrows(qa, pu, puzzle);
+		render_wall(qa, pu, puzzle);
 		// draw_frame()
-		parse.polygon(qa, pu, puzzle);
-		parse.freeline(qa, pu, puzzle);
-		parse.freelineE(qa, pu, puzzle);
-		parse.line(qa, pu, puzzle);
-		parse.lineE(qa, pu, puzzle);
-		parse.direction(qa, pu, puzzle);
+		render_polygon(qa, pu, puzzle);
+		render_freeline(qa, pu, puzzle);
+		render_freelineE(qa, pu, puzzle);
+		render_line(qa, pu, puzzle);
+		render_lineE(qa, pu, puzzle);
+		render_direction(qa, pu, puzzle);
 		// draw_lattice();
-		parse.symbol(qa, pu, puzzle, 2);
-		parse.cage(qa, pu, puzzle);
-		parse.killercages(qa, pu, puzzle);
-		parse.number(qa, pu, puzzle);
-		parse.numberS(qa, pu, puzzle);
+		render_symbol(qa, pu, puzzle, 2);
+		render_cage(qa, pu, puzzle);
+		render_killercages(qa, pu, puzzle);
+		render_number(qa, pu, puzzle);
+		render_numberS(qa, pu, puzzle);
 				
 		drawBoardLattice(pu, puzzle, doc);
 		
-		parse.frame(qa, pu, puzzle);
+		render_frame(qa, pu, puzzle);
 
-		// Create cage to defined the board bounds when there are no regions
+		// Create cage to define the board bounds when there are no regions
 		if(puzzle.regions.length === 0) {
 			const [top, left, bottom, right] = squares.length !== 1
 				? [0, 0, doc.height - 1, doc.width - 1] 

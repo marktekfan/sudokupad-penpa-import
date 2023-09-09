@@ -242,73 +242,73 @@ function OnOpenInSudokupad(openinNewWindow = true) {
 
         if (!openinNewWindow) {
             window.open(redirect, '_self');
+            return;
         }
-        else {
-            switch(selectActionElem.value)
-            {
-                case 'create-url': {
-                    generatedUrlElem.value = redirect;
+
+        switch(selectActionElem.value)
+        {
+            case 'create-url': {
+                generatedUrlElem.value = redirect;
+                generatedUrlElem.select();
+                generatedUrlElem.focus();
+                buttonCopyUrlElem.disabled = !redirect;				
+            } break;
+
+            case 'create-tinyurl': {
+                generatedUrlElem.value = '';
+                generatedUrlElem.placeholder = '...Creating TinyPuz URL...';
+                let newUrl = await request_tinypuz_shortlink(redirect);
+                generatedUrlElem.value = newUrl || 'Error while creating TinyPuz URL';
+                if (newUrl) {
                     generatedUrlElem.select();
                     generatedUrlElem.focus();
-                    buttonCopyUrlElem.disabled = !redirect;				
-                } break;
+                }
+                buttonCopyUrlElem.disabled = !newUrl;								
+            } break;								
 
-                case 'create-tinyurl': {
-                    generatedUrlElem.value = '';
-                    generatedUrlElem.placeholder = '...Creating TinyPuz URL...';
-                    let newUrl = await request_tinypuz_shortlink(redirect);
-                    generatedUrlElem.value = newUrl || 'Error while creating TinyPuz URL';
-                    if (newUrl) {
-                        generatedUrlElem.select();
-                        generatedUrlElem.focus();
-                    }
-                    buttonCopyUrlElem.disabled = !newUrl;								
-                } break;								
+            case 'convert-tojson': {
+                const {stringify} = JsonStringifyPrettyCompact;
+                const stringifyPretty = (obj) => stringify(obj, {maxLength: 150});
+                generatedUrlElem.value = '';
+                const {isRemotePuzzleId, parsePuzzleData, fetchPuzzle} = PuzzleLoader;
+                let raw = puzzleid;
+                puzzleid = puzzleid.split('&')[0];
 
-                case 'convert-tojson': {
-                    const {stringify} = JsonStringifyPrettyCompact;
-                    const stringifyPretty = (obj) => stringify(obj, {maxLength: 150});
-                    generatedUrlElem.value = '';
-                    const {isRemotePuzzleId, parsePuzzleData, fetchPuzzle} = PuzzleLoader;
-                    let raw = puzzleid;
-                    puzzleid = puzzleid.split('&')[0];
-
+                if(isRemotePuzzleId(puzzleid)) {
+                    puzzleid = await fetchPuzzle(puzzleid);
                     if(isRemotePuzzleId(puzzleid)) {
-                        puzzleid = await fetchPuzzle(puzzleid);
-                        if(isRemotePuzzleId(puzzleid)) {
+                        setError('Not a recognized JSON puzzle format');
+                        return;
+                    }
+                }
+                if (reFPuzPrefix.test(puzzleid)) {
+                    let fpuzzle = loadFPuzzle.saveDecodeURIComponent(stripFPuzPrefix(puzzleid));
+                    if(typeof fpuzzle === 'string') {
+                        try {
+                            fpuzzle = JSON.parse(loadFPuzzle.decompressPuzzle(fpuzzle));
+                            inputUrlElem.value = stringifyPretty(fpuzzle);
+                        }
+                        catch {
                             setError('Not a recognized JSON puzzle format');
                             return;
                         }
                     }
-                    if (reFPuzPrefix.test(puzzleid)) {
-                        let fpuzzle = loadFPuzzle.saveDecodeURIComponent(stripFPuzPrefix(puzzleid));
-                        if(typeof fpuzzle === 'string') {
-                            try {
-                                fpuzzle = JSON.parse(loadFPuzzle.decompressPuzzle(fpuzzle));
-                                inputUrlElem.value = stringifyPretty(fpuzzle);
-                            }
-                            catch {
-                                setError('Not a recognized JSON puzzle format');
-                                return;
-                            }
-                        }
-                    }
-                    else {
-                        let puzzle = parsePuzzleData(puzzleid);						
-                        inputUrlElem.value = stringifyPretty(puzzle);
-                    }
-
-                    generatedUrlElem.value = '';
-                    if (lastActionSelection) {
-                        selectActionElem.value = lastActionSelection;
-                        OnSelectActionChange(lastActionSelection);
-                    }
-                } break;								
-
-                default: {
-                    window.open(redirect, '_blank');
-                    return;
                 }
+                else {
+                    let puzzle = parsePuzzleData(puzzleid);						
+                    inputUrlElem.value = stringifyPretty(puzzle);
+                }
+
+                generatedUrlElem.value = '';
+                if (lastActionSelection) {
+                    selectActionElem.value = lastActionSelection;
+                    OnSelectActionChange(lastActionSelection);
+                }
+            } break;								
+
+            default: {
+                window.open(redirect, '_blank');
+                return;
             }
         }
     })
