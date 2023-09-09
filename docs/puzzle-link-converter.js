@@ -12,31 +12,35 @@ const puzzleLinkConverter = (() => {
 
 		getPenpaDecoderOptions();
 
+		// Penpa+ url format
 		if (PenpaDecoder.isPenpaUrl(url)) {
 			let puzzle = PenpaDecoder.convertPenpaPuzzle(url);
 			if (!puzzle) return null;
-			let settings = Object.entries(puzzle.settings).map(([k, v]) => `setting-${k}=${v}`).join('&');
-			delete puzzle.settings;
+			let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
 			let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(puzzle)) + (settings ? '?' + settings : '');
 			return puzzleId;
 		}
 
+		// f-puzzles url format
 		if (url.match(reFpuzzlesUrl)) {
 			let fpuzzle = url.match(reFpuzzlesUrl);
 			return 'fpuzzles' + fpuzzle[1];
 		}		
 
+		// sudokupad link format
 		if (url.match(reSudokuPadUrl)) {
 			let sudokupad = url.match(reSudokuPadUrl);
 			return sudokupad[1];
 		}		
 
+		// sudokupad.app url format
 		if (url.match(reCtc)) {
 			let sudokupad = url.match(reCtc)
 			let puzzleid = sudokupad[3].replace(/^\?puzzleid=/, '');
 			return puzzleid;
 		}
 
+		// JSON format, should be scl or f-puzzles content
 		url = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
 		if (url.startsWith('{')) {
 			try {
@@ -47,13 +51,14 @@ const puzzleLinkConverter = (() => {
 				catch {
 					puzzle = JSON.parse(PuzzleZipper.unzip(url));
 				}
+				let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');	
 				if (puzzle.id && puzzle.cells) {
 					var puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle)));
-					return puzzleId;
+					return puzzleId + (settings ? '?' + settings : '');
 				}
 				else if (puzzle.size && puzzle.grid) {
 					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
-					return puzzleId;
+					return puzzleId + (settings ? '?' + settings : '');
 				}
 			}
 			catch(ex) {
