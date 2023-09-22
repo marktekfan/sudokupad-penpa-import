@@ -388,12 +388,12 @@ const DrawingContext = (() => {
             }
         }
         else {
-            if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
-                if (this.strokeStyle !== this.fillStyle) {
-                    opts.borderColor = this.strokeStyle;
-                }
-            }
             if (this.font) {
+                if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
+                    if (this.strokeStyle !== this.fillStyle) {
+                        opts.borderColor = this.strokeStyle;
+                    }
+                }
                 const fontsize = this.font.split('px')[0];
                 opts.fontSize = round1(fontsize * this.ctcSize - 4);// -4 to compensate for fontSize calculation in SP App.convertPuzzle
                 if (this.fillStyle && this.fillStyle !== Color.BLACK) {
@@ -427,8 +427,13 @@ const DrawingContext = (() => {
                     opts.width = 0;
                 }
             }
-            else {
+            else { //surface
                 if (this.lineWidth) {
+                    if (PenpaTools.ColorIsVisible(this.strokeStyle)) {
+                        if (this.strokeStyle !== this.fillStyle) {
+                            opts.borderColor = this.strokeStyle;
+                        }
+                    }
                     if (this.strokeStyle !== this.fillStyle) {
                         opts.borderSize = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                     }

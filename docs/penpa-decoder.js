@@ -538,8 +538,8 @@ const PenpaDecoder = (() => {
 			set_surface_style(ctx, surface.value);
 			if(listCol[surface.key]) {
 				ctx.fillStyle = listCol[surface.key];
-				//ctx.strokeStyle = listCol[surface.key];
 			}
+			ctx.lineWidth = 0; // surface should not have a border
 			// ctx.fillStyle = '#ff000040'
 			if (!pu.centerlist.includes(surface.key)) {
 				// ctx.target = 'overlay';
