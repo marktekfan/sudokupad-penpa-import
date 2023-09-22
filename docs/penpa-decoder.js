@@ -1509,9 +1509,11 @@ const PenpaDecoder = (() => {
 		const lineE = pu.pu_q.lineE;
 		const frame = pu.frame;
 		const lineECol = pu.pu_q_col.lineE;
+		const deletelineE = pu.pu_q.deletelineE;
 		const styleMap = {2: 2, 21: 21, 80: 1};
 		const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
 		Object.keys(lineE).forEach(k => {
+			delete deletelineE[k];
 			let style = lineE[k];
 			if (!lineECol[k]) { // Not custom color
 				let frameStyle = styleMap[style];
@@ -1626,7 +1628,7 @@ const PenpaDecoder = (() => {
 		// Cleanup frame
 		for (let k in pu.pu_q.deletelineE) {
 			// Don't delete when replaced with another line
-			if (pu.pu_q.lineE[k] === undefined) {
+			if (pu.pu_q.lineE[k] === undefined && pu.pu_q.freelineE[k] === undefined) {
 				if (pu.frame[k] === 2) {
 					pu.pu_q.deletelineE[k] = 2; // outer frame
 				}
@@ -1644,8 +1646,11 @@ const PenpaDecoder = (() => {
 		});
 		// Keep only thick frame lines
 		const noGridLines = pu.mode.grid[0] === '3';
-		const frameLinesToKeep = noGridLines ? [2, 21, 11, 1] : [2, 21];
-		Object.keys(pu.frame).filter(k => !frameLinesToKeep.includes(pu.frame[k])).forEach(k => delete pu.frame[k]);
+		const dashedGridLines = pu.mode.grid[0] === '2';
+		if (!dashedGridLines) {
+			const frameLinesToKeep = noGridLines ? [2, 21, 11, 1] : [2, 21];
+			Object.keys(pu.frame).filter(k => !frameLinesToKeep.includes(pu.frame[k])).forEach(k => delete pu.frame[k]);
+		}
 	}
 
 	C.convertPenpaPuzzle = function (pu) {
