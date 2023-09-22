@@ -364,10 +364,10 @@ const PenpaSymbol = (() => {
     }
 
     P.puzzleAddLines = function(ctx, note) {
-        const {round1, round3, ColorIsTransparent, ColorIsOpaque, getMinMaxRC, ColorSaturate} = PenpaTools;
+        const {round1, round3, ColorIsVisible, ColorIsOpaque, getMinMaxRC, ColorSaturate} = PenpaTools;
         let {lineWidth, fillStyle, strokeStyle} = ctx;
         let wp = ctx.convertPathToWaypoints();
-        if (PenpaDecoder.flags.useClipPath && wp && ctx.isFill && fillStyle && !ColorIsTransparent(fillStyle)) {
+        if (PenpaDecoder.flags.useClipPath && wp && ctx.isFill && ColorIsVisible(fillStyle)) {
             ctx.push();
             const [top, left, bottom, right] = getMinMaxRC(wp);
             let centerx = round3((right + left) / 2);
@@ -390,7 +390,7 @@ const PenpaSymbol = (() => {
             this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, note);
 
             // Add outline
-            if (lineWidth && !ColorIsTransparent(strokeStyle)) {
+            if (lineWidth && ColorIsVisible(strokeStyle)) {
                 ctx.target = 'overlay';
                 ctx.lineWidth = lineWidth;
                 ctx.strokeStyle = strokeStyle;
@@ -404,7 +404,7 @@ const PenpaSymbol = (() => {
         else {
             if (ctx.getIntent() === 'line') {
                 ctx.push();
-                if (ColorIsTransparent(ctx.strokeStyle)) {
+                if (!ColorIsVisible(ctx.strokeStyle)) {
                     ctx.strokeStyle = ctx.fillStyle;
                     ctx.lineWidth = 1;
                 }
@@ -615,9 +615,9 @@ const PenpaSymbol = (() => {
 			height: round3(2 * r),
 		});
         if (PenpaDecoder.isDoubleLayer(ctx)) {
-            this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number cicle');
+            this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number circle');
         }
-        this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number cicle');
+        this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number circle');
     }
 
 	P.draw_rect = function(ctx, x, y, w, h) {

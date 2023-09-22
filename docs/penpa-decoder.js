@@ -31,7 +31,7 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-	C.isDoubleLayer = (ctx) => (C.flags.doubleLayer || 0) && !PenpaTools.ColorIsTransparent(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
+	C.isDoubleLayer = (ctx) => (C.flags.doubleLayer || 0) && PenpaTools.ColorIsVisible(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
 	
 	let _rnd = 0; // static random seed
 
@@ -89,6 +89,7 @@ const PenpaDecoder = (() => {
 		const partStr = JSON.stringify(part);
 		return (puzzle[feature] || []).map(item => JSON.stringify(item)).includes(partStr);
 	};
+	
 	const puzzleAdd = (puzzle, feature, part, type = undefined, unique = false) => {
 		if(puzzle[feature] === undefined) puzzle[feature] = [];
 		if(unique === true && puzzleHas(puzzle, feature, part)) return;
@@ -541,9 +542,9 @@ const PenpaDecoder = (() => {
 			}
 			ctx.lineWidth = 0; // surface should not have a border
 			// ctx.fillStyle = '#ff000040'
-			if (!pu.centerlist.includes(surface.key)) {
-				// ctx.target = 'overlay';
-			}
+			//if (!pu.centerlist.includes(surface.key)) {
+			//	ctx.target = 'overlay';
+			//}
 			ctx.fillStyle = ColorSaturate(ctx.fillStyle);
 			ctx.role = surface.role;
 			const opts = Object.assign(ctx.toOpts(), {
@@ -747,7 +748,7 @@ const PenpaDecoder = (() => {
 		});
 	}
 	function render_polygon(qa, pu, puzzle, feature = 'polygon') {
-		const {point2RC, ColorIsTransparent, ColorSaturate, getMinMaxRC, round1, round3} = PenpaTools;
+		const {point2RC, ColorIsVisible, ColorSaturate, getMinMaxRC, round1, round3} = PenpaTools;
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		Object.keys(list).forEach(key => {
@@ -769,7 +770,7 @@ const PenpaDecoder = (() => {
 			ctx.fill();
 
 			let wp = ctx.convertPathToWaypoints();
-			if (PenpaDecoder.flags.useClipPath && wp && ctx.fillStyle && !ColorIsTransparent(ctx.fillStyle)) {
+			if (PenpaDecoder.flags.useClipPath && wp && ColorIsVisible(ctx.fillStyle)) {
 				ctx.push();
 				const [top, left, bottom, right] = getMinMaxRC(wp);
 				let centerx = round3((right + left) / 2);

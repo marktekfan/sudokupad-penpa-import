@@ -161,7 +161,7 @@ const DrawingContext = (() => {
 
         if(controlPoints.length === 6 && cp[1] < 0.1) {
             if (this.fillStyle === this.strokeStyle
-                || PenpaTools.ColorIsTransparent(this.strokeStyle)
+                || !PenpaTools.ColorIsVisible(this.strokeStyle)
                 || this.strokeStyle === Color.WHITE) {
                 // simple narrow arrow drawable with a single line
                 return this._arrowLine(startX, startY, endX, endY, controlPoints);
@@ -353,7 +353,7 @@ const DrawingContext = (() => {
             return 'line';
         else if (this._text)
             return 'text';
-        else if (this.fillStyle && !PenpaTools.ColorIsTransparent(this.fillStyle))
+        else if (PenpaTools.ColorIsVisible(this.fillStyle))
             return 'surface';
 
         return undefined;
@@ -364,7 +364,7 @@ const DrawingContext = (() => {
         let opts = {};
         intent = intent || this.getIntent()
         if (intent === 'line') {
-            if (this.lineWidth && this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
+            if (this.lineWidth && PenpaTools.ColorIsVisible(this.strokeStyle)) {
                 opts.thickness = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                 opts.color = this.strokeStyle;
             }
@@ -389,7 +389,7 @@ const DrawingContext = (() => {
         }
         else {
             if (this.font) {
-                if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
+                if (PenpaTools.ColorIsVisible(this.strokeStyle)) {
                     if (this.strokeStyle !== this.fillStyle) {
                         opts.borderColor = this.strokeStyle;
                     }
@@ -407,7 +407,7 @@ const DrawingContext = (() => {
                 }
                 opts['stroke-width'] = round1((this.lineWidth || 0) * this.ctcSize / this.penpaSize);
                 if (this._text) {
-                    if (this.strokeStyle && !PenpaTools.ColorIsTransparent(this.strokeStyle)) {
+                    if (PenpaTools.ColorIsVisible(this.strokeStyle)) {
                          opts.textStroke = this.strokeStyle;
                     }
                     opts.text = this._text;
@@ -427,7 +427,7 @@ const DrawingContext = (() => {
                     opts.width = 0;
                 }
             }
-            else { //surface
+            else { // surface
                 if (this.lineWidth) {
                     if (PenpaTools.ColorIsVisible(this.strokeStyle)) {
                         if (this.strokeStyle !== this.fillStyle) {
@@ -438,7 +438,7 @@ const DrawingContext = (() => {
                         opts.borderSize = round1(this.lineWidth * this.ctcSize / this.penpaSize);
                     }
                 }
-                if (this.fillStyle && !PenpaTools.ColorIsTransparent(this.fillStyle)) {
+                if (PenpaTools.ColorIsVisible(this.fillStyle)) {
                     opts.backgroundColor = this.fillStyle;
                 }
             }

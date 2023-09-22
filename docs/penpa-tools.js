@@ -493,7 +493,7 @@ const PenpaTools = (() => {
 		if (alpha === undefined) {
 			alpha = PenpaDecoder.flags.doubleLayer ? 0.75 : 0.5;
 		}
-		if (!hex || C.ColorIsOpaque(hex) || C.ColorIsTransparent(hex)) return hex; 
+		if (!hex || C.ColorIsOpaque(hex) || !C.ColorIsVisible(hex)) return hex; 
 		let r = parseInt(hex.slice(1, 3), 16);
 		let g = parseInt(hex.slice(3, 5), 16);
 		let b = parseInt(hex.slice(5, 7), 16);
@@ -509,7 +509,7 @@ const PenpaTools = (() => {
 	}
 
 	C.ColorSaturate = function(hex) {
-		if (!hex || C.ColorIsOpaque(hex) || C.ColorIsTransparent(hex)) return hex; 
+		if (!hex || C.ColorIsOpaque(hex) || !C.ColorIsVisible(hex)) return hex; 
 		if (!PenpaDecoder.flags.doubleLayer) {
 			if (hex.length === 7) {
 				return hex + 'FF';
@@ -525,6 +525,11 @@ const PenpaTools = (() => {
     C.ColorIsTransparent = function(hex) {
         // if (typeof color !== 'string') debugger
         return !hex || hex.slice(7) === '00' || (hex.length === 5 && hex.slice(4) === '0');
+    }
+
+    C.ColorIsVisible = function(hex) {
+        // if (typeof color !== 'string') debugger
+        return !hex ? false : hex.slice(7) !== '00' && (hex.length !== 5 || hex.slice(4) !== '0');
     }
 
 	return C;
