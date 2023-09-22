@@ -134,17 +134,21 @@ const PenpaDecoder = (() => {
 		return given;
 	}
 
-	function addGivens(pu, puzzle) {
+	function addGivens(pu, puzzle, squares) {
 		const {number} = pu.pu_q;
-		const {point2cell} = PenpaTools;
+		const {point2cell, point2matrix} = PenpaTools;
 		for (let pos in number) {
-			let given = getGiven(pu, pos);
-			if (given !== null) {
-				let [r, c] = point2cell(pos);
-				let cell = puzzle.cells[r][c];
-				cell.value = given;
-				cell.given = true;
-				number[pos].role = 'given'; // Exclude from rendering
+			let [r, c] = point2matrix(pos);
+			let withinSquare = squares.some(sq => (r >= sq.r && r < sq.r + sq.size) && (c >= sq.c && c < sq.c + sq.size));
+			if (withinSquare) {
+				let given = getGiven(pu, pos, squares);
+				if (given !== null) {
+					let [r, c] = point2cell(pos);
+					let cell = puzzle.cells[r][c];
+					cell.value = given;
+					cell.given = true;
+					number[pos].role = 'given'; // Exclude from rendering
+				}
 			}
 		}
 	}
@@ -182,36 +186,33 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-	function addSudokuRegions(pu, puzzle, squares, regions, uniqueRowsCols) {
+	function addSudokuRegions(pu, puzzle, squares, uniqueRowsCols) {
 		const {matrix2point, point2cell} = PenpaTools;
 		let enableConflictChecker = false;
 
 		if (['square', 'sudoku'].includes(pu.gridtype)) {
-			let complete = regions || squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size));
-			if(complete && squares.length === 1) {
+			if (squares.length === 1 && squares[0].unique) {
 				enableConflictChecker = true;
+			}
 
-				regions = regions || squares[0].regions;
-				puzzle.regions = [];
+			puzzle.regions = [];
 
-				Object.keys(regions).forEach(reg => {
-					let region = regions[reg].map(matrix2point).map(point2cell);
-					puzzleAdd(puzzle, 'regions', region);
+			let allSaneSquares = squares.every(sq => sq.size >= 4);
+			if (allSaneSquares) {
+				Object.keys(squares).forEach(sq => {
+					let square = squares[sq];
+					if (square.unique) {
+						Object.keys(square.regions).forEach(reg => {
+							let region = square.regions[reg].map(matrix2point).map(point2cell);
+							// Don't add 100% duplicate regions
+							if (puzzle.regions.every(r => !PenpaTools.EqualsCheck(r, region))) {
+								puzzleAdd(puzzle, 'regions', region);
+							}
+						});
+					}
 				});
 			}
-			// else if(complete) {
-			// 	enableConflictChecker = true;
-				
-			// 	puzzle.regions = [];
-			// 	squares.forEach(square => {
-			// 		const regions = square.regions;
-
-			// 		Object.keys(regions).forEach(reg => {
-			// 			let region = regions[reg].map(matrix2point).map(point2cell);
-			// 			puzzleAdd(puzzle, 'regions', region);
-			// 		});
-			// 	});
-			// }
+						
 		}
 		if (!uniqueRowsCols && !enableConflictChecker) {
 			puzzle.settings['conflictchecker'] = 0;
@@ -1582,16 +1583,23 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-	function removeFrameWhenEqualToRegions(pu, puzzle, doc, regions) {
-		if (!regions) return;
+	function removeFrameWhenEqualToRegions(pu, puzzle, doc, squares) {
+		let complete = squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size));
+
+		if (!complete) return;
 		if (doc.hasCellMask) return;
 
 		// frame must exactly match all regions
 		// Then frame can be removed
 		let frame = Object.assign({}, pu.frame);
-		regions.forEach(reg => {
-			let outline = PenpaRegions.createOutline(pu, reg);
-			outline.forEach(line => delete frame[line]);
+		squares.forEach(sq => {
+			if (sq.unique) {
+				Object.keys(sq.regions).forEach(reg => {
+					let region = sq.regions[reg];
+					let outline = PenpaRegions.createOutline(pu, region);
+					outline.forEach(line => delete frame[line]);
+				});
+			}
 		});
 
 		// Remove frame lines when fully overlapped by regions
@@ -1674,10 +1682,7 @@ const PenpaDecoder = (() => {
 		const {solutionPoints, uniqueRowsCols} = getSolutionInfo(pu);
 		PenpaRegions.cleanupCenterlist(pu, solutionPoints);
 
-		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
-		if (!regions) {
-			PenpaRegions.findSudokuRegions(pu, squares);
-		}
+		const squares = PenpaRegions.findSudokuSquares(pu);
 
 		// Add solution cells to centerlist
 		['number', 'surface'].forEach(constraint => {
@@ -1719,7 +1724,7 @@ const PenpaDecoder = (() => {
 
 		let puzzle = {
 			id: doc.id,
-			settings: {},
+			settings: {}
 		};
 		createBlankPuzzle(pu, puzzle, width, height);
 
@@ -1729,20 +1734,34 @@ const PenpaDecoder = (() => {
 		if (!hideGridLines(pu, puzzle, doc)) {
 			// must be after hideGridLines
 			if (PenpaDecoder.flags.removeFrame) {
-				removeFrameWhenEqualToRegions(pu, puzzle, doc, regions);
+				removeFrameWhenEqualToRegions(pu, puzzle, doc, squares);
 			}
 		}
 		
-		addSudokuRegions(pu, puzzle, squares, regions, uniqueRowsCols);
+		addSudokuRegions(pu, puzzle, squares, uniqueRowsCols);
 
 		addCageMetadata(pu, puzzle);
 
-		addGivens(pu, puzzle);
+		addGivens(pu, puzzle, squares);
 
 		cleanupKillercages(pu, puzzle, squares);
 		joinDisconnectedKillercages(pu)
 
 		let qa = 'pu_q';
+
+		// DEBUG: show centerlist cells
+		//pu.centerlist.forEach(p => pu[qa].surface[p] = 11);
+
+		squares.forEach((sq, i) => {
+			const {matrix2point} = PenpaTools;
+			for (let r = sq.r; r < sq.r + sq.size; r++) {
+				for (let c = sq.c; c < sq.c + sq.size; c++) {
+					let pos = matrix2point(r, c);
+					pu[qa].surface[pos] = 5 + i;
+				}
+			}
+		});
+
 		render_surface(qa, pu, puzzle);
 		render_deletelineE(qa, pu, puzzle);
 
@@ -1772,10 +1791,15 @@ const PenpaDecoder = (() => {
 
 		// Create cage to define the board bounds when there are no regions
 		if(puzzle.regions.length === 0) {
-			const [top, left, bottom, right] = squares.length !== 1
-				? [0, 0, doc.height - 1, doc.width - 1] 
-				: [squares[0].r, squares[0].c, squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1];		
-			puzzleAdd(puzzle, 'cages', {cells: [[top, left], [bottom, right]], unique: false, hidden: true});
+			const {matrix2point, point2cell} = PenpaTools;
+			let tlbr = (squares.length !== 1
+				? [[0, 0], [doc.height - 1, doc.width - 1]] 
+				: [[squares[0].r, squares[0].c], [squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1]])
+				.map(matrix2point).map(point2cell);	
+			// const [top, left, bottom, right] = squares.length !== 1
+			// 	? [0, 0, doc.height - 1, doc.width - 1] 
+			// 	: [squares[0].r, squares[0].c, squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1];		
+			puzzleAdd(puzzle, 'cages', {cells: tlbr, unique: false, hidden: true});
 		}
 		
 		// Custom patch the puzzle
@@ -1801,6 +1825,25 @@ const PenpaDecoder = (() => {
 		applyDefaultMeta(pu, puzzle, 'rules', pu._document.saveinforules, getDefaultRules);
 		if (pu._document.custom_message) {
 			applyDefaultMeta(pu, puzzle, 'msgcorrect', pu._document.custom_message);
+		}
+
+		if (Object.keys(puzzle.settings).length === 0) {
+			delete puzzle.settings;
+		}
+
+		const defaultSquare = (squares.length === 1 && squares[0].r === 0 && squares[0].c === 0 && squares[0].unique && squares[0].size === puzzle.cells.length);
+		if (!defaultSquare) {
+			const {matrix2point, point2cell} = PenpaTools;
+			Object.keys(squares).forEach(sq => {
+				let square = squares[sq];
+				puzzleAdd(puzzle, 'grids', {
+					pos: [[square.r, square.c]].map(matrix2point).map(point2cell)[0],
+					width: square.size,
+					height: square.size,
+					unique: square.unique,
+					gridlines: 'solid'
+				});
+			});
 		}
 
 		// console.log(pu, puzzle);

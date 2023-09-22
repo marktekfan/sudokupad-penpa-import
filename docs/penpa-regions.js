@@ -69,7 +69,8 @@ const PenpaRegions = (() => {
 			12: 60,
 		};
 
-		const linecountMinimum = (minimumLineCount[Math.min(height, width)] || 0);
+		const maxSize = Math.min(height, width);
+		const linecountMinimum = (minimumLineCount[maxSize] || 36); // default to 9x9
 		let linecount = _fillMatrix(borderStyle);
 		if (linecount < linecountMinimum) {
 			if (borderStyle !== defaultBorderStyle) {
@@ -180,7 +181,7 @@ const PenpaRegions = (() => {
 	}
 
 	function finishIncompleteRegions(r0, c0, size, regions) {
-		const regkeys = Object.keys(regions);
+		let regkeys = Object.keys(regions);
 		let cellcount = regkeys.reduce((acc, reg) => acc + regions[reg].length, 0);
 		let complete = regkeys.filter(reg => regions[reg].length === size).length;
 		// All regions found
@@ -226,8 +227,66 @@ const PenpaRegions = (() => {
 
 		// The completed regions are not all the same shape
 		// Probably irregular or pentomino sudoku
-		// Not possible to reliably determine missing regions
 		if (maxw * maxh !== size) {
+			if (complete === size - 2) {
+				let newregion;
+				regkeys.forEach(reg => {
+					if (regions[reg].length !== size) {
+						if (!newregion) {
+							newregion = regions[reg];
+						}
+						else {
+							newregion.push(...regions[reg]);
+							delete regions[reg];
+						}
+					}
+				});
+				regkeys = Object.keys(regions);
+			}
+
+			// Special case for pentominos: split 10-region into two P-shaped regions
+			if (size === 5) {
+				const neighbours = [
+					[-1, 0], [-1, 1], // top
+					[0, 2], [1, 2], // right
+					[2, 0], [2, 1], // bottom
+					[0, -1], [1, -1], // left
+				];
+				regkeys.forEach(reg => {
+					let region = regions[reg];
+
+					if (region.length === 10) {
+						for(let [r1, c1] of region) {
+							// Find 2x2
+							if (region.some(([r2, c2]) => r2 === r1 + 0 && c2 == c1 + 1) &&
+								region.some(([r2, c2]) => r2 === r1 + 1 && c2 == c1 + 0) &&
+								region.some(([r2, c2]) => r2 === r1 + 1 && c2 == c1 + 1))
+							{
+								const connected = neighbours.map(([ro, co]) => 
+									region.findIndex(([rr, cc]) => rr === r1 + ro && cc === c1 + co)
+								).filter(i => i !== -1);
+								// unique P-shape found
+								if (connected.length === 1) {
+									// Split region
+									let region2 = regions[Object.keys(regions).length] = [];
+									region2.push(...region.splice(connected[0], 1));									
+									region2.push(...region.splice(region.findIndex(([r2, c2]) => r2 === r1 + 0 && c2 == c1 + 0), 1));
+									region2.push(...region.splice(region.findIndex(([r2, c2]) => r2 === r1 + 0 && c2 == c1 + 1), 1));
+									region2.push(...region.splice(region.findIndex(([r2, c2]) => r2 === r1 + 1 && c2 == c1 + 0), 1));
+									region2.push(...region.splice(region.findIndex(([r2, c2]) => r2 === r1 + 1 && c2 == c1 + 1), 1));
+								}
+							}
+						};
+					}
+					if (region.length === 10) {
+						// Split 10-region into 2 regions of equal size
+						//...
+					}
+				});
+			}
+			else {
+				// Not possible to reliably determine missing regions
+			}
 			return regions;
 		}
 
@@ -304,11 +363,11 @@ const PenpaRegions = (() => {
 	}
 
 	//Find unused centerList cell
-	function findNextSquare(squares, centerlist, height, width) {
+	function findNextSquare(squares, centerlist, top, left, height, width) {
 		const {matrix2point} = PenpaTools;
 		const maxSize = Math.min(width, height);
-		for(let r0 = 0; r0 < maxSize; r0++) {
-			for(let c0 = 0; c0 < maxSize; c0++) {
+		for(let r0 = top; r0 < top + height - 2; r0++) {
+			for(let c0 = left; c0 < left + width - 2; c0++) {
 				if (!centerlist.includes(matrix2point(r0, c0))) continue;
 
 				let square = findLargestFixedSquareAtRC(squares, centerlist, r0, c0, maxSize);
@@ -370,6 +429,9 @@ const PenpaRegions = (() => {
 		if (removeCells) {
 			// remove cells from centerlist based on deletelineE
 			Object.keys(pu.pu_q.deletelineE).forEach(k => {
+				if (pu.pu_q.deletelineE[k] !== 1) {
+					return;
+				}
 				// Don't remove when replaced with another line
 				if (k in pu.pu_q.lineE) {
 					return;
@@ -425,75 +487,55 @@ const PenpaRegions = (() => {
 	}
 
 	C.findSudokuSquares = function(pu) {
-		const {point2matrix, matrix2point, getBoundsRC} = PenpaTools;
+		const {point2matrix, getBoundsRC} = PenpaTools;
 
 		// Get combined edge lines (LineE) plus the outside frame.
 		// Exclude thin or dash grid lines (=1 or 11).
-		let edge_elements = Object.assign({}, pu.frame, pu.pu_q.lineE);
-		Object.keys(edge_elements).filter(k => [1, 11].includes(edge_elements[k])).forEach(k => delete edge_elements[k]);
+		// let edge_elements = Object.assign({}, pu.frame, pu.pu_q.lineE);
+		// Object.keys(edge_elements).filter(k => [1, 11].includes(edge_elements[k])).forEach(k => delete edge_elements[k]);
 
+		//const {top, left, height, width} = getBoundsRC(pu.centerlist, point2matrix);
+
+		// const edgeStyles = [
+		// 	[2], // Black frame
+		// 	[8], // Red frame
+		// 	[21], // Thick black frame
+		// 	[2, 8, 21], // Combo
+		// ];
+
+		// let singleSquare = null;
+
+		// for(let edgeStyle of edgeStyles) {
+		// 	var regions = extractRegionData(top, left, height, width, edge_elements, edgeStyle, pu.centerlist);
+		// 	console.log('regions', regions);
+
+		// 	let sizes = {};
+		// 	Object.keys(regions).forEach(reg => sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1);
+		// 	let sortedSizes = Object.keys(sizes).map(Number).sort((a, b) => a - b).reverse();
+		// 	for (let regionSize of sortedSizes) {
+		// 		if (regionSize >= 4 && regionSize === sizes[regionSize]) {
+		// 			let selectedRegions = Object.keys(regions).filter(reg => regions[reg].length === regionSize).map(reg => regions[reg]);
+		// 			const {top, left, height, width} = getBoundsRC(selectedRegions.flat());
+		// 			if (height === regionSize && width === regionSize) {
+		// 				if (!singleSquare || singleSquare.size < height) {
+		// 					singleSquare = {r: top, c: left, size: height, regions: selectedRegions, unique: true};
+		// 				}
+		// 				break;
+		// 			}
+		// 		}
+		// 	}	
+		// }
+
+		const squares = [];
 		const {top, left, height, width} = getBoundsRC(pu.centerlist, point2matrix);
 
-		const edgeStyles = [
-			[2], // Black frame
-			[8], // Thick black frame
-			[21], // Red frame
-			[2, 8, 21], // Combo
-		];
-		for(let edgeStyle of edgeStyles) {
-			var regions = extractRegionData(top, left, height, width, edge_elements, edgeStyle, pu.centerlist);
-			console.log('regions', regions);
+		// Find any other squares within the puzzle bounds
+		while(findNextSquare(squares, pu.centerlist, top, left, height, width)) { }
+		
+		// Find all regions in found squares
+		C.findSudokuRegions(pu, squares);
 
-			let sizes = {};
-			Object.keys(regions).forEach(reg => sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1);
-			let sortedSizes = Object.keys(sizes).map(Number).sort((a, b) => a - b).reverse();
-			for (let size of sortedSizes) {
-				if (size >= 4 && size === sizes[size]) {
-					let selectedRegions = Object.keys(regions).filter(reg => regions[reg].length === size).map(reg => regions[reg]);
-					const {top, left, height, width} = getBoundsRC(selectedRegions.flat());
-					if (height === size && width === size) {
-						let squares = [{r: top, c: left, size: height, regions: selectedRegions}];
-						return {squares, regions: selectedRegions};
-					}
-				}
-			}	
-			var allEqualSize = false;
-
-			// // All found regions should have equal size.
-			// let size = -1;
-			// var allEqualSize = Object.keys(regions).length > 2 && Object.keys(regions).every(reg => {
-			// 	if (size === -1) size = regions[reg].length;
-			// 	return regions[reg].length === size;
-			// })
-			// if (allEqualSize) break;
-		}
-		const squares = [];
-		while(findNextSquare(squares, pu.centerlist, height, width)) { }
-
-		if (allEqualSize) {
-			const eqSet = (xs, ys) => xs.size === ys.size && [...xs].every((x) => ys.has(x));
-
-			let regionsSet = new Set(Object.keys(regions).flatMap(reg => regions[reg].map(matrix2point)));
-			let squaresSet = new Set(squares.flatMap(sq => {
-				let points = [];
-				for (let r = 0; r < sq.size; r++) {
-					for (let c = 0; c < sq.size; c++) {
-						points.push(matrix2point(r + sq.r, c + sq.c));
-					}
-				}
-				return points;
-			}));
-
-			let equal = eqSet(regionsSet, squaresSet);
-			if (!equal) {
-				regions = null;
-			}
-		}
-		else {
-			regions = null;
-		}
-
-		return {squares, regions};
+		return squares;
 	}
 
 	C.createOutline = function(pu, regionyx) {
@@ -536,11 +578,13 @@ const PenpaRegions = (() => {
 		// For single squares all regions should be fully defined by fat edge lines.
 		// If not all regions are resolved then don't look further, just return as-is.
 		if (squares.length === 1) {
-			let edge_elements = pu.pu_q.lineE;
+			let edge_elements = lineE;
 			let {r, c, size} = squares[0];
 			squares[0].regions = extractRegionData(r, c, size, size, edge_elements);
+			//FIXME, this should resolve a simple 9x9 sudoku
 		}
-		else {
+		let allSquaresResolved = squares.every(sq => Object.keys(sq.regions || []).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size))
+		if (!allSquaresResolved) {
 			// For overlapping squares try several strategies to resolve all regions.
 
 			// Create square outlines
@@ -605,7 +649,7 @@ const PenpaRegions = (() => {
 					// Remove region outlines
 					Object.keys(sq.regions).forEach(reg => {
 						if (sq.regions[reg].length === sq.size) {
-							sq.region_outline[reg].forEach(k => delete noRegionEdges[k])
+							sq.region_outline[reg].forEach(k => delete noRegionEdges[k]);
 						}
 					});
 					if (Object.keys(sq.regions).length !== sq.size) {
@@ -635,8 +679,9 @@ const PenpaRegions = (() => {
 			}
 		}
 
-		let allSquaresResolved = squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size))
-		if(allSquaresResolved) {
+		squares.forEach(sq => sq.unique = Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size))
+
+		if(squares.every(sq => sq.unique)) {
 			console.log('All cages are resolved!')
 		}
 		else {
