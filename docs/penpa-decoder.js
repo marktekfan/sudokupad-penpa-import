@@ -1506,33 +1506,40 @@ const PenpaDecoder = (() => {
 	}
 
 	function moveBlackEdgelinesToFrame(pu) {
+		const {point2matrix} = PenpaTools;
 		const lineE = pu.pu_q.lineE;
 		const frame = pu.frame;
 		const lineECol = pu.pu_q_col.lineE;
 		const deletelineE = pu.pu_q.deletelineE;
 		const styleMap = {2: 2, 21: 21, 80: 1};
 		const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
-		Object.keys(lineE).forEach(k => {
-			delete deletelineE[k];
-			let style = lineE[k];
-			if (!lineECol[k]) { // Not custom color
-				let frameStyle = styleMap[style];
-				if (frameStyle) {
-					delete lineE[k];
-					frame[k] = frameStyle;
+		Object.keys(lineE).forEach(key => {
+			const p = key.split(',').map(Number);
+			const m1 = point2matrix(p[0]);
+			const m2 = point2matrix(p[1]);
+			// don't move diagonal lines
+			if (m1[0] === m2[0] || m1[1] === m2[1]) {
+				delete deletelineE[key];
+				let style = lineE[key];
+				if (!lineECol[key]) { // Not custom color
+					let frameStyle = styleMap[style];
+					if (frameStyle) {
+						delete lineE[key];
+						frame[key] = frameStyle;
+					}
+					else {
+						if (frame[key]) delete frame[key];
+					}
 				}
-				else {
-					if (frame[k]) delete frame[k];
-				}
-			}
-			else if(lineECol[k] === '#000000') { // Black custom color
-				let frameStyle = styleMapCol[style];
-				if (frameStyle) {
-					delete lineE[k];
-					frame[k] = frameStyle;
-				}
-				else {
-					if (frame[k]) delete frame[k];
+				else if(lineECol[key] === '#000000') { // Black custom color
+					let frameStyle = styleMapCol[style];
+					if (frameStyle) {
+						delete lineE[key];
+						frame[key] = frameStyle;
+					}
+					else {
+						if (frame[key]) delete frame[key];
+					}
 				}
 			}
 		});

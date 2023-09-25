@@ -245,18 +245,22 @@ const PenpaTools = (() => {
 			for (let i = 1; i < points.length - 1; i++) {
 				let curr = points[i + 0];
 				let next = points[i + 1];
-				if ((prev[0] !== curr[0] || curr[0] !== next[0]) &&
-					(prev[1] !== curr[1] || curr[1] !== next[1])) {
+				let dyprev = curr[0] - prev[0];
+				let dynext = next[0] - curr[0];
+				let dxprev = curr[1] - prev[1];
+				let dxnext = next[1] - curr[1];
+				// Combine horizontal and vertical lines
+				if ((dyprev === 0 && dynext === 0) || (dxprev === 0 && dxnext === 0)) {
+					continue;
+				}
+				// Keep any change in direction
+				if (dyprev !== dynext || dxprev !== dxnext) {
 					line.push(curr);
 				}
 				prev = curr;
 			}
 			line.push(points[points.length - 1]);
 		}
-		// line.forEach(wp => {
-		// 	wp[0] = round(wp[0]);
-		// 	wp[1] = round(wp[1]);
-		// })
 		return line;
 	}
 
