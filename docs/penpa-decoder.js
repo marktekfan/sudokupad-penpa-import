@@ -4,11 +4,12 @@ const PenpaDecoder = (() => {
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
 	C.settings = {
-		thickLines:  {defaultValue: true,  title: "Thicken lines to match Sudokupad feature lines"},
-		expandGrid:  {defaultValue: true,  title: "Expand grid for wide outside clues"},
+		thickLines:  {defaultValue: true,  title: "Thick lines to match SudokuPad feature lines"},
+		fadeLines:   {defaultValue: true,  title: "Fade colors on thick lines"},
 		removeFrame: {defaultValue: true,  title: "Remove extra Frame lines"},
 		doubleLayer: {defaultValue: true,  title: "Doubling of transparant underlay colors"},
-		useClipPath: {defaultValue: false, title: "Use clip-path for shapes"},
+		expandGrid:  {defaultValue: false, title: "Expand grid to force editable outside clues"},
+		// useClipPath: {defaultValue: false, title: "Use clip-path for shapes"},
 		debug:       {defaultValue: 0 || document.location.host.startsWith('127.0.0.1'), title: "Add penpa debug info to puzzle"}
 	};
 	C.flags = {}; // Will be initalized with C.settings values
@@ -618,46 +619,11 @@ const PenpaDecoder = (() => {
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], listCol[key]);
 		});
 	}
-	const draw_freeline = (qa, pu, puzzle, feature, target = undefined) => {
-		const list = pu[qa][feature] || [];
-		const listCol = pu[qa + '_col'][feature] || [];
-		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list, listCol);
-		wpList.forEach(line => {
-			if (line.wayPoints.length < 2) return;
-			let ctx = new DrawingContext();
-			if (target) {
-				ctx.target = target;
-			}
-			else if (isMaskedLine(pu, line.keys)) {
-				ctx.target = 'overlay';
-			}
-			set_line_style(ctx, line.value);
-			if(line.cc) {
-				ctx.strokeStyle = line.cc;
-			}
-			if (line.value === 30) {
-				drawDoubleLine(ctx, line, puzzle);
-			}
-			else {
-				const isCenter = [0, 2, 3].includes(pu.point[line.keys[0]].type);
-				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
-					if (PenpaDecoder.flags.thickLines) {
-						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
-						ctx.lineWidth = 11 * ctx.penpaSize / ctx.ctcSize;
-					}
-				}
-				puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
-					wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
-				}), feature);
-			}
-		});
-		drawXmarks(qa, pu, puzzle, feature);
-	}
 	function render_freeline(qa, pu, puzzle) {
-		draw_freeline(qa, pu, puzzle, 'freeline');
+		draw_line(qa, pu, puzzle, 'freeline');
 	}
 	function render_freelineE(qa, pu, puzzle) {
-		draw_freeline(qa, pu, puzzle, 'freelineE', 'overlay');
+		draw_line(qa, pu, puzzle, 'freelineE', 'overlay');
 	}
 	function render_thermo(qa, pu, puzzle, feature = 'thermo') {
 		const list = pu[qa][feature] || [];
@@ -839,8 +805,10 @@ const PenpaDecoder = (() => {
 			else {
 				const isCenter = [0, 2, 3].includes(pu.point[line.keys[0]].type);
 				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
-					if (PenpaDecoder.flags.thickLines) {
+					if (PenpaDecoder.flags.fadeLines) {
 						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle);
+					}
+					if (PenpaDecoder.flags.thickLines) {
 						ctx.lineWidth = 11 * ctx.penpaSize / ctx.ctcSize;
 					}
 				}
@@ -1356,7 +1324,7 @@ const PenpaDecoder = (() => {
 		}
 	}
 
-	function expandGridForWideOutsideClues(pu) {
+	function expandGridForWideOutsideClues(pu, margin = 0) {
 		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
 		let bounds = [];
 		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.number), PenpaTools.point2matrix));
@@ -1370,10 +1338,10 @@ const PenpaDecoder = (() => {
 		let bottom = Math.max(...bounds.map(b => b[2]));
 		let right = Math.max(...bounds.map(b => b[3]));
 		
-		if (top < clBounds[0] - 1 || left < clBounds[1] - 1) {
+		if (top < clBounds[0] - margin || left < clBounds[1] - margin) {
 			addToCenterlist(pu, PenpaTools.matrix2point(top, left));
 		}
-		if (bottom > clBounds[2] + 1 || right > clBounds[3] + 1) {
+		if (bottom > clBounds[2] + margin || right > clBounds[3] + margin) {
 			addToCenterlist(pu, PenpaTools.matrix2point(bottom, right));
 		}
 	}

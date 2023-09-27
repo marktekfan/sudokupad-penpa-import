@@ -125,15 +125,16 @@
 		repeatFunc.stop = stopFunc;
 		return repeatFunc;
 	}
+	const encodeHTMLEntities = html => html.replace(/[\u00A0-\u9999<>\&]/g, i => '&#'+i.charCodeAt(0)+';');
 	function sanitizeHTML(html) {
+		html = html.replace(/(r[0-9]+c[0-9]+)([<>])(?=r[0-9]+c[0-9]+)/ig, '$1 $2 ');
 		let doc = new DOMParser().parseFromString(html, 'text/html');
 		return (doc && doc.body && doc.body.textContent) || '';
 	}
 	function textToHtml(text) {
 		let e = document.createElement('div');
 		e.textContent = text;
-		e.innerHTML = e.textContent.replace(/(\\n|\n)/g, '<br />\n');
-		return e.innerHTML;
+		return e.innerHTML.replace(/(\\n|\n)/g, '<br />\n');
 	};
 	async function fetchWithTimeout(uri, opts = {}) {
 		const {timeout = 8000} = opts;
@@ -184,6 +185,7 @@
 				props
 			))
 	});
+	const requireScriptDependencies = async urls => Promise.all(urls.filter(url => performance.getEntriesByName(url, 'resource').length == 0).map(url => loadScript(url)));
 	const attachStylesheet = async (cssText, sel = 'head') => new Promise((onload, onerror) => {
 		let elem = resolveSelector(sel)[0].appendChild(Object.assign(
 			document.createElement('style'), {textContent: cssText, onload: () => onload(elem), onerror}))

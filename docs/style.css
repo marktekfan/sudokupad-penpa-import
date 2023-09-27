@@ -1,3 +1,9 @@
+:root {
+	--theme-color: #6a1b9a;
+	--theme-background-color: #f3e5f5;
+	--theme-disabled-color: #a381b2;
+}
+
 * {
 	box-sizing: border-box;
 }
@@ -51,7 +57,7 @@ textarea {
 	font-weight: 500;
 	border: 1px solid #ccc;
 	border-radius: 0.4rem;
-	color: #6a1b9a; 
+	color: var(--theme-color); 
 	background-color: #fff;
 	cursor: pointer;
 	/* white-space: nowrap; */
@@ -77,11 +83,20 @@ textarea {
 .topbar {
 	display: flex;
 	flex-direction: row;
-	background-color: #6a1b9a;
+	background-color: var(--theme-color);
 	height: 40px; line-height: 40px;
 	font-size: 1.2rem;
 	/*padding: 0 1rem;*/
 	color: #fff;
+}
+
+/* topbar */
+.topbar .menu {
+	display: flex;
+}
+.topbar .menu a {
+	display: inline-block;
+	padding: 0 1rem;
 }
 .topbar .menu button {
 	height: auto;
@@ -97,6 +112,186 @@ textarea {
 	width: auto; height: auto;
 }
 
+.topbar button.appmenu {
+	margin-left: 1rem;
+	margin-right: 1rem;
+}
+
+.topbar img {
+	margin-right: 1rem;
+}
+
+.mdc-drawer {
+	display: none;
+	position: absolute;
+	left: 0; top: 0;
+	width: 100%; height: 100%;
+	z-index: 1000;
+	background: #0005;
+}
+.mdc-drawer.open {
+	display: block;
+}
+.mdc-list {
+	position: absolute;
+	margin-top: 40px;
+	display: flex;
+	flex-direction: column;
+	max-width: 100%;
+	background: #fff;
+}
+.mdc-drawer .mdc-list-item {
+	display: flex;
+	flex-direction: row;
+	text-decoration: none;
+	min-width: 16rem;
+	height: 2.5rem;
+	line-height: 2.5rem;
+	border-radius: 0.25rem;
+	padding: 0 0.5rem;
+	margin: 0.25rem;
+	background-color: var(--theme-background-color);
+	color: #000;
+}
+.mdc-drawer .mdc-list-item:hover {
+	background-color: var(--theme-color);
+	color: #fff;
+}
+.mdc-list-item .icon {
+	padding-right: 0.5rem;
+}
+.mdc-list-item .icon svg {
+	width: 2rem; height: 2rem;
+	margin: 0.25rem 0;
+}
+.mdc-list-item-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#menu-app-version {
+	padding: 0 0.5rem;
+	margin: 0.25rem;
+	font-size: 65%;
+	color: #555;
+}
+
+.menu 
+{
+	position: relative;
+	/* margin-top: 20px; */
+	/* padding-top: 10px; */
+	border-top: 1px solid rgba(0,0,0,0.05);
+}
+
+ul.menu
+{
+	padding-inline-start: 20px;
+}
+
+.menu li 
+{
+	list-style: none;
+	margin: 8px 0;
+	margin-right: 10px;
+}
+.menu li label
+{
+	position: relative;
+	display: flex;
+	justify-content: space-between;
+}
+.menu li label span 
+{
+	position: relative;
+	display: flex;
+	justify-content: space-between;
+	user-select: none;
+	cursor: pointer;
+}
+.menu li label span ion-icon 
+{
+	margin-right: 10px;
+	font-size: 120%;
+}
+.menu li label .action 
+{
+	position: relative;
+}
+.menu li label .action input 
+{
+	appearance: none;
+}
+.menu li label .action i 
+{
+	position: relative;
+	width: 30px;
+	height: 15px;
+	background: #ddd;
+	border-radius: 15px;	
+}
+.menu li label .action input:checked ~ i 
+{
+	background: var(--theme-color);
+}
+.menu li label .action i::before 
+{
+	content: '';
+	position: absolute;
+	top: 2.25px;
+	left: 2.5px;
+	width: 10.5px;
+	height: 10.5px;
+	border-radius: 10px;
+	background: #fff;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	transition: 0.1s;
+}
+.menu li label .action input:checked ~ i::before 
+{
+	left: calc(100% - 12.5px);
+}
+
+.mdc-list-item .kofiimg {
+    width: 32px;
+	margin: 10px 0px;
+}
+
+.floatingchat-donate-button a {
+	text-decoration: none;
+	background-color: green;
+}
+.kofiimg {
+    width: 39px;
+}
+.floatingchat-donate-button {
+	text-decoration: none;
+	background-color: #00b4f7;
+    border-radius: 100px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    font-family: nunito,quicksand,sans-serif;
+    font-size: 16px;
+    width: max-content;
+    color: #fff;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-border-radius: 100px;
+    -moz-border-radius: 100px;
+    -ms-border-radius: 100px;
+    -o-border-radius: 100px;
+    display: flex!important;
+	/* opacity: 80%; */
+}
+@media (pointer:none), (pointer:coarse) {
+	.floatingchat-donate-button {
+		opacity: 100%;
+	}
+}
+
+.floatingchat-donate-button:hover {
+	opacity: 100%;
+}
 
 .btn {
 	height: 2.4rem; 
@@ -117,15 +312,15 @@ textarea {
 	font-weight: 500;
 	border: 1px solid #ccc;
 	border-radius: 0.5rem;
-	color: #6a1b9a;
+	color: var(--theme-color);
 	background-color: #fff;
 	cursor: pointer;
 	/* white-space: nowrap; */
 	font-family: Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
 }
-.btn:hover { background-color: #f3e5f5; }
+.btn:hover { background-color: var(--theme-background-color); }
 .btn:focus { outline:none; box-shadow: 0 0 1px 0px rgba(0, 0, 0, 0.3); }
-.btn:disabled { color: #a381b2; }
+.btn:disabled { color: var(--theme-disabled-color); }
 .btn:hover:disabled { background-color: inherit; }
 
 .btn > svg {
@@ -160,6 +355,14 @@ svg.iconright { margin-left: 0.25em }
 #input-url {
 	width: 100%;
 	height: 10rem;
+}
+
+.importer-options {
+	display: none;
+}
+
+.importer-options.show {
+	display: block;
 }
 
 fieldset label {
@@ -211,10 +414,10 @@ span.extra {
 	display: inline;
 	margin-right:1rem;
 }
-ul {
+.contact-list ul {
 	list-style: none;
 }
-li {
+.contact-list li {
 	margin-left: -1.5rem;
 }
 select {
@@ -251,7 +454,7 @@ select {
 	100% {margin-left: 0.2rem;}
 }
 
-#kofi-logo {
+.kofi-logo-animation {
 	animation: tilt-shaking 8s infinite ;
 }
 @keyframes tilt-shaking {

@@ -11,6 +11,8 @@ function clearError() {
     document.getElementById('errorcontainer').classList.remove('error');
 }
 
+const camelize = s => s.replace(/-./g, x=>x[1].toUpperCase())
+
 const inputUrlElem = document.getElementById('input-url');
 const selectDestinationElem = document.getElementById('select-destination');
 const buttonCopyUrlElem = document.getElementById('btncopyurl');
@@ -30,6 +32,10 @@ if (document.readyState !== 'complete') {
 }
 
 function doInitialize() {
+
+    let appString = `Sudokupad Penpa+ importer v${appVersion}`;
+    document.querySelectorAll('#menu-app-version').forEach(elem => elem.innerHTML = appString);
+
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     const url = urlParams.get('url')
@@ -47,7 +53,9 @@ function doInitialize() {
     // On app reactivate inputUrlElem.value is not always immediatly available
     setTimeout(OnInputURLChange, 100);
 
-    createSettings(document.querySelector('fieldset'), urlParams.get('test'));
+    setMenuSetting('options-show-options', localStorage.showOptions);
+
+    createSettings(document.querySelector('.importer-options'), urlParams.get('test'));
     PenpaDecoder.ParseUrlSettings();
     let options = document.querySelectorAll('fieldset input[type=checkbox]');
     for(let option of options) {
@@ -55,6 +63,8 @@ function doInitialize() {
     }
 
     addFileDragNDrop(fileDropAreaElem);
+
+    createAppMenu();    
 
     function createSettings(fieldset, test) {
         // Initialize Setting
@@ -80,9 +90,8 @@ function doInitialize() {
             PenpaDecoder.flags[setting] = settings[setting].defaultValue;
         });
         // Show settings in test mode.
-
         if (test !== null) {
-            fieldset.style.display = 'block';
+            fieldset.classList.toggle('show', true);
         }
     }        
 
@@ -138,6 +147,28 @@ function doInitialize() {
             }
         }
     }
+}
+
+function toBool(value) {
+    if (typeof value === 'string' && value.length !== 0) {
+        return value[0] === 't';
+    }
+    return !!value;
+}
+
+function setMenuSetting(setting, value) {
+    let settingCheckbox = document.getElementById(setting);
+    
+    switch(setting) {
+        case 'options-show-options': {
+            let checked = toBool(value);
+            settingCheckbox.checked = checked;
+            localStorage.showOptions = checked;
+            let importerOptions = document.querySelector('.importer-options');
+            importerOptions.classList.toggle('show', checked);
+        } break;
+    }
+
 }
 
 let lastActionSelection = 'open'; // default action
@@ -345,4 +376,29 @@ async function request_tinypuz_shortlink(url) {
         console.log('Error while creating TinyPuz URL');
         return null;
     }
+}
+
+function createAppMenu() {
+	const closeMenu = event => {
+		document.querySelector('#appmenu').classList.toggle('open');
+        removeDownEventHandler('#appmenu.mdc-drawer', handleClickOverlay);
+        if(event) event.preventDefault(); // Prevent click-throughs on buttons
+	};
+	const handleClickOverlay = event => {
+		event.stopPropagation();
+		event.stopImmediatePropagation();
+		if(event.target === document.querySelector('#appmenubtn')) return
+		if(event.target === document.querySelector('#appmenu')) closeMenu(event);
+	};
+	const handleClickOption = event => {
+        if (!event.target) return;
+        setMenuSetting('options-show-options', event.target.checked);
+	};
+	const handleOpenAppMenu = event => {
+		document.querySelector('#appmenu').classList.toggle('open');
+		addDownEventHandler('#appmenu.mdc-drawer', handleClickOverlay);
+	};
+	addHandler('#appmenubtn', 'click', handleOpenAppMenu, {capture: true});
+    addHandler('#options-show-options', 'click', handleClickOption, {capture: true});
+    //handleOpenAppMenu();
 }
