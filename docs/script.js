@@ -33,7 +33,7 @@ if (document.readyState !== 'complete') {
 
 function doInitialize() {
 
-    let appString = `Sudokupad Penpa+ importer v${appVersion}`;
+    let appString = `Sudokupad Penpa+ importer v${appVersion}  (&copy; 2023)`;
     document.querySelectorAll('#menu-app-version').forEach(elem => elem.innerHTML = appString);
 
     const queryString = window.location.search;

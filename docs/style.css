@@ -208,30 +208,33 @@ ul.menu
 }
 .menu li label span ion-icon 
 {
-	margin-right: 10px;
-	font-size: 120%;
+	margin: -5px;
+	margin-right: 8px;
+	font-size: 180%;
 }
-.menu li label .action 
+.menu li label .checkbox-slider 
 {
 	position: relative;
 }
-.menu li label .action input 
+.menu li label .checkbox-slider input 
 {
 	appearance: none;
 }
-.menu li label .action i 
+.menu li label .checkbox-slider i 
 {
 	position: relative;
+	top:2px;
+	margin-left: 0.5rem;
 	width: 30px;
 	height: 15px;
-	background: #ddd;
+	background: #ccc;
 	border-radius: 15px;	
 }
-.menu li label .action input:checked ~ i 
+.menu li label .checkbox-slider input:checked ~ i 
 {
 	background: var(--theme-color);
 }
-.menu li label .action i::before 
+.menu li label .checkbox-slider i::before 
 {
 	content: '';
 	position: absolute;
@@ -244,7 +247,7 @@ ul.menu
 	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 	transition: 0.1s;
 }
-.menu li label .action input:checked ~ i::before 
+.menu li label .checkbox-slider input:checked ~ i::before 
 {
 	left: calc(100% - 12.5px);
 }

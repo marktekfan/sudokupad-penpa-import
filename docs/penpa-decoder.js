@@ -4,11 +4,11 @@ const PenpaDecoder = (() => {
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
 	C.settings = {
-		thickLines:  {defaultValue: true,  title: "Thick lines to match SudokuPad feature lines"},
-		fadeLines:   {defaultValue: true,  title: "Fade colors on thick lines"},
-		removeFrame: {defaultValue: true,  title: "Remove extra Frame lines"},
-		doubleLayer: {defaultValue: true,  title: "Doubling of transparant underlay colors"},
-		expandGrid:  {defaultValue: false, title: "Expand grid to force editable outside clues"},
+		thickLines:  {defaultValue: true,  title: "Thicker lines to match SudokuPad feature lines"},
+		fadeLines:   {defaultValue: true,  title: "Fade colors on feature lines"},
+		removeFrame: {defaultValue: true,  title: "Remove extra Frame lines on regions"},
+		doubleLayer: {defaultValue: true,  title: "Doubling of transparant underlay colors to make them less transparent"},
+		expandGrid:  {defaultValue: false, title: "Always expand grid to force editable outside clues"},
 		// useClipPath: {defaultValue: false, title: "Use clip-path for shapes"},
 		debug:       {defaultValue: 0 || document.location.host.startsWith('127.0.0.1'), title: "Add penpa debug info to puzzle"}
 	};
