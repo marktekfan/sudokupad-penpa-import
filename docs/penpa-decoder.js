@@ -446,10 +446,9 @@ const PenpaDecoder = (() => {
 				if (hasright)  deletelineE[makePointPair(matrix2point(y - 1, x    , 1), matrix2point(y    , x    , 1))] = 1;
 				if (hasbottom) deletelineE[makePointPair(matrix2point(y    , x - 1, 1), matrix2point(y    , x    , 1))] = 1;
 			}
-		}
 
-		doc.hasCellMask = true;
-		return true;
+			doc.hasCellMask = true;
+		}
 	}
 
 	function drawBoardLattice(pu, puzzle, doc) {
