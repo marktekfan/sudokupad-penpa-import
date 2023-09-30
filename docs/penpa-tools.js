@@ -95,6 +95,7 @@ const PenpaTools = (() => {
 	}
 
 	C.combineStraightPenpaLines = function(lines, linesCol) {
+		const {makePointPair} = PenpaTools;
 		lines = Object.assign({}, lines);
         const point = C.doc.point;
 		const keys = Object.keys(lines);
@@ -108,14 +109,14 @@ const PenpaTools = (() => {
 			if(dir === -1) return; // Not an adjacent point
 			do {
 				let nextp = point[p2].adjacent[dir];
-				let nextKey = p2 + ',' + nextp;
+				let nextKey = makePointPair(p2, nextp);
 				let nextVal = lines[nextKey];
 				if (nextVal === undefined || lines[k] !== nextVal) break; // not found or different line style
 				if (linesCol && linesCol[k] !== linesCol[nextKey]) break // or not same custom color
 				delete lines[nextKey];
 				p2 = nextp;
 			} while (true);
-			let newKey = p1 + ',' + p2;
+			let newKey = makePointPair(p1, p2);
 			if (k != newKey) {
 				lines[newKey] = lines[k];
 				delete lines[k];
@@ -456,6 +457,10 @@ const PenpaTools = (() => {
 			case 5:			
 				return Math.floor((p - 4 * C.doc.nx0 * C.doc.ny0) / 4) - (point.type - 4) * C.doc.nx0 * C.doc.ny0;			
 		}
+	}
+
+	C.makePointPair = function(p1, p2) {
+		return Math.min(Number(p1), Number(p2)).toString() + ',' + Math.max(Number(p1), Number(p2)).toString();
 	}
 
 	C.getMinMaxRC = function(list = [], mapper = ([r, c]) => [r, c]) {

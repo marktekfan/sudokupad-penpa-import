@@ -403,7 +403,7 @@ const PenpaDecoder = (() => {
 	}
 
 	function hideGridLines(pu, puzzle, doc) {
-		const {point2matrix, matrix2point, getBoundsRC} = PenpaTools;
+		const {point2matrix, matrix2point, getBoundsRC, makePointPair} = PenpaTools;
 		const {centerlist} = pu;
 
 		const {top, left, bottom, right, height, width} = getBoundsRC(centerlist, point2matrix);
@@ -433,19 +433,19 @@ const PenpaDecoder = (() => {
 			let hasbottom = maskedCells.includes(pu.point[c].adjacent[3]) || y === bottom;
 
 			if (hastop) {
-				const key = matrix2point(y - 1, x - 1, 1) + ',' + matrix2point(y - 1, x, 1);
+				const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y - 1, x, 1));
 				deletelineE[key] = 1;
 			}
 			if (hasleft) {
-				const key = matrix2point(y - 1, x - 1, 1) + ',' + matrix2point(y, x - 1, 1);
+				const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y, x - 1, 1));
 				deletelineE[key] = 1;
 			}
 			if (hasright) {
-				const key = matrix2point(y - 1, x, 1) + ',' + matrix2point(y, x, 1);
+				const key = makePointPair(matrix2point(y - 1, x, 1), matrix2point(y, x, 1));
 				deletelineE[key] = 1;
 			}
 			if (hasbottom) {
-				const key = matrix2point(y, x - 1, 1) + ',' + matrix2point(y, x, 1);
+				const key = makePointPair(matrix2point(y, x - 1, 1), matrix2point(y, x, 1));
 				deletelineE[key] = 1;
 			}
 		}
@@ -1203,7 +1203,7 @@ const PenpaDecoder = (() => {
 	}
 
 	function convertFeature2Line(pu, fromFeature, lineFeature) {
-		const {point2matrix} = PenpaTools;
+		const {point2matrix, makePointPair} = PenpaTools;
 		const fromline = pu.pu_q[fromFeature];
 		const line = pu.pu_q[lineFeature];
 		const fromlineCol = pu.pu_q_col[fromFeature] || {};
@@ -1218,7 +1218,7 @@ const PenpaDecoder = (() => {
 			if (m1[0] === m2[0]) {
 				for (let p1 = p[0]; p1 < p[1]; p1 += 1) {
 					let p2 = p1 + 1; // next column
-					let newkey = p1 + ',' + p2;
+					let newkey = makePointPair(p1, p2);
 					if (line[newkey] === undefined) { // freeline is always under line
 						line[newkey] = fromline[key];
 						if (color) lineCol[newkey] = color; // Copy custom color
@@ -1231,7 +1231,7 @@ const PenpaDecoder = (() => {
 			else if (m1[1] === m2[1]) {
 				for (let p1 = p[0]; p1 < p[1]; p1 += pu.nx0) {
 					let p2 = p1 + pu.nx0; // next row
-					let newkey = p1 + ',' + p2;
+					let newkey = makePointPair(p1, p2);
 					if (line[newkey] === undefined) { // freeline is always under line
 						line[newkey] = fromline[key];
 						if (color) lineCol[newkey] = color;
@@ -1245,7 +1245,7 @@ const PenpaDecoder = (() => {
 				let dir = Math.sign(m2[1] - m1[1]);
 				for (let p1 = p[0]; p1 < p[1]; p1 += pu.nx0 + dir) {
 					let p2 = p1 + pu.nx0 + dir; // next row
-					let newkey = p1 + ',' + p2;
+					let newkey = makePointPair(p1, p2);
 					if (line[newkey] === undefined) { // freeline is always under line
 						line[newkey] = fromline[key];
 						if (color) lineCol[newkey] = color;
@@ -1267,10 +1267,11 @@ const PenpaDecoder = (() => {
 
 	const addToCenterlist = function(pu, p) {
 		if (pu.centerlist.includes(p)) return;
+		const {makePointPair} = PenpaTools;
 		pu.centerlist.push(p);
 		pu.centerlist.sort();
 		for (let i = 0; i < 4; i++) {
-			let k = Math.min(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]) + ',' + Math.max(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
+			let k = makePointPair(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
 			pu.pu_q.deletelineE[k] = 1;
 		}
 	}

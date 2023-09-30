@@ -497,16 +497,14 @@ const PenpaRegions = (() => {
 	}
 
 	C.createOutline = function(pu, regionyx) {
-		const {matrix2point} = PenpaTools;
+		const {matrix2point, makePointPair} = PenpaTools;
 		let frame = {};
 		for(let yx of regionyx) {
 			let [y, x] = yx;
 			let point = pu.point[matrix2point(y, x)];
 			let corner = point.surround.length;
 			for (let i = 0; i < corner; i++) {
-				let max = Math.max(point.surround[i], point.surround[(i + 1) % corner]);
-				let min = Math.min(point.surround[i], point.surround[(i + 1) % corner]);
-				let key = min + "," + max;
+				let key = makePointPair(point.surround[i], point.surround[(i + 1) % corner]);
 				if (frame[key]) {
 					frame[key] = 1;
 				} else {
@@ -531,7 +529,7 @@ const PenpaRegions = (() => {
 
 
 	C.findSudokuRegions = function(pu, squares) {
-		const {matrix2point} = PenpaTools;
+		const {matrix2point, makePointPair} = PenpaTools;
 		const lineE = Object.assign({}, pu.pu_q.lineE, pu.frame);
 
 		// Single square found.
@@ -551,20 +549,16 @@ const PenpaRegions = (() => {
 				for (let i = 0; i < sq.size; i++) {
 					let p11 = matrix2point(sq.r + i - 1, sq.c - 1, 1)
 					let p12 = matrix2point(sq.r + i, sq.c - 1, 1)
-					let l1 = p11 + ',' + p12;
-					sq.outline.push(l1);
+					sq.outline.push(makePointPair(p11, p12));
 					let p21 = matrix2point(sq.r - 1, sq.c + i - 1, 1);
 					let p22 = matrix2point(sq.r - 1, sq.c + i, 1);
-					let l2 = p21 + ',' + p22;
-					sq.outline.push(l2);
+					sq.outline.push(makePointPair(p21, p22));
 					let p31 = matrix2point(sq.r + i - 1, sq.c + sq.size - 1, 1);
 					let p32 = matrix2point(sq.r + i, sq.c + sq.size - 1, 1);
-					let l3 = p31 + ',' + p32;
-					sq.outline.push(l3);
+					sq.outline.push(makePointPair(p31, p32));
 					let p41 = matrix2point(sq.r + sq.size - 1, sq.c + i - 1, 1);
 					let p42 = matrix2point(sq.r + sq.size - 1, sq.c + i, 1);
-					let l4 = p41 + ',' + p42;
-					sq.outline.push(l4);
+					sq.outline.push(makePointPair(p41, p42));
 				}
 				// Get dominant linestyle of outline
 				let lineStyleCount = {};
