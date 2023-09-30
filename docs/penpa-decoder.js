@@ -1011,8 +1011,8 @@ const PenpaDecoder = (() => {
 		const {doc, point2matrix, matrix2point} = PenpaTools;
 		if (!doc.hasCellMask || line.length < 2) return false;
 		let p = line[0];
-		// Must be center line
-		if (doc.point[p].type !== 0) return false;
+		// Must be center line (cell or edge)
+		if (![0, 2, 3].includes(doc.point[p].type)) return false;
 		if (doc.maskedCells.includes(p)) return true;
 		let prevMasked = isMaskedCell(pu, p);
 		let [y, x] = point2matrix(p);
