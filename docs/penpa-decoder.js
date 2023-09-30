@@ -4,14 +4,20 @@ const PenpaDecoder = (() => {
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
 	C.settings = {
-		thickLines:  {defaultValue: true,  title: "Thicker lines to match SudokuPad feature lines"},
-		fadeLines:   {defaultValue: true,  title: "Fade colors on feature lines"},
-		removeFrame: {defaultValue: true,  title: "Remove extra Frame lines on regions"},
-		doubleLayer: {defaultValue: true,  title: "Doubling of transparant underlay colors to make them less transparent"},
-		expandGrid:  {defaultValue: false, title: "Always expand grid to force editable outside clues"},
-		// useClipPath: {defaultValue: false, title: "Use clip-path for shapes"},
-		debug:       {defaultValue: 0 || document.location.host.startsWith('127.0.0.1'), title: "Add penpa debug info to puzzle"}
+		thickLines:  {defaultValue: true,  title: 'Thicker lines to match SudokuPad feature lines'},
+		fadeLines:   {defaultValue: true,  title: 'Fade colors on feature lines'},
+		removeFrame: {defaultValue: true,  title: 'Remove extra Frame lines on regions'},
+		doubleLayer: {defaultValue: true,  title: 'Doubling of transparant underlay colors to make them less transparent'},
+		expandGrid:  {defaultValue: false, title: 'Always expand grid to force editable outside clues'},
+		// useClipPath: {defaultValue: false, title: 'Use clip-path for shapes'},
+		debug:       {defaultValue: 0 || document.location.host.startsWith('127.0.0.1'), title: 'Add penpa debug info to puzzle'}
 	};
+
+	if ([...new URLSearchParams(document.location.search)].some(([key, val]) => key === 'test')) {
+		C.settings.debugCenterlist = {defaultValue: false, title: 'Show centerlist cells in red'};
+		C.settings.debugSquares =    {defaultValue: false, title: 'Show detected squares'};
+	}
+
 	C.flags = {}; // Will be initalized with C.settings values
 
 	C.ParseUrlSettings = () => {
@@ -186,37 +192,26 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-	function addSudokuRegions(pu, puzzle, squares, uniqueRowsCols) {
+	function addSudokuRegions(pu, puzzle, squares) {
+		if (!['square', 'sudoku'].includes(pu.gridtype)) return;
+
 		const {matrix2point, point2cell} = PenpaTools;
-		let enableConflictChecker = false;
+		puzzle.regions = [];
+		let allSaneSquares = squares.every(sq => sq.size >= 4);
+		if (!allSaneSquares) return;
 
-		if (['square', 'sudoku'].includes(pu.gridtype)) {
-			if (squares.length === 1 && squares[0].unique) {
-				enableConflictChecker = true;
-			}
-
-			puzzle.regions = [];
-
-			let allSaneSquares = squares.every(sq => sq.size >= 4);
-			if (allSaneSquares) {
-				Object.keys(squares).forEach(sq => {
-					let square = squares[sq];
-					if (square.unique) {
-						Object.keys(square.regions).forEach(reg => {
-							let region = square.regions[reg].map(matrix2point).map(point2cell);
-							// Don't add 100% duplicate regions
-							if (puzzle.regions.every(r => !PenpaTools.EqualsCheck(r, region))) {
-								puzzleAdd(puzzle, 'regions', region);
-							}
-						});
+		Object.keys(squares).forEach(sq => {
+			let square = squares[sq];
+			if (square.unique) {
+				Object.keys(square.regions).forEach(reg => {
+					let region = square.regions[reg].map(matrix2point).map(point2cell);
+					// Don't add 100% duplicate regions
+					if (puzzle.regions.every(r => !PenpaTools.EqualsCheck(r, region))) {
+						puzzleAdd(puzzle, 'regions', region);
 					}
 				});
 			}
-						
-		}
-		if (!uniqueRowsCols && !enableConflictChecker) {
-			puzzle.settings['conflictchecker'] = 0;
-		}
+		});
 	}
 
 	function getSolutionInfo(pu) {
@@ -224,15 +219,15 @@ const PenpaDecoder = (() => {
 		// const {width, height} = doc;
 		let solutionPoints = [];
 		['surface'].forEach(constraint => {
-			let solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
+			let puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
 				let point = s;
 				solutionPoints.push(Number(point));
 			});
 		});
 		['loopline'].forEach(constraint => {
-			let solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
+			let puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
 				let [p1, p2, val] = s.split(',');
 				[p1, p2].forEach(point => {
 					solutionPoints.push(Number(point));
@@ -240,8 +235,8 @@ const PenpaDecoder = (() => {
 			});
 		});
 		['number'].forEach(constraint => {
-			let solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
+			let puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
 				let [point, val = '?'] = s.split(',');
 				solutionPoints.push(Number(point));
 			});
@@ -253,8 +248,8 @@ const PenpaDecoder = (() => {
 				
 			let sol = Array(height * width).fill('?');
 			['number'].forEach(constraint => {
-				let solution = getPuSolution(pu, constraint) || [];
-				solution.forEach(s => {
+				let puSolution = getPuSolution(pu, constraint) || [];
+				puSolution.forEach(s => {
 					let [point, val = '?'] = s.split(',');
 					let [r, c] = point2matrix(point);	
 					let pos = (r - top) * width + (c - left);
@@ -304,7 +299,7 @@ const PenpaDecoder = (() => {
 	function getPuSolution(pu, constraint = 'number') {
 		if (!pu.solution) return null;
 
-		let solution = null;
+		let puSolution = null;
 		if (!pu.multisolution) {
 			// 0 = shading
             // 1 = Line / FreeLine
@@ -320,33 +315,35 @@ const PenpaDecoder = (() => {
 				'number': 4,
 			};
 			let stext = JSON.parse(pu.solution);
-			solution = stext[constraintMap[constraint]];
+			puSolution = stext[constraintMap[constraint]];
 		}
 		else {
-            var sol_count = -1; // as list indexing starts at 0
+            var sol_index = 0;
             // loop through and check which 'OR' settings are selected
     		['surface', 'number', 'loopline', 'loopedge', 'wall', 'square', 'circle', 'tri', 'arrow', 'math', 'battleship', 'tent', 'star', 'akari', 'mine']
 			.forEach(sol_or => {
 				// Get checkbox value
 				if (pu._document['sol_or_' + sol_or] === true) {
-					sol_count++;
-                    if (sol_or === constraint) {
-						solution = pu.solution[sol_count];
+					if (sol_or === constraint) {
+						puSolution = pu.solution[sol_index];
+						return;
 					}
+					sol_index++;
 				}
 			});
 		}
-		return solution;
+		return puSolution;
 	}
 
 	// Add puzzle solution
 	function addSolution(pu, puzzle, doc) {
 		const {point2cell} = PenpaTools;
 		const {width, height} = doc;
+		let hasSolution = false;
 		let sol = Array(height * width).fill('?');
 		['surface'].forEach(constraint => {
-			let solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
+			let puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
 				let point = s;
 				let [r, c] = point2cell(point);
 				let pos = r * width + c;
@@ -356,8 +353,8 @@ const PenpaDecoder = (() => {
 			});
 		});
 		['loopline'].forEach(constraint => {
-			let solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
+			let puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
 				let [p1, p2, val] = s.split(',');
 				[p1, p2].forEach(point => {
 					let [r, c] = point2cell(point);
@@ -369,8 +366,8 @@ const PenpaDecoder = (() => {
 			});
 		});
 		['number'].forEach(constraint => {
-			let solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
+			let puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
 				let [point, val = '?'] = s.split(',');
 				let [r, c] = point2cell(point);	
 				let pos = r * width + c;
@@ -400,6 +397,20 @@ const PenpaDecoder = (() => {
 
 			let solString = sol.map(n => n.length !== 1 ? '?' : n.toLowerCase()).join('');
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`}, 'solution');
+			hasSolution = true;
+		}
+		return hasSolution;
+	}
+
+	function disableConflictChecker(pu, puzzle, squares, uniqueRowsCols, hasSolution) {
+		let enable = false;
+		if (['square', 'sudoku'].includes(pu.gridtype)) {
+			if (squares.length === 1 && squares[0].unique) {
+				enable = true;
+			}
+		}
+		if (!enable && !uniqueRowsCols && !hasSolution) {
+			puzzle.settings['conflictchecker'] = 0;
 		}
 	}
 
@@ -409,45 +420,31 @@ const PenpaDecoder = (() => {
 
 		const {top, left, bottom, right, height, width} = getBoundsRC(centerlist, point2matrix);
 		// Create 'outside cell mask' only when cells are removed
-		if (centerlist.length === width * height) {
-			return false;
-		}
-
-		// Mask off non-grid grid lines
-		let maskedCells = [];
-		for (let r = top; r <= bottom; r++) {
-			for (let c = left; c <= right; c++) {
-				let p = matrix2point(r, c);
-				if(!centerlist.includes(p)) {
-					maskedCells.push(p);
+		if (centerlist.length !== width * height) {
+			// Mask off non-grid grid lines
+			let maskedCells = [];
+			for (let r = top; r <= bottom; r++) {
+				for (let c = left; c <= right; c++) {
+					let p = matrix2point(r, c);
+					if(!centerlist.includes(p)) {
+						maskedCells.push(p);
+					}
 				}
 			}
-		}
 
-		let {deletelineE} = pu.pu_q;
+			let {deletelineE} = pu.pu_q;
 
-		for(let c of maskedCells) {
-			const [y, x] = point2matrix(c);
-			let hasleft = maskedCells.includes(pu.point[c].adjacent[1]) || x === left;
-			let hasright = maskedCells.includes(pu.point[c].adjacent[2]) || x === right;
-			let hastop = maskedCells.includes(pu.point[c].adjacent[0]) || y === top;
-			let hasbottom = maskedCells.includes(pu.point[c].adjacent[3]) || y === bottom;
+			for(let c of maskedCells) {
+				const [y, x] = point2matrix(c);
+				let hasleft = maskedCells.includes(pu.point[c].adjacent[1]) || x === left;
+				let hasright = maskedCells.includes(pu.point[c].adjacent[2]) || x === right;
+				let hastop = maskedCells.includes(pu.point[c].adjacent[0]) || y === top;
+				let hasbottom = maskedCells.includes(pu.point[c].adjacent[3]) || y === bottom;
 
-			if (hastop) {
-				const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y - 1, x, 1));
-				deletelineE[key] = 1;
-			}
-			if (hasleft) {
-				const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y, x - 1, 1));
-				deletelineE[key] = 1;
-			}
-			if (hasright) {
-				const key = makePointPair(matrix2point(y - 1, x, 1), matrix2point(y, x, 1));
-				deletelineE[key] = 1;
-			}
-			if (hasbottom) {
-				const key = makePointPair(matrix2point(y, x - 1, 1), matrix2point(y, x, 1));
-				deletelineE[key] = 1;
+				if (hastop)    deletelineE[makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y - 1, x    , 1))] = 1;
+				if (hasleft)   deletelineE[makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y    , x - 1, 1))] = 1;
+				if (hasright)  deletelineE[makePointPair(matrix2point(y - 1, x    , 1), matrix2point(y    , x    , 1))] = 1;
+				if (hasbottom) deletelineE[makePointPair(matrix2point(y    , x - 1, 1), matrix2point(y    , x    , 1))] = 1;
 			}
 		}
 
@@ -1584,6 +1581,7 @@ const PenpaDecoder = (() => {
 	}
 
 	function removeFrameWhenEqualToRegions(pu, puzzle, doc, squares) {
+		// All regions in a square must have same size and same count as square size.
 		let complete = squares.every(sq => Object.keys(sq.regions).length === sq.size && Object.keys(sq.regions).every(reg => sq.regions[reg].length === sq.size));
 
 		if (!complete) return;
@@ -1637,6 +1635,30 @@ const PenpaDecoder = (() => {
 		}
 	}
 
+	function addSolutionCellsToCenterist(pu) {
+		// Add solution cells to centerlist
+		['number', 'surface'].forEach(constraint => {
+			const puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
+				let [point, val] = s.split(',');
+				point = Number(point);
+				addToCenterlist(pu, point);
+			});
+			pu.centerlist.sort();
+		});
+		['loopline'].forEach(constraint => {
+			const puSolution = getPuSolution(pu, constraint) || [];
+			puSolution.forEach(s => {
+				let [p1, p2, val] = s.split(',');
+				[p1, p2].forEach(point => {
+					point = Number(point);
+					addToCenterlist(pu, point);
+				})
+			});
+			pu.centerlist.sort();
+		});
+	}
+
 	C.convertPenpaPuzzle = function (pu) {
 		if (typeof pu === 'string') {
 			pu = C.loadPenpaPuzzle(pu);
@@ -1684,27 +1706,7 @@ const PenpaDecoder = (() => {
 
 		const squares = PenpaRegions.findSudokuSquares(pu);
 
-		// Add solution cells to centerlist
-		['number', 'surface'].forEach(constraint => {
-			const solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
-				let [point, val] = s.split(',');
-				point = Number(point);
-				addToCenterlist(pu, point);
-			});
-			pu.centerlist.sort();
-		});
-		['loopline'].forEach(constraint => {
-			const solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
-				let [p1, p2, val] = s.split(',');
-				[p1, p2].forEach(point => {
-					point = Number(point);
-					addToCenterlist(pu, point);
-				})
-			});
-			pu.centerlist.sort();
-		});
+		addSolutionCellsToCenterist(pu);
 
 		//TODO: Can/should this be done before region detection?
 		expandGridForFillableOutsideFeatures(pu);
@@ -1731,14 +1733,12 @@ const PenpaDecoder = (() => {
 		
 		positionBoard(pu, puzzle, doc);
 		
-		if (!hideGridLines(pu, puzzle, doc)) {
-			// must be after hideGridLines
-			if (PenpaDecoder.flags.removeFrame) {
-				removeFrameWhenEqualToRegions(pu, puzzle, doc, squares);
-			}
+		hideGridLines(pu, puzzle, doc);		
+		if(!doc.hasCellMask && PenpaDecoder.flags.removeFrame) {
+			removeFrameWhenEqualToRegions(pu, puzzle, doc, squares);
 		}
 		
-		addSudokuRegions(pu, puzzle, squares, uniqueRowsCols);
+		addSudokuRegions(pu, puzzle, squares);
 
 		addCageMetadata(pu, puzzle);
 
@@ -1749,18 +1749,26 @@ const PenpaDecoder = (() => {
 
 		let qa = 'pu_q';
 
-		// DEBUG: show centerlist cells
-		//pu.centerlist.forEach(p => pu[qa].surface[p] = 11);
+		// DEBUG: color each square a different color
+		if (PenpaDecoder.flags.debugSquares) {
+			squares.forEach((sq, i) => {
+				const {matrix2point} = PenpaTools;
+				for (let r = sq.r; r < sq.r + sq.size; r++) {
+					for (let c = sq.c; c < sq.c + sq.size; c++) {
+						let pos = matrix2point(r, c);
+						pu[qa].surface[pos] = 5 + i;
 
-		squares.forEach((sq, i) => {
-			const {matrix2point} = PenpaTools;
-			for (let r = sq.r; r < sq.r + sq.size; r++) {
-				for (let c = sq.c; c < sq.c + sq.size; c++) {
-					let pos = matrix2point(r, c);
-					pu[qa].surface[pos] = 5 + i;
+						let num = pu[qa].numberS[pos];
+						let text = (num && num[0]) || '';
+						pu[qa].numberS[pos] = [text + (i + 1).toString(), 9];
+					}
 				}
-			}
-		});
+			});
+		}
+		// DEBUG: colorize centerlist cells
+		if (PenpaDecoder.flags.debugCenterlist) {
+			pu.centerlist.forEach(p => pu[qa].surface[p] = 100);
+		}
 
 		render_surface(qa, pu, puzzle);
 		render_deletelineE(qa, pu, puzzle);
@@ -1817,7 +1825,9 @@ const PenpaDecoder = (() => {
 		// 	});
 		// }
 
-		addSolution(pu, puzzle, doc);
+		let hasSolution = addSolution(pu, puzzle, doc);
+
+		disableConflictChecker(pu, puzzle, squares, uniqueRowsCols, hasSolution);
 		
 		// Add puzzle meta data
 		applyDefaultMeta(pu, puzzle, 'title', pu._document.saveinfotitle, getDefaultTitle);
