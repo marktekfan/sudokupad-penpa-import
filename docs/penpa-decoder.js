@@ -170,14 +170,13 @@ const PenpaDecoder = (() => {
 			if (matches) {
 				applyDefaultMeta(pu, puzzle, matches[1], matches[2]);
 				delete numberS[pos];
-				// check for obsolete killer cages
+				// Remove meta killercage
 				let killerCell = PenpaTools.point2centerPoint(pos);
 				for (let i = 0; i < killercages.length; i++) {
 					if (killercages[i].length === 1 && killercages[i].includes(killerCell)) {
 						killercages[i].length = 0;
 					}					
 				}
-
 			}
 		});
 	}
@@ -220,7 +219,6 @@ const PenpaDecoder = (() => {
 
 	function getSolutionInfo(pu) {
 		const {point2matrix} = PenpaTools;
-		// const {width, height} = doc;
 		let solutionPoints = [];
 		['surface'].forEach(constraint => {
 			let solution = getPuSolution(pu, constraint) || [];
@@ -530,7 +528,7 @@ const PenpaDecoder = (() => {
 		const keys = Object.keys(list); //keys.sort();
 		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: Number(k)}));
 		const predicate = (s1, s2) => { return true 
-			&& s1.value === s2.value
+			&& (!listCol[s1.key] || s1.value === s2.value)
 			&& listCol[s1.key] === listCol[s2.key]
 			&& pu.centerlist.includes(s1.key) === pu.centerlist.includes(s2.key)
 			&& isBoardCell(s1.center) === isBoardCell(s2.center)
@@ -587,7 +585,7 @@ const PenpaDecoder = (() => {
 			draw.draw_numberS(ctx, number, key);
 			if (number[0] !== 'FOGLIGHT') {
 				if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
-					if(pu.centerlist.includes(point2centerPoint(key))) { // top-left cell corner
+					if(pu.centerlist.includes(point2centerPoint(key))) {
 						let rc = point2cell(key);
 						let cell = puzzle.cells[rc[0]][rc[1]];
 						cell.pencilMarks = [' '];
@@ -915,7 +913,7 @@ const PenpaDecoder = (() => {
 		const list = pu[qa][feature] || [];
 		const surface = pu[qa].surface;
 		const surfaceCol = pu[qa + '_col'].surface || [];
-		const darkBackgrounds = [Color.BLACK, Color.BLACK_LIGHT, Color.GREY_DARK_VERY];
+		//const darkBackgrounds = [Color.BLACK, Color.BLACK_LIGHT, Color.GREY_DARK_VERY];
 		Object.keys(list).forEach(l => {
 			let [p1, p2] = PenpaTools.getAdjacentCellsOfELine(pu, l);
 			let s1 = surface[p1];
@@ -928,8 +926,7 @@ const PenpaDecoder = (() => {
 				let fillStyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
 				// Don't remove when not visible due to dark background
 				//if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
-				// if (fillStyle1 ||  fillStyle2) {
-				if (s1 !== s2 || fillStyle1 !== fillStyle2) {
+				if (fillStyle1 !== fillStyle2) {
 					list[l] = 0; // line.value = 0
 				}
 				else {
@@ -1326,12 +1323,13 @@ const PenpaDecoder = (() => {
 	}
 
 	function expandGridForWideOutsideClues(pu, margin = 0) {
-		let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
+		const {getMinMaxRC, point2matrix, matrix2point} = PenpaTools;
+		let clBounds = getMinMaxRC(pu.centerlist, point2matrix);
 		let bounds = [];
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.number), PenpaTools.point2matrix));
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.numberS), PenpaTools.point2matrix));
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.symbol), PenpaTools.point2matrix));
-		bounds.push(PenpaTools.getMinMaxRC(Object.keys(pu.pu_q.surface).filter(k => pu.pu_q.surface[k] > 0), PenpaTools.point2matrix));
+		bounds.push(getMinMaxRC(Object.keys(pu.pu_q.number), point2matrix));
+		bounds.push(getMinMaxRC(Object.keys(pu.pu_q.numberS), point2matrix));
+		bounds.push(getMinMaxRC(Object.keys(pu.pu_q.symbol), point2matrix));
+		bounds.push(getMinMaxRC(Object.keys(pu.pu_q.surface).filter(k => pu.pu_q.surface[k] > 0), point2matrix));
 		
 		// bounds for all clues
 		let top = Math.min(...bounds.map(b => b[0]));
@@ -1340,10 +1338,10 @@ const PenpaDecoder = (() => {
 		let right = Math.max(...bounds.map(b => b[3]));
 		
 		if (top < clBounds[0] - margin || left < clBounds[1] - margin) {
-			addToCenterlist(pu, PenpaTools.matrix2point(top, left));
+			addToCenterlist(pu, matrix2point(top, left));
 		}
 		if (bottom > clBounds[2] + margin || right > clBounds[3] + margin) {
-			addToCenterlist(pu, PenpaTools.matrix2point(bottom, right));
+			addToCenterlist(pu, matrix2point(bottom, right));
 		}
 	}
 

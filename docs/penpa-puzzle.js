@@ -3,7 +3,16 @@ class Point {
 	constructor(x, y, type, adjacent, surround, use, neighbor = [], adjacent_dia = [], type2 = 0) {
 		this.x = x;
 		this.y = y;
-		this.type = type; // 0=center, 1=vertex(corner), 2=centervertex-UD, 3=centervertex-LR, 4=1/4, 5=compass
+		/*
+		type:
+		 0 = center,
+		 1 = vertex(corner (bottom-right)
+		 2 = centervertex-UD (bottom)
+		 3 = centervertex-LR (right) 
+		 4 = 1/4 (top-left, top-right, bottom-left, bottom-right)
+		 5 = compass (top, right, left, bottom)
+		*/
+		this.type = type;
 		this.type2 = type2; // not used
 		this.adjacent = adjacent; // [up, left, right, down]
 		this.adjacent_dia = adjacent_dia; // [up-left, up-right, down-left, down-right]
