@@ -1770,10 +1770,12 @@ const PenpaDecoder = (() => {
 
 		// Create cage to define the board bounds when there are no regions
 		if(puzzle.regions.length === 0) {
-			const [top, left, bottom, right] = squares.length !== 1
-				? [0, 0, doc.height - 1, doc.width - 1] 
-				: [squares[0].r, squares[0].c, squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1];		
-			puzzleAdd(puzzle, 'cages', {cells: [[top, left], [bottom, right]], unique: false, hidden: true});
+			const {matrix2point, point2cell} = PenpaTools;
+			let tlbr = (squares.length !== 1
+						? [[0, 0], [doc.height - 1, doc.width - 1]] 
+						: [[squares[0].r, squares[0].c], [squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1]])
+					.map(matrix2point).map(point2cell);	
+			puzzleAdd(puzzle, 'cages', {cells: tlbr, unique: false, hidden: true}, 'bounds');
 		}
 		
 		// Custom patch the puzzle
