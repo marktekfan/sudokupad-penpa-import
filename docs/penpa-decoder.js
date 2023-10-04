@@ -4,13 +4,14 @@ const PenpaDecoder = (() => {
     const C = _constructor, P = Object.assign(C.prototype, {constructor: C});
 
 	C.settings = {
-		thickLines:  {defaultValue: true,  title: "Thicker lines to match SudokuPad feature lines"},
-		fadeLines:   {defaultValue: true,  title: "Fade colors on feature lines"},
-		removeFrame: {defaultValue: true,  title: "Remove extra Frame lines on regions"},
-		doubleLayer: {defaultValue: true,  title: "Doubling of transparant underlay colors to make them less transparent"},
-		expandGrid:  {defaultValue: false, title: "Always expand grid to force editable outside clues"},
-		// useClipPath: {defaultValue: false, title: "Use clip-path for shapes"},
-		debug:       {defaultValue: 0 || document.location.host.startsWith('127.0.0.1'), title: "Add penpa debug info to puzzle"}
+		thickLines:  {defaultValue: true,  title: 'Thicker lines to match SudokuPad feature lines'},
+		fadeLines:   {defaultValue: true,  title: 'Fade colors on feature lines'},
+		removeFrame: {defaultValue: true,  title: 'Remove extra Frame lines on regions'},
+		doubleLayer: {defaultValue: true,  title: 'Doubling of transparant underlay colors to make them less transparent'},
+		answerGen:   {defaultValue: true,  title: 'Generate answer check from Solution mode digits'},
+		expandGrid:  {defaultValue: false, title: 'Always expand grid to force editable outside clues'},
+		// useClipPath: {defaultValue: false, title: 'Use clip-path for shapes'},
+		debug:       {defaultValue: 0 || document.location.host.startsWith('127.0.0.1'), title: 'Add penpa debug info to puzzle'}
 	};
 	C.flags = {}; // Will be initalized with C.settings values
 
@@ -1627,11 +1628,67 @@ const PenpaDecoder = (() => {
 		}
 	}
 
+	function generateAnswerCheck(pu) {
+		// Source: class_p.js function make_solution()
+		var sol = [
+			[], // 0 = shading
+			[], // 1 = Line / FreeLine
+			[], // 2 = Edge / FreeEdge
+			[], // 3 = Wall
+			[], // 4 = Number
+			[]  // 5 = Symbol
+		];
+		for (var i in pu["pu_a"].number) {
+			if (pu["pu_q"].number[i] && pu["pu_q"].number[i][1] === 1 && (pu["pu_q"].number[i][2] === "1" || pu["pu_q"].number[i][2] === "10")) {
+				// (Black) and (Normal or L) in Problem mode then ignore
+			} else {
+				// Sudoku only one number and multiple digits in same cell should not be considered, this is for single digit obtained from candidate submode
+				if (pu["pu_a"].number[i][2] === "7") {
+					// (Green or light blue or dark blue or red)
+					if (pu["pu_a"].number[i][1] === 2 || pu["pu_a"].number[i][1] === 8 || pu["pu_a"].number[i][1] === 9 || pu["pu_a"].number[i][1] === 10) {
+						var sum = 0,
+							a;
+						for (var j = 0; j < 10; j++) {
+							if (pu["pu_a"].number[i][0][j] === 1) {
+								sum += 1;
+								a = j + 1;
+							}
+						}
+						if (sum === 1) {
+							sol[4].push(i + "," + a);
+						}
+					}
+				} else if (!isNaN(pu["pu_a"].number[i][0]) || !pu["pu_a"].number[i][0].match(/[^A-Za-z]+/)) {
+					// ((Green or light blue or dark blue or red) and (Normal, M, S, L))
+					if ((pu["pu_a"].number[i][1] === 2 || pu["pu_a"].number[i][1] === 8 || pu["pu_a"].number[i][1] === 9 || pu["pu_a"].number[i][1] === 10) &&
+						(pu["pu_a"].number[i][2] === "1" || pu["pu_a"].number[i][2] === "5" || pu["pu_a"].number[i][2] === "6" || pu["pu_a"].number[i][2] === "10")) {
+						sol[4].push(i + "," + pu["pu_a"].number[i][0]);
+					}
+				}
+			}
+		}
+		for (var i = 0; i < 6; i++) {
+			sol[i] = sol[i].sort();
+		}
+
+		// A significant number of solution digits should be present
+		// Note: It is not possible to reliably detect a complete solution
+		if (sol[4].length > pu.centerlist.length / 2) {
+			pu.solution = JSON.stringify(sol);
+		}
+	}
+
 	C.convertPenpaPuzzle = function (pu) {
 		if (typeof pu === 'string') {
 			pu = C.loadPenpaPuzzle(pu);
 		}
 		if (!pu) return;
+
+		if (!pu.solution) {
+			if (PenpaDecoder.flags.answerGen) {
+				generateAnswerCheck(pu);
+			}
+		}
 
 		const doc = {
 			// Copied from pu:
