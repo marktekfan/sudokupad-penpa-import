@@ -2208,6 +2208,7 @@ const PenpaSymbol = (() => {
             2: {w: 1, h: 2},
             3: {w: 3, h: 1},
             4: {w: 1, h: 3},
+            5: {w: 1, h: 1},
         }
         const bulb = bulbMap[num];
         if (bulb) {
