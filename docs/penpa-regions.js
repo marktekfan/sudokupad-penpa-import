@@ -368,6 +368,7 @@ const PenpaRegions = (() => {
 		}
 
 		if (removeCells) {
+			let centerlist = [...pu.centerlist];
 			// remove cells from centerlist based on deletelineE
 			Object.keys(pu.pu_q.deletelineE).forEach(k => {
 				// Don't remove when replaced with another line
@@ -388,6 +389,11 @@ const PenpaRegions = (() => {
 					pu.centerlist.splice(index2, 1);
 				}
 			});
+			// Restore centerlist if most of the cells were removed, which was probably not intended
+			if (pu.centerlist.length < (pu.nx * pu.ny) / 6) { // Some arbitrary limit
+				pu.centerlist.length = 0;
+				pu.centerlist.push(...centerlist);
+			}
 		}
 		else {
 			// In case there is no frame and no grid lines and no grid points
@@ -415,7 +421,7 @@ const PenpaRegions = (() => {
 				}
 				// Add to centerlist when surrounded by 4 lines.
 				let centerlist = Object.keys(cl).filter(p => cl[p] >= 4).map(Number);
-				if (centerlist.length > 10) { // Some arbitrary limit
+				if (centerlist.length > (pu.nx * pu.ny) / 6) { // Some arbitrary limit
 					pu.centerlist.length = 0;
 					pu.centerlist.push(...centerlist);
 				}
