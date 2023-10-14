@@ -529,8 +529,7 @@ const PenpaDecoder = (() => {
 		const keys = Object.keys(list); //keys.sort();
 		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: Number(k)}));
 		const predicate = (s1, s2) => { return true 
-			&& (!listCol[s1.key] || s1.value === s2.value)
-			&& listCol[s1.key] === listCol[s2.key]
+			&& ((listCol[s1.key] && listCol[s1.key] === listCol[s2.key]) || (!listCol[s1.key] && s1.value === s2.value))
 			&& pu.centerlist.includes(s1.key) === pu.centerlist.includes(s2.key)
 			&& isBoardCell(s1.center) === isBoardCell(s2.center)
 		}
