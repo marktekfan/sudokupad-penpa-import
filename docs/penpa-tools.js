@@ -463,6 +463,22 @@ const PenpaTools = (() => {
 		return Math.min(Number(p1), Number(p2)).toString() + ',' + Math.max(Number(p1), Number(p2)).toString();
 	}
 
+	C.findPoint = function(y, x, allowedTypes = [0, 1, 2, 3, 4, 5]) {
+		let min = 10e6;
+		let found = 0;
+		x += 2; y += 2;
+		C.doc.point.forEach((point, i) => {
+			if (allowedTypes.includes(point.type)) {
+				let min0 = (x - point.x) ** 2 + (y - point.y) ** 2;
+				if (min0 < min) {
+					min = min0;
+					found = i;
+				}
+			}
+		});
+		return parseInt(found);
+	}	
+
 	C.getMinMaxRC = function(list = [], mapper = ([r, c]) => [r, c]) {
 		const rcs = [].concat(list.map(mapper)),
 					rows = rcs.map(([r, c]) => r),

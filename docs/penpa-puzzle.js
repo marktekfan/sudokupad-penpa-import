@@ -29,6 +29,7 @@ class Stack {
 	pop() {	return null };
 	size() { return 0 }
 	toString() { return '[]' }
+	__a = [];
 }
 
 class PenpaPuzzle {
@@ -125,9 +126,9 @@ class PenpaPuzzle {
 		// Object and Array initialization
 		for (var i of pu_qa) {
 			this[i] = {};
-			// this[i].command_redo = new Stack();
-			// this[i].command_undo = new Stack();
-			// this[i].command_replay = new Stack();
+			this[i].command_redo = new Stack();
+			this[i].command_undo = new Stack();
+			this[i].command_replay = new Stack();
 			this[i].surface = {};
 			this[i].number = {};
 			this[i].numberS = {};
@@ -151,9 +152,9 @@ class PenpaPuzzle {
 		// Object and Array initialization for custom colors
 		for (var i of pu_qa_col) {
 			this[i] = {};
-			// this[i].command_redo = new Stack();
-			// this[i].command_undo = new Stack();
-			// this[i].command_replay = new Stack();
+			this[i].command_redo = new Stack();
+			this[i].command_undo = new Stack();
+			this[i].command_replay = new Stack();
 			this[i].surface = {};
 			this[i].number = {};
 			this[i].numberS = {};
@@ -1785,6 +1786,488 @@ class PenpaPuzzle {
 		// }
 	}
 
+	///////SAVE/////////
+
+	__export_text_shared() {
+		var text = "";
+		text = this.gridtype + "," + this.nx.toString() + "," + this.ny.toString() + "," + this.size.toString() + "," +
+			this.theta.toString() + "," + this.reflect.toString() + "," + this.canvasx + "," + this.canvasy + "," + this.center_n + "," + this.center_n0 + "," +
+			this.sudoku[0].toString() + "," + this.sudoku[1].toString() + "," + this.sudoku[2].toString() + "," + this.sudoku[3].toString();
+
+		// Puzzle title
+		let titleinfo = PenpaPuzzle.document.getElementById("saveinfotitle").value;
+		text += "," + "Title: " + titleinfo.replace(/,/g, '%2C');
+
+		// Puzzle author
+		let authorinfo = PenpaPuzzle.document.getElementById("saveinfoauthor").value;
+		text += "," + "Author: " + authorinfo.replace(/,/g, '%2C');
+
+		// Puzzle Source
+		text += "," + PenpaPuzzle.document.getElementById("saveinfosource").value;
+
+		// Puzzle Rules
+		let ruleinfo = PenpaPuzzle.document.getElementById("saveinforules").value;
+		text += "," + ruleinfo.replace(/\n/g, '%2D').replace(/,/g, '%2C').replace(/&/g, '%2E').replace(/=/g, '%2F');
+
+		// Border button status
+		let border_status = 'OFF'; //UserSettings.draw_edges ? 'ON' : 'OFF';
+		text += "," + border_status;
+
+		return text;
+	}
+
+	__export_list_tab_shared() {
+		var list = [this.centerlist[0]];
+		for (var i = 1; i < this.centerlist.length; i++) {
+			list.push(this.centerlist[i] - this.centerlist[i - 1]);
+		}
+		var text = JSON.stringify(list) + "\n";
+
+		// Copy the tab selector modes
+		let user_choices = []; //UserSettings.tab_settings;
+		text += JSON.stringify(user_choices) + "\n";
+
+		return text;
+	}
+
+	__export_version_shared(options = {}) {
+		var text = "";
+
+		if (!options.skipTimerPlaceholder) {
+			text += JSON.stringify("x") + "\n"; // Dummy, to match the size of maketext_duplicate
+		}
+
+		text += JSON.stringify(options.comp ? "comp" : "x") + "\n";
+
+		// Version
+		text += JSON.stringify(this.version) + "\n";
+
+		// Save submode/style/combi settings
+		text += JSON.stringify(this.mode) + "\n";
+
+		// Don't save theme setting in solving as solver might want his own theme, but having this placeholder to match the size with other url modes
+		text += JSON.stringify("x") + "\n";
+
+		// Custom Colors
+		text += "1\n"; //(UserSettings.custom_colors_on) ? "1\n" : "0\n";
+
+		return text;
+	}
+
+	__get_answer_settings(type) {
+		type = type || ""; // blank or "_or"
+
+		// save answer check settings
+		var settingstatus = PenpaPuzzle.document.getElementById("answersetting").getElementsByClassName("solcheck" + type);
+		var answersetting = {};
+		for (var i = 0; i < settingstatus.length; i++) {
+			answersetting[settingstatus[i].id] = !!(settingstatus[i].checked);
+		}
+		return answersetting;
+	}
+
+	__export_solcheck_shared() {
+		return JSON.stringify(this.__get_answer_settings()) + "\n";
+	}
+
+	__export_checker_shared() {
+		var text = JSON.stringify(this.__get_answer_settings("_or")) + "\n";
+
+		// Save genre tags
+		//text += JSON.stringify($('#genre_tags_opt').select2("val"));
+		text += JSON.stringify(PenpaPuzzle.document.getElementById('genre_tags_opt').val);
+
+
+		return text;
+	}
+
+	__export_finalize_shared(text) {
+		var puzzle_data = encrypt_data(text);
+		return puzzle_data;
+	}
+
+	maketext() {
+		var text = this.__export_text_shared();
+
+		// Multi Solution status, it will be true only when generating solution checking
+		text += "," + false + "\n";
+
+		text += JSON.stringify(this.space) + "\n";
+		text += JSON.stringify(this.mode) + "\n";
+
+		if (PenpaPuzzle.document.getElementById("save_undo").checked === false) {
+			var qr = this.pu_q.command_redo.__a;
+			var qu = this.pu_q.command_undo.__a;
+			var ar = this.pu_a.command_redo.__a;
+			var au = this.pu_a.command_undo.__a;
+			this.pu_q.command_redo.__a = [];
+			this.pu_q.command_undo.__a = [];
+			this.pu_a.command_redo.__a = [];
+			this.pu_a.command_undo.__a = [];
+		}
+
+		// No need to save replay information in edit link
+		this.pu_a.command_replay.__a = [];
+		this.pu_a_col.command_replay.__a;
+
+		text += JSON.stringify(this.pu_q) + "\n";
+		text += JSON.stringify(this.pu_a) + "\n";
+
+		if (PenpaPuzzle.document.getElementById("save_undo").checked === false) {
+			this.pu_q.command_redo.__a = qr;
+			this.pu_q.command_undo.__a = qu;
+			this.pu_a.command_redo.__a = ar;
+			this.pu_a.command_undo.__a = au;
+		}
+
+		text += this.__export_list_tab_shared();
+		text += this.__export_solcheck_shared();
+		text += this.__export_version_shared();
+
+		if (PenpaPuzzle.document.getElementById("save_undo").checked === false) {
+			qr = this.pu_q_col.command_redo.__a;
+			qu = this.pu_q_col.command_undo.__a;
+			ar = this.pu_a_col.command_redo.__a;
+			au = this.pu_a_col.command_undo.__a;
+			this.pu_q_col.command_redo.__a = [];
+			this.pu_q_col.command_undo.__a = [];
+			this.pu_a_col.command_redo.__a = [];
+			this.pu_a_col.command_undo.__a = [];
+		}
+
+		text += JSON.stringify(this.pu_q_col) + "\n";
+		text += JSON.stringify(this.pu_a_col) + "\n";
+
+		if (PenpaPuzzle.document.getElementById("save_undo").checked === false) {
+			this.pu_q_col.command_redo.__a = qr;
+			this.pu_q_col.command_undo.__a = qu;
+			this.pu_a_col.command_redo.__a = ar;
+			this.pu_a_col.command_undo.__a = au;
+		}
+
+		text += this.__export_checker_shared();
+
+		// Custom Answer Message
+		if (this.mmode === "solve") {
+			text += "\n" + false;
+		} else {
+			let custom_message = PenpaPuzzle.document.getElementById("custom_message").value;
+			text += "\n" + custom_message.replace(/\n/g, '%2D').replace(/,/g, '%2C').replace(/&/g, '%2E').replace(/=/g, '%2F');
+		}
+
+		for (var i = 0; i < this.replace.length; i++) {
+			text = text.split(this.replace[i][0]).join(this.replace[i][1]);
+		}
+
+		// This is to account for old links and new links together
+		var url = '';
+		// if (location.hash) {
+		// 	url = location.href.split('#')[0];
+		// } else {
+		// 	url = location.href.split('?')[0];
+		// }
+
+		var ba = this.__export_finalize_shared(text);
+
+		return url + "#m=edit&p=" + ba;
+	}
+
+	maketext_duplicate() {
+		var text = this.__export_text_shared();
+
+		// if solution check exists, then read multisolution variable or else set to false
+		if (this.solution) {
+			// Multi Solution status, it will be true only when generating solution checking
+			text += "," + this.multisolution + "\n";
+		} else {
+			// Multi Solution status, it will be true only when generating solution checking
+			text += "," + false + "\n";
+		}
+
+		text += JSON.stringify(this.space) + "\n";
+		text += JSON.stringify(this.mode) + "\n";
+
+		var qr = this.pu_q.command_redo.__a;
+		var qu = this.pu_q.command_undo.__a;
+		var ar = this.pu_a.command_redo.__a;
+		var au = this.pu_a.command_undo.__a;
+		var are = this.pu_a.command_replay.__a;
+		this.pu_q.command_redo.__a = [];
+		this.pu_q.command_undo.__a = [];
+		this.pu_a.command_redo.__a = [];
+		if (this.mmode === "solve") {
+			// Retain undo in solve mode
+		} else {
+			this.pu_a.command_undo.__a = [];
+			this.pu_a.command_replay.__a = [];
+		}
+		text += JSON.stringify(this.pu_q) + "\n";
+		text += JSON.stringify(this.pu_a) + "\n";
+		this.pu_q.command_redo.__a = qr;
+		this.pu_q.command_undo.__a = qu;
+		this.pu_a.command_redo.__a = ar;
+		this.pu_a.command_undo.__a = au;
+		this.pu_a.command_replay.__a = are;
+
+		text += this.__export_list_tab_shared();
+
+		// Save timer
+		if (this.mmode === "solve") {
+			text += sw_timer.getTimeValues().toString(['days', 'hours', 'minutes', 'seconds', 'secondTenths']) + "\n";
+		}
+
+		text += this.__export_solcheck_shared();
+
+		if (this.mmode !== "solve") {
+			text += JSON.stringify("x") + "\n"; // dummy to compensate time saver for non solve cloning
+		}
+
+		text += this.__export_version_shared({
+			skipTimerPlaceholder: true,
+			comp: this.comp
+		});
+
+		qr = this.pu_q_col.command_redo.__a;
+		qu = this.pu_q_col.command_undo.__a;
+		ar = this.pu_a_col.command_redo.__a;
+		au = this.pu_a_col.command_undo.__a;
+		are = this.pu_a_col.command_replay.__a;
+		this.pu_q_col.command_redo.__a = [];
+		this.pu_q_col.command_undo.__a = [];
+		this.pu_a_col.command_redo.__a = [];
+
+		if (this.mmode === "solve") {
+			// Retain undo in solve mode
+		} else {
+			this.pu_a_col.command_undo.__a = [];
+			this.pu_a_col.command_replay.__a = [];
+		}
+		text += JSON.stringify(this.pu_q_col) + "\n";
+		text += JSON.stringify(this.pu_a_col) + "\n";
+		this.pu_q_col.command_redo.__a = qr;
+		this.pu_q_col.command_undo.__a = qu;
+		this.pu_a_col.command_redo.__a = ar;
+		this.pu_a_col.command_undo.__a = au;
+		this.pu_a_col.command_replay.__a = are;
+
+		text += this.__export_checker_shared();
+
+		// Custom Answer Message
+		if (this.solution) {
+			let custom_message = PenpaPuzzle.document.getElementById("custom_message").value;
+			text += "\n" + custom_message.replace(/\n/g, '%2D').replace(/,/g, '%2C').replace(/&/g, '%2E').replace(/=/g, '%2F');
+		} else {
+			text += "\n" + false;
+		}
+
+		for (var i = 0; i < this.replace.length; i++) {
+			text = text.split(this.replace[i][0]).join(this.replace[i][1]);
+		}
+
+		var ba = encrypt_data(text);
+
+		// This is to account for old links and new links together
+		var url = '';
+		// if (location.hash) {
+		// 	url = location.href.split('#')[0];
+		// } else {
+		// 	url = location.href.split('?')[0];
+		// }
+
+		let solution_clone;
+		// if solution exist then copy the solution as well
+		if (this.solution) {
+			if (this.multisolution) {
+				solution_clone = JSON.stringify(this.solution);
+			} else {
+				solution_clone = this.solution;
+			}
+			var ba_s = encrypt_data(solution_clone);
+			return url + "#m=edit&p=" + ba + "&a=" + ba_s;
+		} else {
+			return url + "#m=edit&p=" + ba;
+		}
+	}
+
+	maketext_solve(type = "none") {
+		var text = this.__export_text_shared();
+
+		// if solution check exists, then read multisolution variable or else set to false
+		if (type === "answercheck") {
+			this.checkall_status(); // this will update the multisolution status
+			// Multi Solution status, it will be true only when generating solution checking
+			text += "," + this.multisolution + "\n";
+		} else {
+			// Multi Solution status, it will be true only when generating solution checking
+			text += "," + false + "\n";
+		}
+
+		text += JSON.stringify(this.space) + "\n";
+		text += JSON.stringify(this.mode.grid) + "~" + JSON.stringify(this.mode["pu_a"]["edit_mode"]) + "~" + JSON.stringify(this.mode["pu_a"][this.mode["pu_a"]["edit_mode"]]) + "\n";
+
+		var qr = this.pu_q.command_redo.__a;
+		var qu = this.pu_q.command_undo.__a;
+		this.pu_q.command_redo.__a = [];
+		this.pu_q.command_undo.__a = [];
+		text += JSON.stringify(this.pu_q) + "\n" + "\n";
+		this.pu_q.command_redo.__a = qr;
+		this.pu_q.command_undo.__a = qu;
+
+		text += this.__export_list_tab_shared();
+		text += this.__export_solcheck_shared();
+		text += this.__export_version_shared();
+
+		qr = this.pu_q_col.command_redo.__a;
+		qu = this.pu_q_col.command_undo.__a;
+		this.pu_q_col.command_redo.__a = [];
+		this.pu_q_col.command_undo.__a = [];
+		text += JSON.stringify(this.pu_q_col) + "\n" + "x" + "\n";
+		this.pu_q_col.command_redo.__a = qr;
+		this.pu_q_col.command_undo.__a = qu;
+
+		text += this.__export_checker_shared();
+
+		// Custom Answer Message
+		if (type === "answercheck") {
+			let custom_message = PenpaPuzzle.document.getElementById("custom_message").value;
+			text += "\n" + custom_message.replace(/\n/g, '%2D').replace(/,/g, '%2C').replace(/&/g, '%2E').replace(/=/g, '%2F');
+		} else {
+			text += "\n" + false;
+		}
+
+		for (var i = 0; i < this.replace.length; i++) {
+			text = text.split(this.replace[i][0]).join(this.replace[i][1]);
+		}
+
+		// This is to account for old links and new links together
+		var url = '';
+		// if (location.hash) {
+		// 	url = location.href.split('#')[0];
+		// } else {
+		// 	url = location.href.split('?')[0];
+		// }
+		var ba = this.__export_finalize_shared(text);
+
+		return url + "#m=solve&p=" + ba;
+	}
+
+	maketext_compsolve() {
+		var text = this.__export_text_shared();
+
+		// Multi Solution status, it will be true only when generating solution checking
+		text += "," + false + "\n";
+
+		text += JSON.stringify(this.space) + "\n";
+		text += JSON.stringify(this.mode.grid) + "~" + JSON.stringify(this.mode["pu_a"]["edit_mode"]) + "~" + JSON.stringify(this.mode["pu_a"][this.mode["pu_a"]["edit_mode"]]) + "\n";
+
+		var qr = this.pu_q.command_redo.__a;
+		var qu = this.pu_q.command_undo.__a;
+		this.pu_q.command_redo.__a = [];
+		this.pu_q.command_undo.__a = [];
+		text += JSON.stringify(this.pu_q) + "\n" + "\n";
+		this.pu_q.command_redo.__a = qr;
+		this.pu_q.command_undo.__a = qu;
+
+		text += this.__export_list_tab_shared();
+		text += this.__export_solcheck_shared();
+		text += this.__export_version_shared({
+			comp: true
+		});
+
+		qr = this.pu_q_col.command_redo.__a;
+		qu = this.pu_q_col.command_undo.__a;
+		this.pu_q_col.command_redo.__a = [];
+		this.pu_q_col.command_undo.__a = [];
+		text += JSON.stringify(this.pu_q_col) + "\n" + "x" + "\n";
+		this.pu_q_col.command_redo.__a = qr;
+		this.pu_q_col.command_undo.__a = qu;
+
+		text += this.__export_checker_shared();
+
+		// Custom Answer Message
+		text += "\n" + false;
+
+		for (var i = 0; i < this.replace.length; i++) {
+			text = text.split(this.replace[i][0]).join(this.replace[i][1]);
+		}
+
+		// This is to account for old links and new links together
+		var url = '';
+		// if (location.hash) {
+		// 	url = location.href.split('#')[0];
+		// } else {
+		// 	url = location.href.split('?')[0];
+		// }
+		var ba = this.__export_finalize_shared(text);
+
+		return url + "#m=solve&p=" + ba;
+	}
+
+	maketext_solve_solution() {
+		var text_head = this.maketext_solve("answercheck");
+		var text;
+		text = JSON.stringify(this.make_solution());
+
+		var ba = encrypt_data(text);
+		return text_head + "&a=" + ba;
+	}
+
+	maketext_replay() {
+		var text_head = pu.maketext_solve();
+
+		// encrypt the data
+		var replay, replay_arr;
+		replay_arr = [...pu["pu_a"]["command_replay"].__a];
+		try {
+			replay = encrypt_data(JSON.stringify(replay_arr.reverse()));
+		} catch (err) {
+			replay = "penpaerror";
+		}
+		if (replay == null || replay == "") {
+			replay = "penpaerror-replayisblank";
+		}
+
+		// puzzle info
+		var puzzle_info = encrypt_data(JSON.stringify({
+			'sname': PenpaPuzzle.document.getElementById('saveinfosolver').value,
+			'stime': sw_timer.getTimeValues().toString(['days', 'hours', 'minutes', 'seconds', 'secondTenths'])
+		}));
+
+		return text_head + "&q=" + puzzle_info + "&r=" + replay;
+	}
+
+	checkall_status() {
+		this.multisolution = false;
+		let checkall = false;
+
+        // // See if user selected any particular setting
+        // let answersetting = document.getElementById("answersetting");
+        // let settingstatus_and = answersetting.getElementsByClassName("solcheck");
+        // let settingstatus_or = answersetting.getElementsByClassName("solcheck_or");
+        // let checkall = true;
+
+        // // loop through and check if any "AND" settings are selected
+        // for (var i = 0; i < settingstatus_and.length; i++) {
+        //     if (settingstatus_and[i].checked) {
+        //         checkall = false;
+        //         break;
+        //     }
+        // }
+
+        // // If checkall is still true, it means, no "AND" option was selected
+        // if (checkall) {
+        //     // loop through and check if any "OR" settings are selected
+        //     for (var i = 0; i < settingstatus_or.length; i++) {
+        //         if (settingstatus_or[i].checked) {
+        //             checkall = false;
+        //             this.multisolution = true;
+        //             break;
+        //         }
+        //     }
+        // }
+
+        return checkall;
+    }
 }
 
 class Puzzle_square extends PenpaPuzzle {

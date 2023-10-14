@@ -4946,19 +4946,22 @@ function hide_element_by_id(s) {
 //
 //===================================
 
-return {
-    boot_parameters: boot_parameters,
-    decrypt_data: decrypt_data,
-    decode_puzzlink: decode_puzzlink,
-    load: load,
-    create: create,
-    
-    // get created pu
-    get_pu: () => pu,
-}
-    // P.decrypt_data = decrypt_data;
-    // P.decode_puzzlink = decode_puzzlink;
-    // P.get_pu = () => pu;
-
-    // return C;
+    return {
+        get_pu: () => pu, // get created pu
+        boot_parameters,
+        decrypt_data,
+        decode_puzzlink,
+        load,
+        create,
+        encrypt_data,
+        decrypt_data,
+    }
 };
+
+function encrypt_data(puzdata) {
+    var u8text = new TextEncoder().encode(puzdata);
+    var deflate = new Zlib.RawDeflate(u8text);
+    var compressed = deflate.compress();
+    var char8 = Array.from(compressed, e => String.fromCharCode(e)).join("");
+    return window.btoa(char8);
+}

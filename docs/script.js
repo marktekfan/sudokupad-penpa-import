@@ -64,7 +64,9 @@ function doInitialize() {
 
     addFileDragNDrop(fileDropAreaElem);
 
-    createAppMenu();    
+    createAppMenu();
+    
+    PenpaFromFPuzzles.convertFPuzzlesToPenpa();
 
     function createSettings(fieldset, test) {
         // Initialize Setting
