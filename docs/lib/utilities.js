@@ -72,7 +72,7 @@
 		function stopFunc() {
 			lastThis = undefined; lastArgs = undefined;
 			minTimeoutId = clearTimeout(minTimeoutId);
-			minTimeoutId = clearTimeout(maxTimeoutId);
+			maxTimeoutId = clearTimeout(maxTimeoutId);
 		}
 		function handleFunc() {
 			let currThis = lastThis, currArgs = lastArgs;

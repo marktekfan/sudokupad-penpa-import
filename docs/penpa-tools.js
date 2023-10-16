@@ -366,13 +366,17 @@ const PenpaTools = (() => {
 			);
 			return points;
 		};
+		//cells = cells.map(([r, c]) => )
 		cells.forEach(cell => {
-			let {row, col} = cell;
+			//let {row, col} = cell;
+			let [row, col] = cell;
 			grid[row] = grid[row] || [];
 			grid[row][col] = {cell};
 		});
 		cells.forEach(cell => {
-			let {row, col} = cell, matchedPatterns = checkPatterns(row, col);
+			//let {row, col} = cell;
+			let [row, col] = cell;
+			let matchedPatterns = checkPatterns(row, col);
 			matchedPatterns.forEach(pat => segs.push([row, col, cell, pat]));
 		});
 		while(segs.length > 0) {
@@ -464,6 +468,11 @@ const PenpaTools = (() => {
 	}
 
 	C.findPoint = function(y, x, allowedTypes = [0, 1, 2, 3, 4, 5]) {
+		if (Array.isArray(y)) {
+			allowedTypes = x || [0, 1, 2, 3, 4, 5];
+			[y, x] = y;
+		}
+
 		let min = 10e6;
 		let found = 0;
 		x += 2; y += 2;

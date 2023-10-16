@@ -66,8 +66,6 @@ function doInitialize() {
 
     createAppMenu();
     
-    PenpaFromFPuzzles.convertFPuzzlesToPenpa();
-
     function createSettings(fieldset, test) {
         // Initialize Setting
         let settings = PenpaDecoder.settings;
