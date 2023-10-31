@@ -579,7 +579,7 @@ const PenpaDecoder = (() => {
 		Object.keys(list).forEach(key => {
 			const number = list[key];
 			let ctx = new DrawingContext();
-			if (number.role && number.role !== 'killer-sum') {
+			if (number.role) {
 				return;
 			}
 			draw.draw_numberS(ctx, number, key);
@@ -898,11 +898,11 @@ const PenpaDecoder = (() => {
 				if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left cell corner
 					if (labelCell === point2centerPoint(k)) {
 						let value = numberS[k];
-						if (!isNaN(value[0])) {
+						//if (!isNaN(value[0])) {
 							cagePart.value = value[0].trim();
 							value.role = 'killer'; // Exclude from rendering
 							break;
-						}
+						//}
 					}
 				}
 			}
