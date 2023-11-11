@@ -181,12 +181,13 @@ const PenpaTools = (() => {
 	}
 
 	C.concatenateEndpoints = function(listwp) {
+		listwp = JSON.parse(JSON.stringify(listwp));
 		let changes = 0;
 		do {
 			changes = 0;
 			listwp.forEach(line1 => {
 				if(line1.value === null || line1.wayPoints.length < 2) return;
-				if(line1.value === 30 || line1.value === 40) return; // dont combine short or double lines
+				if([30, 40, 98].includes(line1.value)) return; // don't combine short, double or X lines
 				let startpoint1 = line1.wayPoints[0].toString();
 				let endpoint1 = line1.wayPoints[line1.wayPoints.length - 1].toString();
 				listwp.forEach(line2 => {
@@ -298,6 +299,34 @@ const PenpaTools = (() => {
 		let adjacent2 = [k2, p2.adjacent[2], p2.adjacent[3], p2.adjacent_dia[3]].map(point2centerPoint);
 		let commonCells = adjacent1.filter(k => adjacent2.includes(k));
 		return commonCells;
+	}
+
+	C.getOutlinePoints = function(cells, os = 0.25) {
+		const {point2matrix, matrix2point} = PenpaTools;
+
+		let input = cells.map(p => {
+			const [row, col] = point2matrix(p);
+			return {row, col};
+		});
+		
+		let outlineSet = new Set();
+		let start = 0;
+		let outlineMatrix = C.getCellOutline(input, os);
+		outlineMatrix.forEach(pt => {
+			const [type, r, c] = pt;
+			if (type === 'Z' && start) {
+				outlineSet.add(start)
+			} else {
+				const p = matrix2point(Math.floor(r), Math.floor(c));
+				outlineSet.add(p);
+				if (type === 'M') {
+					start = p;
+				}
+			}
+		});
+		const outlinePoints = [...outlineSet];
+		outlinePoints.sort((a, b) => a - b);
+		return outlinePoints;
 	}
 
 	C.getCellOutline = function(cells, os = 0) {
@@ -480,18 +509,12 @@ const PenpaTools = (() => {
 		return {top, left, bottom, right, height, width};
 	};
 
-	C.ColorRgba2Hex = function(rgba) {
-		let rgb = rgba.replace(/\s/g, '').match(/^rgba?\((\d+),(\d+),(\d+),?([^,\s)]+)?/i);
-		let alpha = (rgb && rgb[4]) || '';
-		let hex = !rgb ? rgba : '#' +
-			(rgb[1] | 1 << 8).toString(16).slice(1) +
-			(rgb[2] | 1 << 8).toString(16).slice(1) +
-			(rgb[3] | 1 << 8).toString(16).slice(1);
-
-		if (alpha !== '' && alpha < 1) {
-		  hex = hex + (Math.floor(alpha * 256) | 1 << 8).toString(16).slice(1);
+	C.toHexColor = function(rgba) {
+		let color = tinycolor(rgba);
+		if (color._a < 1) {
+			return color.toHex8String().toUpperCase();
 		}
-		return hex.toUpperCase();
+		return color.toHexString().toUpperCase();
 	}
 
 	const opaqueColors = ['#000000', '#CFCFCF', '#FFFFFF'];
@@ -544,3 +567,28 @@ const PenpaTools = (() => {
 	return C;
 })();
 
+function objectEquals(x, y) {
+    'use strict';
+
+    if (x === null || x === undefined || y === null || y === undefined) { return x === y; }
+    // after this just checking type of one would be enough
+    if (x.constructor !== y.constructor) { return false; }
+    // if they are functions, they should exactly refer to same one (because of closures)
+    if (x instanceof Function) { return x === y; }
+    // if they are regexps, they should exactly refer to same one (it is hard to better equality check on current ES)
+    if (x instanceof RegExp) { return x === y; }
+    if (x === y || x.valueOf() === y.valueOf()) { return true; }
+    if (Array.isArray(x) && x.length !== y.length) { return false; }
+
+    // if they are dates, they must had equal valueOf
+    if (x instanceof Date) { return false; }
+
+    // if they are strictly equal, they both need to be object at least
+    if (!(x instanceof Object)) { return false; }
+    if (!(y instanceof Object)) { return false; }
+
+    // recursive object equality check
+    var p = Object.keys(x);
+    return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
+        p.every(function (i) { return objectEquals(x[i], y[i]); });
+}

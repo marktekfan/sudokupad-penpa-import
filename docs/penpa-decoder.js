@@ -175,7 +175,7 @@ const PenpaDecoder = (() => {
 				let killerCell = PenpaTools.point2centerPoint(pos);
 				for (let i = 0; i < killercages.length; i++) {
 					if (killercages[i].length === 1 && killercages[i].includes(killerCell)) {
-						killercages[i].length = 0;
+						killercages[i] = [];
 					}					
 				}
 			}
@@ -830,43 +830,64 @@ const PenpaDecoder = (() => {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature];
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
-		const cages = pu[qa].killercages || [];
+		const killercages = pu[qa].killercages || [];
 		const {point2centerPoint, round3} = PenpaTools;
-		// Filter out cage lines which are on killer cages.
-		wpLines = wpLines.filter(line => {
-			let p1 = line.keys[0];
-			let p2 = line.keys[1];
-			let ndx1 = cages.findIndex(c => c.includes(point2centerPoint(p1)));
-			let ndx2 = cages.findIndex(c => c.includes(point2centerPoint(p2)));
-			if (ndx1 !== -1 && ndx1 === ndx2) {
-				 // Solid cage lines should be drawn by lines, and make cage invisible
-				if ([7, 107, 16, 116].includes(line.value)) {
-					pu[qa + '_col']['killercages'][ndx1] = Color.TRANSPARENTBLACK;
+		let cageLines = PenpaTools.concatenateEndpoints(wpLines);
+		const killerOutlines = killercages.map(cells => PenpaTools.getOutlinePoints(cells));
+		const cageOutlines = cageLines.map(line => [...new Set(line.keys.map(p => point2centerPoint(p)))].sort((a, b) => a - b));
+
+		// Find cage lines which 100% cover a killercage
+		killerOutlines.forEach((killerOutline, killer_idx) => {			
+			let fullmatch = cageOutlines.find((outlineCells, line_idx) => {
+				const line = cageLines[line_idx];
+				// Skip when already assigned
+				if (line.killercage !== undefined) return;
+				if (objectEquals(killerOutline, outlineCells)) {
+					// Must be a closed loop
+					if (line.keys[0] === line.keys[line.keys.length - 1]) {
+						// Solid cage lines should be drawn by lines, and make cage invisible
+						if ([7, 107, 16, 116].includes(line.value)) {
+							pu[qa + '_col']['killercages'][killer_idx] = Color.TRANSPARENTBLACK;
+						}
+						else {
+							// Custom color or not black dash
+							if (line.cc || line.value !== 10) {
+								// Copy color to killercage and filter out individual cage line
+								let ctx = new DrawingContext();
+								set_line_style(ctx, line.value, line.cc);
+								pu[qa + '_col']['killercages'][killer_idx] = line.cc || ctx.strokeStyle;
+							}
+							// Cage is implicitly drawn by killercage
+							line.killercage = killer_idx;
+						}
+					}
+					else {
+						// Not a closed loop, but fully covering a killercage
+						// Then make cage invisible (cage is drawn by cage line)
+						pu[qa + '_col']['killercages'][killer_idx] = Color.TRANSPARENTBLACK;
+					}
 					return true;
 				}
-				// Custom color or not black dash
-				if (line.cc || line.value !== 10) {
-					// Copy color to killercage and filter out individual cage line
-					let ctx = new DrawingContext();
-					set_line_style(ctx, line.value, line.cc);
-					pu[qa + '_col']['killercages'][ndx1] = line.cc || ctx.strokeStyle;
-				}
-				return false;
+			});
+			if (!fullmatch) {
+				// No full match
+				// cage lines should be drawn by lines, and make cage invisible
+				pu[qa + '_col']['killercages'][killer_idx] = Color.TRANSPARENTBLACK;
 			}
-			return true;
 		});
+
 		// Align cage lines with SudokuPad cages lines
 		const r = 0.17;
-		wpLines.forEach(list => {
-			list.wayPoints.forEach(wp => {
+		cageLines.forEach(line => {
+			// Skip when cage is drawn by killercage
+			if (line.killercage !== undefined) return;
+			line.wayPoints.forEach(wp => {
 				let dy = Math.sign(wp[0] - Math.floor(wp[0]) - 0.5);
 				let dx = Math.sign(wp[1] - Math.floor(wp[1]) - 0.5);
 				wp[0] = round3(wp[0] + dy * r);
 				wp[1] = round3(wp[1] + dx * r);
 			});
-        });
-		let cageLines = PenpaTools.concatenateEndpoints(wpLines);
-		cageLines.forEach(line => {
+
 			let ctx = new DrawingContext();
 			set_line_style(ctx, line.value, line.cc);
 			if (line.cc) {
@@ -878,6 +899,7 @@ const PenpaDecoder = (() => {
 			}), feature + ' line');
 		});
 	}
+
 	// Must be rendered before numberS
 	function render_killercages(qa, pu, puzzle, feature = 'killercages') {
 		const list = pu[qa].killercages || [];
@@ -1374,7 +1396,7 @@ const PenpaDecoder = (() => {
 			let list = pu.pu_q_col[i];
 			for(let i in list) {
 				if (typeof list[i] === 'string') {
-					list[i] = PenpaTools.ColorRgba2Hex(list[i]);
+					list[i] = PenpaTools.toHexColor(list[i]);
 				}
 				else {
 					if (list[i] === null || typeof list[i] === 'number' || Array.isArray(list[i])) {
@@ -1526,7 +1548,7 @@ const PenpaDecoder = (() => {
 				c < left || c > right
 			);
 			if (cageOutsideRegions) {
-				delete pu.pu_q.killercages[k];
+				pu.pu_q.killercages[k] = [];
 			}
 		});
 
@@ -1540,7 +1562,7 @@ const PenpaDecoder = (() => {
 			cageSet.add(point2centerPoint(p1));
 			cageSet.add(point2centerPoint(p2));
 		});
-		pu.pu_q.killercages = killercages.filter(cage => cage.some(p => cageSet.has(p)));
+		pu.pu_q.killercages = killercages.map(cage => cage.some(p => cageSet.has(p)) ? cage.sort((a, b) => a - b) : []);
 	}
 
 	function GetCageConnectionCells(pu, key, symbol) {
@@ -1575,6 +1597,7 @@ const PenpaDecoder = (() => {
 			if (kc1 === -1 || kc2 === -1 || kc1 === kc2) return;
 
 			killercages[kc1].push(...killercages[kc2]);
+			killercages[kc1].sort((a, b) => a - b);
 			killercages[kc2] = [];
 			symbol.role = 'cagelink';
 		});
@@ -1696,12 +1719,12 @@ const PenpaDecoder = (() => {
 			ny: pu.ny, // height
 			nx0: pu.nx0, // width + 4
 			ny0: pu.ny0, // height + 4
-			theta: pu.theta, // rotation angle
-			reflect: pu.reflect, // [0] = -1: reft LR; [1] = -1: reflect UD
+			//theta: pu.theta, // rotation angle
+			//reflect: pu.reflect, // [0] = -1: reft LR; [1] = -1: reflect UD
 			width_c: pu.width_c, // canvas width, default = nx + 1
 			height_c: pu.height_c, // canvas height, default = ny + 1
 			center_n: pu.center_n, // center point of canvas
-			centerlist: pu.centerlist, // board cells list
+			//centerlist: pu.centerlist, // board cells list
 			// Calculated parameters:
 			col0: 0, // offset of puzzle cell(0,0)
 			row0: 0, //  offset of puzzle cell(0,0)
