@@ -831,7 +831,7 @@ const PenpaDecoder = (() => {
 		const listCol = pu[qa + '_col'][feature];
 		let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
 		const killercages = pu[qa].killercages || [];
-		const {point2centerPoint, round3} = PenpaTools;
+		const {point2centerPoint, objectEquals, round3} = PenpaTools;
 		let cageLines = PenpaTools.concatenateEndpoints(wpLines);
 		const killerOutlines = killercages.map(cells => PenpaTools.getOutlinePoints(cells));
 		const cageOutlines = cageLines.map(line => [...new Set(line.keys.map(p => point2centerPoint(p)))].sort((a, b) => a - b));
