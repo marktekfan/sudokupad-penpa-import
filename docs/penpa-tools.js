@@ -19,7 +19,7 @@ const PenpaTools = (() => {
 			let height = s1.height || 1;
 			let width = s1.width || 1;
 			let newwidth = width;
-			nextCol = findNext(centers, [row, col + newwidth], s1);
+			let nextCol = findNext(centers, [row, col + newwidth], s1);
 			while (nextCol && nextCol.value !== null && (nextCol.width || 1) === width && (nextCol.height || 1) === height) {
 				newwidth += width;
 				nextCol.value = null; // mark as 'removed'
@@ -37,7 +37,7 @@ const PenpaTools = (() => {
 			let height = s1.height || 1;
 			let width = s1.width || 1;
 			let newheight = height;
-			nextCol = findNext(centers, [row + newheight, col], s1);
+			let nextCol = findNext(centers, [row + newheight, col], s1);
 			while (nextCol && nextCol.value !== null && (nextCol.width || 1) === width && (nextCol.height || 1) === height) {
 				newheight += height;
 				nextCol.value = null; // mark as 'removed'
