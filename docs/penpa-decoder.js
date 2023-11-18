@@ -558,6 +558,7 @@ const PenpaDecoder = (() => {
 			puzzleAdd(puzzle, 'underlays', opts, 'surface');
 		});
 	}
+	
 	function render_number(qa, pu, puzzle, feature = 'number') {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
@@ -571,6 +572,7 @@ const PenpaDecoder = (() => {
 			draw.draw_number(ctx, number, key);
 		});
 	}
+	
 	// Must be rendered after killercages
 	function render_numberS(qa, pu, puzzle, feature = 'numberS') {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
@@ -594,6 +596,7 @@ const PenpaDecoder = (() => {
 			}
 		});
 	}
+	
 	function render_symbol(qa, pu, puzzle, layer = 1) {
 		const feature = 'symbol'
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
@@ -617,12 +620,15 @@ const PenpaDecoder = (() => {
 			draw.draw_symbol(ctx, c, r, symbol[0], symbol[1], listCol[key]);
 		});
 	}
+	
 	function render_freeline(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'freeline');
 	}
+	
 	function render_freelineE(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'freelineE', 'overlay');
 	}
+	
 	function render_thermo(qa, pu, puzzle, feature = 'thermo') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
@@ -643,6 +649,7 @@ const PenpaDecoder = (() => {
 			}, feature + ' bulb');
 		});
 	}
+	
 	function render_arrows(qa, pu, puzzle, feature = 'arrows') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
@@ -674,6 +681,7 @@ const PenpaDecoder = (() => {
 			}, target), feature + ' circle');
 		});
 	}
+	
 	function render_direction(qa, pu, puzzle, feature = 'direction') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
@@ -693,6 +701,7 @@ const PenpaDecoder = (() => {
 			}, target), feature);
 		});
 	}
+	
 	function render_squareframe(qa, pu, puzzle, feature = 'squareframe') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
@@ -711,6 +720,7 @@ const PenpaDecoder = (() => {
 			}, target), feature);
 		});
 	}
+	
 	function render_polygon(qa, pu, puzzle, feature = 'polygon') {
 		const {point2RC, ColorIsVisible, ColorSaturate, getMinMaxRC, round1, round3} = PenpaTools;
 		const list = pu[qa][feature] || [];
@@ -764,6 +774,7 @@ const PenpaDecoder = (() => {
 			}
 		});
 	}
+	
 	function render_frame(qa, pu, puzzle) {
 		const list = pu.frame || [];
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
@@ -777,7 +788,8 @@ const PenpaDecoder = (() => {
 			}), 'frame');
 		});
 	}
-	const draw_line = (qa, pu, puzzle, feature, target = undefined) => {
+	
+	function draw_line(qa, pu, puzzle, feature, target = undefined) {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list, listCol);
@@ -817,15 +829,19 @@ const PenpaDecoder = (() => {
 		});
 		drawXmarks(qa, pu, puzzle, feature);
 	}
+	
 	function render_line(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'line');
 	}
+	
 	function render_lineE(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'lineE', 'overlay');
 	}
+	
 	function render_wall(qa, pu, puzzle) {
 		draw_line(qa, pu, puzzle, 'wall');
 	}
+	
 	function render_cage(qa, pu, puzzle, feature = 'cage') {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature];
@@ -876,11 +892,12 @@ const PenpaDecoder = (() => {
 			}
 		});
 
-		// Align cage lines with SudokuPad cages lines
 		const r = 0.17;
 		cageLines.forEach(line => {
 			// Skip when cage is drawn by killercage
 			if (line.killercage !== undefined) return;
+			
+			// Align cage lines with SudokuPad cages lines
 			line.wayPoints.forEach(wp => {
 				let dy = Math.sign(wp[0] - Math.floor(wp[0]) - 0.5);
 				let dx = Math.sign(wp[1] - Math.floor(wp[1]) - 0.5);
@@ -931,6 +948,7 @@ const PenpaDecoder = (() => {
 			puzzleAdd(puzzle, 'cages', cagePart, feature);
 		});
 	}
+	
 	function render_deletelineE(qa, pu, puzzle, feature = 'deletelineE') {
 		const list = pu[qa][feature] || [];
 		const surface = pu[qa].surface;
@@ -971,6 +989,7 @@ const PenpaDecoder = (() => {
 			}), feature);
 		});
 	}
+	
 	function render_nobulbthermo(qa, pu, puzzle, feature = 'nobulbthermo') {
 		function find_common(pu, line, endpoint) {
 			if (pu.thermo && pu.thermo.find(l => l !== line && l.includes(endpoint))) return true;
@@ -1082,12 +1101,14 @@ const PenpaDecoder = (() => {
 			}), 'x');
 		});
 	}
+	
 	function drawShortLine(ctx, line, puzzle) {
 		let shortLine = PenpaTools.shrinkLine(line.wayPoints, 0.2);
 		puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 			wayPoints: shortLine
 		}), 'short line');
 	}
+	
 	function drawDoubleLine(ctx, line, puzzle) {
 		const r = 0.15;
 		let p1 = line.wayPoints[0];
