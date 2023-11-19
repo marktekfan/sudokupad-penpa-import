@@ -973,10 +973,6 @@ const PenpaDecoder = (() => {
 				if (fillStyle1 !== fillStyle2) {
 					let color1 = tinycolor(fillStyle1);
 					let color2 = tinycolor(fillStyle2);
-					//let hsl1 = color1.toHsl();
-					//let hsl2 = color2.toHsl();
-					// pick darker color
-					//let newcolor = hsl1.l < hsl2.l ? color1 : color2;
 					let newcolor = tinycolor.mix(color1, color2);
 					list[l] = PenpaTools.ColorApplyAlpha(PenpaTools.toHexColor(newcolor));
 					//list[l] = -1; // =>line.value = -1
@@ -987,18 +983,18 @@ const PenpaDecoder = (() => {
 				}
 			}
 		});
+		//let comblist = PenpaTools.combineStraightPenpaLines(list);
+		//let combined = PenpaTools.penpaLines2WaypointLines(comblist);		
 		let combined = PenpaTools.reducePenpaLines2WaypointLines(list);
 		combined.forEach(line => {
 			if (line.value <= 0) return; // Skip not visible line
 			let {wayPoints} = line;
 			let width = 4;
 			let color = '#FFFFFF';
+			wayPoints = PenpaTools.shortenLine(wayPoints, 1.2/64, 1.2/64);
 			if (typeof line.value === 'string') {
 				width = 1;
 				color = line.value;
-				wayPoints = PenpaTools.shortenLine(wayPoints, 0.5/64, 0.5/64);
-			} else {
-				wayPoints = PenpaTools.shortenLine(wayPoints, 2/64, 2/64);
 			}
 			let ctx = new DrawingContext();
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
