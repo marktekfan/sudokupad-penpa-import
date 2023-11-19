@@ -96,12 +96,12 @@ const PenpaTools = (() => {
 		return 0;
 	}
 
-	C.combineStraightPenpaLines = function(lines, linesCol) {
+	C.combineStraightPenpaLines = function(lines, linesCol, excludedLines = []) {
 		const {makePointPair} = PenpaTools;
 		lines = Object.assign({}, lines);
         const point = C.doc.point;
 		const keys = Object.keys(lines);
-		keys.sort(PenpaTools.comparePenpaLinePoints);
+		keys.sort(C.comparePenpaLinePoints);
 		keys.forEach(k => {
 			if (lines[k] === undefined) return;
 			if (lines[k] === 98) return; // x-mark, has only a single point.
@@ -115,6 +115,7 @@ const PenpaTools = (() => {
 				let nextVal = lines[nextKey];
 				if (nextVal === undefined || lines[k] !== nextVal) break; // not found or different line style
 				if (linesCol && linesCol[k] !== linesCol[nextKey]) break // or not same custom color
+				if (excludedLines.length != 0 && (excludedLines[k] || excludedLines[nextKey])) break; // explicitly don't combine (e.g. when dashed line over deletelineE)
 				delete lines[nextKey];
 				p2 = nextp;
 			} while (true);
@@ -131,16 +132,16 @@ const PenpaTools = (() => {
 		return lines;
 	}
 
-	C.reducePenpaLines2WaypointLines = function(list, listCol) {
-		let comblist = PenpaTools.combineStraightPenpaLines(list, listCol);
-		let wpLines = PenpaTools.penpaLines2WaypointLines(comblist, listCol);
-		let combined = PenpaTools.concatenateEndpoints(wpLines);
+	C.reducePenpaLines2WaypointLines = function(list, listCol, excludedLines = []) {
+		let comblist = C.combineStraightPenpaLines(list, listCol, excludedLines);
+		let wpLines = C.penpaLines2WaypointLines(comblist, listCol);
+		let combined = C.concatenateEndpoints(wpLines, excludedLines);
 		return combined;
 	}
 
 	C.penpaLines2WaypointLines = function(list, listCol) {
 		const keys = Object.keys(list);
-		keys.sort(PenpaTools.comparePenpaLinePoints);
+		keys.sort(C.comparePenpaLinePoints);
 		let listwp = keys.map(k => {
 			let rcs = k.split(",").map(C.point2RC);
 			let line = {wayPoints: [...rcs], value: list[k], keys: k.split(",").map(Number)};
@@ -182,7 +183,7 @@ const PenpaTools = (() => {
 		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
 	}
 
-	C.concatenateEndpoints = function(listwp) {
+	C.concatenateEndpoints = function(listwp, excludedLines = []) {
 		listwp = JSON.parse(JSON.stringify(listwp));
 		let changes = 0;
 		do {
@@ -192,9 +193,11 @@ const PenpaTools = (() => {
 				if([30, 40, 98].includes(line1.value)) return; // don't combine short, double or X lines
 				let startpoint1 = line1.wayPoints[0].toString();
 				let endpoint1 = line1.wayPoints[line1.wayPoints.length - 1].toString();
+				if (excludedLines.length != 0 && excludedLines[C.makePointPair(line1.keys[0], line1.keys[1])]) return;
 				listwp.forEach(line2 => {
 					if(line1 === line2 || line1.value !== line2.value)  return;
 					if(line1.cc !== line2.cc)  return;
+					if (excludedLines.length != 0 && excludedLines[C.makePointPair(line2.keys[0], line2.keys[1])]) return;	
 					let startpoint2 = line2.wayPoints[0].toString();
 					let endpoint2 = line2.wayPoints[line2.wayPoints.length - 1].toString();
 					if(endpoint2 === endpoint1) {
@@ -232,7 +235,7 @@ const PenpaTools = (() => {
 		filtered.forEach(line => {
 			console.assert(line.wayPoints.length === line.keys.length);
 			for(let i = 0; i < line.keys.length; i++) {
-				let rc = PenpaTools.point2RC(line.keys[i]);
+				let rc = C.point2RC(line.keys[i]);
 				let wp = line.wayPoints[i];
 				console.assert(rc[0] === wp[0]);
 				console.assert(rc[1] === wp[1]);
@@ -540,20 +543,6 @@ const PenpaTools = (() => {
 			(newG | 1 << 8).toString(16).slice(1).toUpperCase() +
 			(newB | 1 << 8).toString(16).slice(1).toUpperCase();
 		return newHex;
-	}
-
-	C.ColorSaturate = function(hex) {
-		if (!hex || C.ColorIsOpaque(hex) || !C.ColorIsVisible(hex)) return hex; 
-		if (!PenpaDecoder.flags.doubleLayer) {
-			if (hex.length === 7) {
-				return hex + 'FF';
-			}
-			if (hex.length === 4) {
-				return hex + 'F';
-			}
-			return hex;
-		}
-		return hex;
 	}
 
     C.ColorIsTransparent = function(hex) {

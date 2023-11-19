@@ -364,7 +364,7 @@ const PenpaSymbol = (() => {
     }
 
     P.puzzleAddLines = function(ctx, note) {
-        const {round1, round3, ColorIsVisible, ColorIsOpaque, getMinMaxRC, ColorSaturate} = PenpaTools;
+        const {round1, round3, ColorIsVisible, getMinMaxRC} = PenpaTools;
         let {lineWidth, fillStyle, strokeStyle} = ctx;
         let wp = ctx.convertPathToWaypoints();
         if (PenpaDecoder.flags.useClipPath && wp && ctx.isFill && ColorIsVisible(fillStyle)) {
@@ -376,7 +376,7 @@ const PenpaSymbol = (() => {
             // let scaley = round3(bottom - top);
             ctx.lineWidth = 0;
             ctx.strokeStyle = Color.TRANSPARENTBLACK;
-            ctx.fillStyle = ColorSaturate(fillStyle);
+            ctx.fillStyle = fillStyle;
             let opts = Object.assign(ctx.toOpts('surface'), {
                 center: [centery, centerx],
                 width: 1, //scalex,
@@ -606,8 +606,7 @@ const PenpaSymbol = (() => {
     }
 
 	P.draw_numbercircle_elem = function(ctx, x, y, r) {
-        const {ColorSaturate, round3} = PenpaTools;
-        ctx.fillStyle = ColorSaturate(ctx.fillStyle);
+        const {round3} = PenpaTools;
 		let opts = Object.assign(ctx.toOpts(), {
 			rounded: true,
 			center: [y, x],
@@ -640,8 +639,7 @@ const PenpaSymbol = (() => {
 
 
 	P.draw_rect_elem = function(ctx, x, y, w, h, note) {
-        const {ColorSaturate, round3} = PenpaTools;
-        ctx.fillStyle = ColorSaturate(ctx.fillStyle);
+        const {round3} = PenpaTools;
         let opts = Object.assign(ctx.toOpts('surface'), {
             center: [y, x],
             width: round3(w + ctx.lineWidth / ctx.penpaSize),
@@ -654,8 +652,7 @@ const PenpaSymbol = (() => {
     }
 
     P.draw_circle_elem = function(ctx, x, y, r, note) {
-        const {ColorSaturate, round3} = PenpaTools;
-        ctx.fillStyle = ColorSaturate(ctx.fillStyle);
+        const {round3} = PenpaTools;
         let opts = Object.assign(ctx.toOpts('surface'), {
             rounded: 1,
             center: [y, x],

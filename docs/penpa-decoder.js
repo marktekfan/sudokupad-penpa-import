@@ -525,7 +525,7 @@ const PenpaDecoder = (() => {
 	function render_surface(qa, pu, puzzle) {
 		const list = pu[qa].surface || [];
 		const listCol = pu[qa + '_col'].surface || [];
-		const {point2RC, isBoardCell, ColorSaturate} = PenpaTools;
+		const {point2RC, isBoardCell} = PenpaTools;
 		const keys = Object.keys(list); //keys.sort();
 		let centers = keys.map(k => ({center: point2RC(k), value: list[k], key: Number(k)}));
 		const predicate = (s1, s2) => { return true 
@@ -544,7 +544,6 @@ const PenpaDecoder = (() => {
 			//if (!pu.centerlist.includes(surface.key)) {
 			//	ctx.target = 'overlay';
 			//}
-			ctx.fillStyle = ColorSaturate(ctx.fillStyle);
 			ctx.role = surface.role;
 			const opts = Object.assign(ctx.toOpts(), {
 				center: surface.center,
@@ -722,7 +721,7 @@ const PenpaDecoder = (() => {
 	}
 	
 	function render_polygon(qa, pu, puzzle, feature = 'polygon') {
-		const {point2RC, ColorIsVisible, ColorSaturate, getMinMaxRC, round1, round3} = PenpaTools;
+		const {point2RC, ColorIsVisible, getMinMaxRC, round1, round3} = PenpaTools;
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
 		Object.keys(list).forEach(key => {
@@ -732,7 +731,6 @@ const PenpaDecoder = (() => {
 			let ctx = new DrawingContext();
 			ctx.strokeStyle = listCol[key] || Color.BLACK;
 			ctx.fillStyle = listCol[key] || Color.BLACK;
-			ctx.fillStyle = ColorSaturate(ctx.fillStyle);
 			ctx.lineWidth = 1;
 
 			ctx.push();
@@ -781,7 +779,8 @@ const PenpaDecoder = (() => {
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
-			ctx.target = 'overlay';
+			//ctx.target = 'overlay';
+			ctx.target = 'cell-grids'; // To prevent visual outlining
 			set_line_style(ctx, line.value);
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 				wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
@@ -792,7 +791,8 @@ const PenpaDecoder = (() => {
 	function draw_line(qa, pu, puzzle, feature, target = undefined) {
 		const list = pu[qa][feature] || [];
 		const listCol = pu[qa + '_col'][feature] || [];
-		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list, listCol);
+		const excludedLines = (feature === 'lineE') ? (pu.pu_q.deletelineE || []) : [];
+		let wpList = PenpaTools.reducePenpaLines2WaypointLines(list, listCol, excludedLines);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
@@ -801,6 +801,10 @@ const PenpaDecoder = (() => {
 			}				
 			else if (isMaskedLine(pu, line.keys)) {
 				ctx.target = 'overlay';
+			}
+			// This is a line over a deleted grid line -> Move to cell-grids to prevent visual outlines.
+			if (excludedLines.length != 0 && excludedLines[PenpaTools.makePointPair(line.keys[0], line.keys[line.keys.length - 1])]) {
+				ctx.target = 'cell-grids';
 			}
 			set_line_style(ctx, line.value);
 			if(line.cc) {
@@ -967,24 +971,41 @@ const PenpaDecoder = (() => {
 				// Don't remove when not visible due to dark background
 				//if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
 				if (fillStyle1 !== fillStyle2) {
-					list[l] = 0; // line.value = 0
+					let color1 = tinycolor(fillStyle1);
+					let color2 = tinycolor(fillStyle2);
+					//let hsl1 = color1.toHsl();
+					//let hsl2 = color2.toHsl();
+					// pick darker color
+					//let newcolor = hsl1.l < hsl2.l ? color1 : color2;
+					let newcolor = tinycolor.mix(color1, color2);
+					list[l] = PenpaTools.ColorApplyAlpha(PenpaTools.toHexColor(newcolor));
+					//list[l] = -1; // =>line.value = -1
 				}
 				else {
 					// Pre-calculate line color to make it visually identical to the surface color which has 0.5 alpha in SudokuPad.
-					list[l] = PenpaTools.ColorApplyAlpha(PenpaTools.ColorSaturate(fillStyle1));
+					list[l] = PenpaTools.ColorApplyAlpha(fillStyle1);
 				}
 			}
 		});
 		let combined = PenpaTools.reducePenpaLines2WaypointLines(list);
 		combined.forEach(line => {
-			if (line.value === 0) return; // Skip not visible line
-			let shortLine = PenpaTools.shortenLine(line.wayPoints, 2/64, 2/64);
+			if (line.value <= 0) return; // Skip not visible line
+			let {wayPoints} = line;
+			let width = 4;
+			let color = '#FFFFFF';
+			if (typeof line.value === 'string') {
+				width = 1;
+				color = line.value;
+				wayPoints = PenpaTools.shortenLine(wayPoints, 0.5/64, 0.5/64);
+			} else {
+				wayPoints = PenpaTools.shortenLine(wayPoints, 2/64, 2/64);
+			}
 			let ctx = new DrawingContext();
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
-			 	wayPoints: PenpaTools.reduceWayPoints(shortLine),
-				color: typeof line.value === 'string' ? line.value : '#FFFFFF',
+			 	wayPoints: PenpaTools.reduceWayPoints(wayPoints),
+				color: color,
 				 // color: '#FF40A0'
-				thickness: 4,
+				thickness: width,
 				target: line.value === 2 ? 'overlay' : 'cell-grids',
 			}), feature);
 		});
@@ -1732,6 +1753,8 @@ const PenpaDecoder = (() => {
 				generateAnswerCheck(pu);
 			}
 		}
+
+		//pu.pu_q.lineE = {};
 
 		const doc = {
 			// Copied from pu:
