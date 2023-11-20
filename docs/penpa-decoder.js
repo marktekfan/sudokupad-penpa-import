@@ -1546,6 +1546,7 @@ const PenpaDecoder = (() => {
 		const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
 		Object.keys(lineE).forEach(key => {
 			const p = key.split(',').map(Number);
+			if (p.length < 2) return;
 			const m1 = point2matrix(p[0]);
 			const m2 = point2matrix(p[1]);
 			// don't move diagonal lines
