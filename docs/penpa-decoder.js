@@ -572,7 +572,6 @@ const PenpaDecoder = (() => {
 		});
 	}
 	
-	// Must be rendered after killercages
 	function render_numberS(qa, pu, puzzle, feature = 'numberS') {
 		const draw = new PenpaSymbol(pu, puzzle, 64, {puzzleAdd});
 		const list = pu[qa][feature] || [];
@@ -584,13 +583,11 @@ const PenpaDecoder = (() => {
 				return;
 			}
 			draw.draw_numberS(ctx, number, key);
-			if (number[0] !== 'FOGLIGHT') {
-				if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
-					if(pu.centerlist.includes(point2centerPoint(key))) {
-						let rc = point2cell(key);
-						let cell = puzzle.cells[rc[0]][rc[1]];
-						cell.pencilMarks = [' '];
-					}
+			if(pu.point[key].type === 4 && (key % 4) === 0) { // top-left cell corner
+				if(pu.centerlist.includes(point2centerPoint(key))) {
+					let rc = point2cell(key);
+					let cell = puzzle.cells[rc[0]][rc[1]];
+					cell.pencilMarks = [' '];
 				}
 			}
 		});
@@ -925,9 +922,7 @@ const PenpaDecoder = (() => {
 	function render_killercages(qa, pu, puzzle, feature = 'killercages') {
 		const list = pu[qa].killercages || [];
 		const listCol = pu[qa + '_col'][feature];
-		const {point2cell, point2centerPoint, point2matrix, matrix2point} = PenpaTools;
-		const {numberS} = pu[qa];
-		const sortTopLeftRC = ([r1, c1], [r2, c2]) => r1 === r2 ? c2 - c1 : r2 - r1;
+		const {point2cell} = PenpaTools;
 		list.forEach((cage, i) => {
 			if (cage.length === 0) return;
 			let cagePart = {unique: true};
@@ -935,19 +930,8 @@ const PenpaDecoder = (() => {
 			if (listCol[i]) {
 				cagePart.borderColor = listCol[i];
 			}
-
-			const labelCell = matrix2point([...cage.map(point2matrix)].sort(sortTopLeftRC).pop());
-			for(let k in numberS) {
-				if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left cell corner
-					if (labelCell === point2centerPoint(k)) {
-						let value = numberS[k];
-						//if (!isNaN(value[0])) {
-							cagePart.value = value[0].trim();
-							value.role = 'killer'; // Exclude from rendering
-							break;
-						//}
-					}
-				}
+			if (cage['value'] !== undefined) {
+				cagePart.value = cage['value'];
 			}
 			puzzleAdd(puzzle, 'cages', cagePart, feature);
 		});
@@ -1554,7 +1538,7 @@ const PenpaDecoder = (() => {
 
 			delete deletelineE[key];
 			if (!lineECol[key]) { // Not custom color
-				let frameStyle = styleMap[style];
+				const frameStyle = styleMap[style];
 				if (frameStyle) {
 					delete lineE[key];
 					frame[key] = frameStyle;
@@ -1564,7 +1548,7 @@ const PenpaDecoder = (() => {
 				}
 			}
 			else if(lineECol[key] === '#000000') { // Black custom color
-				let frameStyle = styleMapCol[style];
+				const frameStyle = styleMapCol[style];
 				if (frameStyle) {
 					delete lineE[key];
 					frame[key] = frameStyle;
@@ -1574,37 +1558,77 @@ const PenpaDecoder = (() => {
 				}
 			}
 		});
+
+		Object.keys(frame).forEach(key => {
+			// dash frame lines must have deletelineE to hide gridline
+			const style = frame[key];
+			if (dashLine.includes(style)) {
+				deletelineE[key] = 1;
+			}
+		});
 	}
 
 	function cleanupKillercages(pu, puzzle, squares) {
 		const {point2cell, point2centerPoint, doc} = PenpaTools;
 		// Remove cosmetic killercages (=outside regions or width-and-height)
 		// to prevent SudokuPad expanding the board size for these cages.
-		const [top, left, bottom, right] = squares.length !== 1
-				? [0, 0, doc.height - 1, doc.width - 1] 
-				: [squares[0].r, squares[0].c, squares[0].r + squares[0].size - 1, squares[0].c + squares[0].size - 1];
-		const killercages = pu.pu_q.killercages || [];
-		Object.keys(killercages).forEach(k => {
-			let cageOutsideRegions = killercages[k].map(point2cell).some(([r, c]) => 
-				r < top || r > bottom ||
-				c < left || c > right
-			);
-			if (cageOutsideRegions) {
-				pu.pu_q.killercages[k] = [];
-			}
-		});
 
 		// Remove killercages which have no visible lines
 		const list = pu.pu_q.cage || [];
-		let wpLines = PenpaTools.penpaLines2WaypointLines(list);
-		let cageSet = new Set();
+		const wpLines = PenpaTools.penpaLines2WaypointLines(list);
+		const cageSet = new Set();
 		wpLines.forEach(line => {
-			let p1 = line.keys[0];
-			let p2 = line.keys[1];
+			const p1 = line.keys[0];
+			const p2 = line.keys[1];
 			cageSet.add(point2centerPoint(p1));
 			cageSet.add(point2centerPoint(p2));
 		});
-		pu.pu_q.killercages = killercages.map(cage => cage.some(p => cageSet.has(p)) ? cage.sort((a, b) => a - b) : []);
+		const killercages = pu.pu_q.killercages || [];
+		killercages.forEach(cage => {
+			if (!cage.some(p => cageSet.has(p))) {
+				cage.length = 0;
+			}
+		});
+
+		// Get killercage values
+		const {numberS} = pu.pu_q;
+		const {point2matrix, matrix2point} = PenpaTools;
+		const sortTopLeftRC = ([r1, c1], [r2, c2]) => r1 === r2 ? c2 - c1 : r2 - r1;
+		killercages.forEach(cage => {
+			const labelCell = matrix2point([...cage.map(point2matrix)].sort(sortTopLeftRC).pop());
+			for(let k in numberS) {
+				if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left cell corner
+					if (labelCell === point2centerPoint(k)) {
+						let value = numberS[k];
+						cage['value'] = value[0].trim();
+						value.role = 'killer'; // Exclude from rendering
+						break;
+					}
+				}
+			}
+		});
+
+		const {height, width} = doc;
+		Object.keys(killercages).forEach(k => {
+			const killer = killercages[k];
+			if (killer.length !== 1 || killer['value'] !== undefined) return;
+			const cageOutsideRegions = killer.map(point2cell).some(([r, c]) => 
+				(r === 0 && (c === 0 || c === width - 1)) ||
+				(r === height -1 && (c === 0 || c === width - 1))
+			);
+			if (cageOutsideRegions) {
+				//Remove cage lines
+				const {cage} = pu.pu_q;
+				let p = killer[0];
+				for(let k in cage) {
+					let [p1, p2] = k.split(',');
+					if (point2centerPoint(p1) === p || point2centerPoint(p2) === p) {
+						delete cage[k];
+					}
+				}
+				killercages[k].length = 0;
+			}
+		});
 	}
 
 	function GetCageConnectionCells(pu, key, symbol) {
@@ -1632,10 +1656,10 @@ const PenpaDecoder = (() => {
 		const symbols = pu.pu_q['symbol'] || [];
 		Object.keys(symbols).forEach(key => {
 			const symbol = symbols[key];
-			let [p1, p2] = GetCageConnectionCells(pu, key, symbol) || [];
+			const [p1, p2] = GetCageConnectionCells(pu, key, symbol) || [];
 			if (p1 == null || p2 == null) return;
-			let kc1 = killercages.findIndex(cage => cage.some(p => p === p1));
-			let kc2 = killercages.findIndex(cage => cage.some(p => p === p2));
+			const kc1 = killercages.findIndex(cage => cage.some(p => p === p1));
+			const kc2 = killercages.findIndex(cage => cage.some(p => p === p2));
 			if (kc1 === -1 || kc2 === -1 || kc1 === kc2) return;
 
 			killercages[kc1].push(...killercages[kc2]);
