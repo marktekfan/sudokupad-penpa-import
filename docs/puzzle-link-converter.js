@@ -12,12 +12,25 @@ const puzzleLinkConverter = (() => {
 
 		getPenpaDecoderOptions();
 
+		const {unzip, zip, propMap} = PuzzleZipper;
+		const encodeSCLPuz = puzzle => {
+			propMap.duration = 'dur';
+			delete propMap.d;
+			propMap.d2 = 'd';
+			// change prefix once app is updated
+			let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(zip(puzzle));
+			propMap.duration = 'duration';
+			delete propMap.d2;
+			propMap.d = 'd2';	
+			return puzzleId;
+		};
+
 		// Penpa+ url format
 		if (PenpaDecoder.isPenpaUrl(url)) {
 			let puzzle = PenpaDecoder.convertPenpaPuzzle(url);
 			if (!puzzle) return null;
 			let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
-			let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(puzzle)) + (settings ? '?' + settings : '');
+			let puzzleId = encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 			return puzzleId;
 		}
 
@@ -49,11 +62,11 @@ const puzzleLinkConverter = (() => {
 					puzzle = JSON.parse(url);
 				}
 				catch {
-					puzzle = JSON.parse(PuzzleZipper.unzip(url));
+					puzzle = JSON.parse(unzip(url));
 				}
 				let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');	
 				if (puzzle.id && puzzle.cells) {
-					var puzzleId = 'scl' + loadFPuzzle.compressPuzzle(PuzzleZipper.zip(JSON.stringify(puzzle)));
+					var puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
 					return puzzleId + (settings ? '?' + settings : '');
 				}
 				else if (puzzle.size && puzzle.grid) {
