@@ -268,7 +268,7 @@ const PenpaTools = (() => {
 			}
 			line.push(points[points.length - 1]);
 		}
-		return line;
+		return line.map(C.roundRC);
 	}
 
 	C.normalizePath = function(points) {
@@ -287,10 +287,6 @@ const PenpaTools = (() => {
 			prev = curr;
 		}
 		line.push(points[points.length - 1]);
-		// line.forEach(wp => {
-		// 	wp[1] = round(wp[1]);
-		// 	wp[2] = round(wp[2]);
-		// })
 		return line;
 	}
 
@@ -440,8 +436,13 @@ const PenpaTools = (() => {
 		if (Array.isArray(num)) return num.map(C.round256);
 		return Math.round((num + Number.EPSILON) * 256) / 256;
 	}
-	C.round = function(num) { return C.round3(num); }
-
+	C.round = function(num) { 
+		return C.round3(num); 
+	}
+	C.roundRC = function(rc) {
+		const [r, c] = rc;
+		return [C.round(r), C.round(c)];
+	}
 
 	C.isBoardCell = function(rc) {
 		const [r, c] = rc;
