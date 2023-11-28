@@ -458,9 +458,9 @@ const PenpaDecoder = (() => {
 	function drawBoardLattice(pu, puzzle, doc) {
 		const {point2RC} = PenpaTools;
 		// Dotted grid lines
-		if (pu.mode.grid[0] === '2') {
-			puzzle.settings['dashedgrid'] = 1;
-		}
+		// if (pu.mode.grid[0] === '2') {
+		// 	puzzle.settings['dashedgrid'] = 1;
+		// }
 		// No grid lines
 		if (pu.mode.grid[0] === '3') {
 			puzzle.settings['nogrid'] = 1; // not (yet) implemented
@@ -1760,17 +1760,16 @@ const PenpaDecoder = (() => {
 			if (pu.frame[k]) {
 				let style = pu.pu_q.lineE[k];
 				if (pu.frame[k] === (style === 12 ? 11 : style)) { // Line style 12 is frame style 11
-					delete pu.pu_q.lineE[k];
+					if (pu.pu_q_col.lineE[k] && tinycolor(pu.pu_q_col.lineE[k]).equals(tinycolor.BLACK)) {
+						delete pu.pu_q.lineE[k];
+					}
 				}
 			}
 		});
 		// Keep only thick frame lines
 		const noGridLines = pu.mode.grid[0] === '3';
-		const dashedGridLines = pu.mode.grid[0] === '2';
-		if (!dashedGridLines) {
-			const frameLinesToKeep = noGridLines ? [2, 21, 11, 1] : [2, 21];
-			Object.keys(pu.frame).filter(k => !frameLinesToKeep.includes(pu.frame[k])).forEach(k => delete pu.frame[k]);
-		}
+		const frameLinesToKeep = noGridLines ? [2, 21, 11, 1] : [2, 21, 11];
+		Object.keys(pu.frame).filter(k => !frameLinesToKeep.includes(pu.frame[k])).forEach(k => delete pu.frame[k]);
 	}
 
 	function generateAnswerCheck(pu) {
