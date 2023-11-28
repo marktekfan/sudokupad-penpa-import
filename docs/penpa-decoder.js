@@ -40,6 +40,8 @@ const PenpaDecoder = (() => {
 	const rePenpaUrl = /\/penpa-edit\//i;
 	const rePuzzlinkUrl = /\/puzz\.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p(\.html)?\?/;
 
+	const dashLineStyle = [10, 11, 12, 13, 14, 15, 17, 110, 115];
+
 	class FakeDoc {
 		constructor() { 
 			this._elem = {};
@@ -1341,9 +1343,13 @@ const PenpaDecoder = (() => {
 		const {makePointPair} = PenpaTools;
 		pu.centerlist.push(p);
 		pu.centerlist.sort();
+		const {lineE} = pu.pu_q;
+		const {frame} = pu;
 		for (let i = 0; i < 4; i++) {
 			let k = makePointPair(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
-			pu.pu_q.deletelineE[k] = 8;
+			if (!lineE[k] && !frame[k]) {
+				pu.pu_q.deletelineE[k] = 8;
+			}
 		}
 	}
 
@@ -1554,7 +1560,6 @@ const PenpaDecoder = (() => {
 		const deletelineE = pu.pu_q.deletelineE;
 		const styleMap = {2: 2, 21: 21, 80: 1};
 		const styleMapCol = {2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1};
-		const dashLine = [10, 11, 12, 13, 14, 15, 17, 110, 115];
 		Object.keys(lineE).forEach(key => {
 			const p = key.split(',').map(Number);
 			if (p.length < 2) return;
@@ -1564,7 +1569,7 @@ const PenpaDecoder = (() => {
 			if (m1[0] !== m2[0] && m1[1] !== m2[1]) return;
 			const style = lineE[key];
 			// don't move dash lines
-			if (dashLine.includes(style)) return;
+			if (dashLineStyle.includes(style)) return;
 
 			delete deletelineE[key];
 			if (!lineECol[key]) { // Not custom color
@@ -1592,8 +1597,8 @@ const PenpaDecoder = (() => {
 		Object.keys(frame).forEach(key => {
 			// dash frame lines must have deletelineE to hide gridline
 			const style = frame[key];
-			if (dashLine.includes(style)) {
-				deletelineE[key] = 1;
+			if (dashLineStyle.includes(style) && !deletelineE[key]) {
+				deletelineE[key] = 3;
 			}
 		});
 	}
@@ -1745,7 +1750,9 @@ const PenpaDecoder = (() => {
 				if (pu.frame[k] === 2) {
 					pu.pu_q.deletelineE[k] = 2; // outer frame
 				}
-				delete pu.frame[k];
+				if (pu.pu_q.deletelineE[k] <= 2) {
+					delete pu.frame[k];
+				}
 			}
 		}
 		// Remove lines which are identical to the corresponding frame line.
@@ -1863,17 +1870,6 @@ const PenpaDecoder = (() => {
 		convertFeature2Line(pu, 'freelineE', 'lineE');
 		convertFeature2Line(pu, 'wall', 'line');
 
-		moveBlackEdgelinesToFrame(pu);
-		cleanupFrame(pu);
-
-		const {solutionPoints, uniqueRowsCols} = getSolutionInfo(pu);
-		PenpaRegions.cleanupCenterlist(pu, solutionPoints);
-
-		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
-		if (!regions) {
-			PenpaRegions.findSudokuRegions(pu, squares);
-		}
-
 		// Add solution cells to centerlist
 		['number', 'surface'].forEach(constraint => {
 			const solution = getPuSolution(pu, constraint) || [];
@@ -1895,6 +1891,17 @@ const PenpaDecoder = (() => {
 			});
 			pu.centerlist.sort();
 		});
+
+		moveBlackEdgelinesToFrame(pu);
+		cleanupFrame(pu);
+
+		const {solutionPoints, uniqueRowsCols} = getSolutionInfo(pu);
+		PenpaRegions.cleanupCenterlist(pu, solutionPoints);
+
+		let {squares, regions} = PenpaRegions.findSudokuSquares(pu);
+		if (!regions) {
+			PenpaRegions.findSudokuRegions(pu, squares);
+		}
 
 		//TODO: Can/should this be done before region detection?
 		expandGridForFillableOutsideFeatures(pu);
