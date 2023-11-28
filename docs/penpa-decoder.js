@@ -433,19 +433,19 @@ const PenpaDecoder = (() => {
 
 			if (hastop) {
 				const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y - 1, x, 1));
-				deletelineE[key] = 1;
+				deletelineE[key] = 9;
 			}
 			if (hasleft) {
 				const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y, x - 1, 1));
-				deletelineE[key] = 1;
+				deletelineE[key] = 9;
 			}
 			if (hasright) {
 				const key = makePointPair(matrix2point(y - 1, x, 1), matrix2point(y, x, 1));
-				deletelineE[key] = 1;
+				deletelineE[key] = 9;
 			}
 			if (hasbottom) {
 				const key = makePointPair(matrix2point(y, x - 1, 1), matrix2point(y, x, 1));
-				deletelineE[key] = 1;
+				deletelineE[key] = 9;
 			}
 		}
 
@@ -938,39 +938,69 @@ const PenpaDecoder = (() => {
 	}
 	
 	function render_deletelineE(qa, pu, puzzle, feature = 'deletelineE') {
-		const list = pu[qa][feature] || [];
+		const list = pu.pu_q[feature] || [];
 		const surface = pu[qa].surface;
 		const surfaceCol = pu[qa + '_col'].surface || [];
-		//const darkBackgrounds = [Color.BLACK, Color.BLACK_LIGHT, Color.GREY_DARK_VERY];
-		Object.keys(list).forEach(l => {
-			let [p1, p2] = PenpaTools.getAdjacentCellsOfELine(pu, l);
-			let s1 = surface[p1];
-			let s2 = surface[p2];
-			if (s1 || s2) {
-				let ctx = new DrawingContext();
-				set_surface_style(ctx, s1 || s2);
-				let fillStyle1 = (s1 && surfaceCol[p1]) || ctx.fillStyle;
-				set_surface_style(ctx, s2 || s1);
-				let fillStyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
-				// Don't remove when not visible due to dark background
-				//if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
-				if (fillStyle1 !== fillStyle2) {
-					let color1 = tinycolor(fillStyle1);
-					let color2 = tinycolor(fillStyle2);
-					let newcolor = tinycolor.mix(color1, color2);
-					list[l] = PenpaTools.ColorApplyAlpha(PenpaTools.toHexColor(newcolor));
-					//list[l] = -1; // =>line.value = -1
+		const {point2RC, doc} = PenpaTools;
+		const {width, height} = doc;
+		const isOnPerimeter = function(k) {
+			const [p1, p2] = k.split(',');
+			const [r1, c1] = point2RC(p1);
+			const [r2, c2] = point2RC(p2);
+			return (r1 === 0 && r2 === 0) 
+				|| (c1 === 0 && c2 === 0)
+				|| (r1 === height && r2 === height) 
+				|| (c1 === width && c2 === width);
+		}
+		const perimeter = {};
+		if (pu.foglight) {
+			Object.keys(list).forEach(k => {
+				// Move line to perimeter list, which is rendered last
+				if (isOnPerimeter(k)) {
+					perimeter[k] = '#FFFFFF'; // perimeter color
+					list[k] = 0;
 				}
 				else {
-					// Pre-calculate line color to make it visually identical to the surface color which has 0.5 alpha in SudokuPad.
-					list[l] = PenpaTools.ColorApplyAlpha(fillStyle1);
+					list[k] = '#afafaf'; // fog cover color
 				}
-			}
-		});
-		//let comblist = PenpaTools.combineStraightPenpaLines(list);
-		//let combined = PenpaTools.penpaLines2WaypointLines(comblist);		
-		let combined = PenpaTools.reducePenpaLines2WaypointLines(list);
-		combined.forEach(line => {
+			});
+		}
+		else {		
+			//const darkBackgrounds = [Color.BLACK, Color.BLACK_LIGHT, Color.GREY_DARK_VERY];
+			Object.keys(list).forEach(k => {
+				const [p1, p2] = PenpaTools.getAdjacentCellsOfELine(pu, k);
+				const s1 = surface[p1];
+				const s2 = surface[p2];
+				if (s1 || s2) {
+					const ctx = new DrawingContext();
+					set_surface_style(ctx, s1 || s2);
+					const fillStyle1 = (s1 && surfaceCol[p1]) || ctx.fillStyle;
+					set_surface_style(ctx, s2 || s1);
+					const fillStyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
+					// Don't remove when not visible due to dark background
+					//if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
+					if (fillStyle1 !== fillStyle2) {
+						const color1 = tinycolor(fillStyle1);
+						const color2 = tinycolor(fillStyle2);
+						const newcolor = tinycolor.mix(color1, color2);
+						list[k] = PenpaTools.ColorApplyAlpha(PenpaTools.toHexColor(newcolor));
+						//list[l] = -1; // =>line.value = -1
+					}
+					else {
+						// Pre-calculate line color to make it visually identical to the surface color which has 0.5 alpha in SudokuPad.
+						list[k] = PenpaTools.ColorApplyAlpha(fillStyle1);
+					}
+				}
+				// Move line to perimeter list, which is rendered last
+				if (isOnPerimeter(k)) {
+					perimeter[k] = list[k];
+					list[k] = 0;
+				}
+			});
+		}
+		const combined = PenpaTools.reducePenpaLines2WaypointLines(list);
+		const combinedPerimeter = PenpaTools.reducePenpaLines2WaypointLines(perimeter);
+		[].concat(combined, combinedPerimeter).forEach(line => {
 			if (line.value <= 0) return; // Skip not visible line
 			let {wayPoints} = line;
 			let width = 4;
@@ -980,7 +1010,7 @@ const PenpaDecoder = (() => {
 				width = 1;
 				color = line.value;
 			}
-			let ctx = new DrawingContext();
+			const ctx = new DrawingContext();
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 			 	wayPoints: PenpaTools.reduceWayPoints(wayPoints),
 				color: color,
@@ -1313,7 +1343,7 @@ const PenpaDecoder = (() => {
 		pu.centerlist.sort();
 		for (let i = 0; i < 4; i++) {
 			let k = makePointPair(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
-			pu.pu_q.deletelineE[k] = 1;
+			pu.pu_q.deletelineE[k] = 8;
 		}
 	}
 
