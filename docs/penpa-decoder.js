@@ -1568,11 +1568,9 @@ const PenpaDecoder = (() => {
 		});
 	}
 
-	function cleanupKillercages(pu, puzzle, squares) {
+	function prepareKillercages(pu) {
 		const {point2cell, point2centerPoint, doc} = PenpaTools;
-		// Remove cosmetic killercages (=outside regions or width-and-height)
-		// to prevent SudokuPad expanding the board size for these cages.
-
+		
 		// Remove killercages which have no visible lines
 		const list = pu.pu_q.cage || [];
 		const wpLines = PenpaTools.penpaLines2WaypointLines(list);
@@ -1590,27 +1588,47 @@ const PenpaDecoder = (() => {
 			}
 		});
 
-		// Get killercage values
-		const {numberS} = pu.pu_q;
+		joinDisconnectedKillercages(pu);
+
+		// Collect killercage values
+		const {numberS, number} = pu.pu_q;
 		const {point2matrix, matrix2point} = PenpaTools;
 		const sortTopLeftRC = ([r1, c1], [r2, c2]) => r1 === r2 ? c2 - c1 : r2 - r1;
-		killercages.forEach(cage => {
-			const labelCell = matrix2point([...cage.map(point2matrix)].sort(sortTopLeftRC).pop());
+		killercages.forEach(killer => {
+			const labelCell = matrix2point([...killer.map(point2matrix)].sort(sortTopLeftRC).pop());
 			for(let k in numberS) {
-				if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left cell corner
-					if (labelCell === point2centerPoint(k)) {
-						let value = numberS[k];
-						cage['value'] = value[0].trim();
-						value.role = 'killer'; // Exclude from rendering
+				if (labelCell === point2centerPoint(k)) {
+					const num = numberS[k];
+					if (pu.point[k].type === 4 && (k % 4) === 0) { // Top-left corner in cell
+						killer['value'] = num[0].trim();
+						num.role = 'killer'; // Exclude from rendering
+						break;
+					}
+					// Special case for foglight
+					else if (num[0].includes('FOGLIGHT')) {
+						killer['value'] = 'FOGLIGHT';
+						num.role = 'killer'; // Exclude from rendering
+						break;
+					}
+				}
+			}
+			for(let k in number) {
+				if (labelCell === point2centerPoint(k)) {
+					const num = number[k];
+					// Special case for foglight
+					if (num[0].includes('FOGLIGHT')) {
+						killer['value'] = 'FOGLIGHT';
+						num.role = 'killer'; // Exclude from rendering
 						break;
 					}
 				}
 			}
 		});
 
+		// Remove any single cell cages on grid corners
+		// Because they were only used to define the grid outline
 		const {height, width} = doc;
-		Object.keys(killercages).forEach(k => {
-			const killer = killercages[k];
+		killercages.forEach(killer => {
 			if (killer.length !== 1 || killer['value'] !== undefined) return;
 			const cageOutsideRegions = killer.map(point2cell).some(([r, c]) => 
 				(r === 0 && (c === 0 || c === width - 1)) ||
@@ -1619,16 +1637,18 @@ const PenpaDecoder = (() => {
 			if (cageOutsideRegions) {
 				//Remove cage lines
 				const {cage} = pu.pu_q;
-				let p = killer[0];
+				const p = killer[0];
 				for(let k in cage) {
 					let [p1, p2] = k.split(',');
 					if (point2centerPoint(p1) === p || point2centerPoint(p2) === p) {
 						delete cage[k];
 					}
 				}
-				killercages[k].length = 0;
+				killer.length = 0;
 			}
 		});
+
+		pu.foglight = killercages.some(killer => /^foglight/i.test(killer['value'] || ''));
 	}
 
 	function GetCageConnectionCells(pu, key, symbol) {
@@ -1637,16 +1657,16 @@ const PenpaDecoder = (() => {
 		if (symbol[1] !== 'frameline') return;
 		// symbol:  \
 		if ([5, 6, 7, 8, 0].includes(symbol[0])) {
-			let p1 = point2centerPoint(key);
-			let c1 = p1; // top-left
-			let c2 = pu.point[c1].adjacent_dia[3]; // bottom-right
+			const p1 = point2centerPoint(key);
+			const c1 = p1; // top-left
+			const c2 = pu.point[c1].adjacent_dia[3]; // bottom-right
 			return [c1, c2];
 		}
 		// symbol:  /
 		if ([1, 2, 3, 4, 9].includes(symbol[0])) {
-			let p1 = point2centerPoint(key);
-			let c1 = pu.point[p1].adjacent[2]; // top-right
-			let c2 = pu.point[c1].adjacent_dia[2]; // bottom-left
+			const p1 = point2centerPoint(key);
+			const c1 = pu.point[p1].adjacent[2]; // top-right
+			const c2 = pu.point[c1].adjacent_dia[2]; // bottom-left
 			return [c1, c2];
 		}
 	}
@@ -1884,8 +1904,7 @@ const PenpaDecoder = (() => {
 
 		addGivens(pu, puzzle);
 
-		cleanupKillercages(pu, puzzle, squares);
-		joinDisconnectedKillercages(pu)
+		prepareKillercages(pu);
 
 		let qa = 'pu_q';
 		render_surface(qa, pu, puzzle);
