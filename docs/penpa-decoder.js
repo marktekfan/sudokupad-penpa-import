@@ -1018,7 +1018,7 @@ const PenpaDecoder = (() => {
 				color: color,
 				 // color: '#FF40A0'
 				thickness: width,
-				target: line.value === 2 ? 'overlay' : 'cell-grids',
+				target: 'cell-grids',
 			}), feature);
 		});
 	}
