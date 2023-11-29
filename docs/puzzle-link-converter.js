@@ -137,7 +137,7 @@ const puzzleLinkConverter = (() => {
 		});
 	}
 
-	loadPuzzle.expandShortUrlAsync = expandShortUrl;
+	loadPuzzle.expandShortUrl = expandShortUrl;
 	loadPuzzle.convertPuzzleUrl = convertPuzzleUrl;
 
 	return loadPuzzle;

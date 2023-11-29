@@ -65,7 +65,7 @@ function doInitialize() {
 
     addFileDragNDrop(fileDropAreaElem);
 
-    createAppMenu();    
+    createAppMenu();
 
     function createSettings(fieldset, test) {
         // Initialize Setting
@@ -80,7 +80,7 @@ function doInitialize() {
             inputElem.type = 'checkbox';
             inputElem.id = setting;
             inputElem.name = setting;
-            
+
             let labelElem =  document.createElement('label');
             labelElem.htmlFor = setting;
             labelElem.innerText = settings[setting].title;
@@ -94,7 +94,7 @@ function doInitialize() {
         if (test !== null) {
             fieldset.classList.toggle('show', true);
         }
-    }        
+    }
 
     function addFileDragNDrop(dropArea) {
         // https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API#drag_events
@@ -159,7 +159,7 @@ function toBool(value) {
 
 function setMenuSetting(setting, value) {
     let settingCheckbox = document.getElementById(setting);
-    
+
     switch(setting) {
         case 'options-show-options': {
             let checked = toBool(value);
@@ -260,12 +260,12 @@ function OnOpenInSudokupad(openinNewWindow = true) {
     convertButtonElem.innerHTML = "Converting...";
 
     Promise.resolve(urlstring)
-    .then(url => puzzleLinkConverter.expandShortUrlAsync(url))
+    .then(url => puzzleLinkConverter.expandShortUrl(url))
     .then(url => puzzleLinkConverter.convertPuzzleUrl(url))
     .then(async puzzleid => {
         if (!puzzleid) {
             throw {customMessage: 'Not a recognized puzzle URL'}
-        } 
+        }
         if (destination.includes('?')) {
             puzzleid = puzzleid.replace('?', '&');
         }
@@ -283,7 +283,7 @@ function OnOpenInSudokupad(openinNewWindow = true) {
                 generatedUrlElem.value = redirect;
                 generatedUrlElem.select();
                 generatedUrlElem.focus();
-                buttonCopyUrlElem.disabled = !redirect;				
+                buttonCopyUrlElem.disabled = !redirect;
             } break;
 
             case 'create-tinyurl': {
@@ -295,8 +295,8 @@ function OnOpenInSudokupad(openinNewWindow = true) {
                     generatedUrlElem.select();
                     generatedUrlElem.focus();
                 }
-                buttonCopyUrlElem.disabled = !newUrl;								
-            } break;								
+                buttonCopyUrlElem.disabled = !newUrl;
+            } break;
 
             case 'convert-tojson': {
                 const {stringify} = JsonStringifyPrettyCompact;
@@ -327,7 +327,7 @@ function OnOpenInSudokupad(openinNewWindow = true) {
                     }
                 }
                 else {
-                    let puzzle = parsePuzzleData(puzzleid);						
+                    let puzzle = await parsePuzzleData(puzzleid);
                     inputUrlElem.value = stringifyPretty(puzzle);
                 }
 
@@ -336,7 +336,7 @@ function OnOpenInSudokupad(openinNewWindow = true) {
                     selectActionElem.value = lastActionSelection;
                     OnSelectActionChange(lastActionSelection);
                 }
-            } break;								
+            } break;
 
             default: {
                 window.open(redirect, '_blank');
