@@ -18,6 +18,12 @@ function PortableEvents() {
 		}
 		return self;
 	}
+	async function awaitEventListener(type, timeoutMs) {
+		return await new Promise((resolve, reject) => {
+			addEventListener(type, resolve);
+			if(timeoutMs !== undefined) setTimeout(() => reject(`Event "${type}" timed out.`), timeoutMs);
+		});
+	}
 	function dispatchEvent(event) {
 		var type, args, handlers;
 		if(typeof event === 'object' && typeof event.type === 'string') {
@@ -46,6 +52,7 @@ function PortableEvents() {
 		// jQuery naming convention
 		on: { value: addEventListener, enumerable: true},
 		off: { value: removeEventListener, enumerable: true},
+		await: { value: awaitEventListener, enumerable: true},
 		trigger: { value: dispatchEvent, enumerable: true},
 		getEventListeners: { value: getEventListeners, enumerable: true},
 	});

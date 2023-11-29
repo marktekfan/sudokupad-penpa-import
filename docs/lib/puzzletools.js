@@ -46,7 +46,8 @@ const PuzzleTools = (() => {
 			}
 			return unzipped;
 		};
-		PT.zipClassicSudoku2 = puzzle => {
+		PT.zipClassicSudoku2 = (puzzle = '') => {
+			if(puzzle.length === 0) return '';
 			let charCode = puzzle[0].charCodeAt(0), digit = (charCode >= 49 && charCode <= 57) ? puzzle[0] : '0';
 			let res = '', blanks = 0;
 			for(let i = 1; i < puzzle.length; i++) {
@@ -171,31 +172,24 @@ const PuzzleTools = (() => {
 					console.log('getPuzzleFormat("%s..."):', data.slice(0, 30), PuzzleTools.getPuzzleFormat(data));
 				});
 			});
-	// Screenshots
-		PT.puzzleToSvg = (opts = {}) => new Promise((resolve, reject) => {
-			//const svgStyle = 'font-family:Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;background:rgba(255,255,255,0)';
-			const svgStyle = 'font-family:Tahoma, Verdana, sans-serif;background:rgba(255,255,255,255)';
-			let {svg, serializer} = opts;
-			if(svg === undefined) svg = opts.svg = document.querySelector(SvgRenderer.DefaultSelector);
-			if(serializer === undefined) serializer = opts.serializer = new XMLSerializer();
-			const boardBounds = SvgRenderer.getContentBounds(svg);
-			let width = Math.ceil(-boardBounds.left + boardBounds.right), height = Math.ceil(-boardBounds.top + boardBounds.bottom);
-			let svgCssText = [...document.styleSheets]
-				.map(style => [...(style.rules || style.cssRules)].map(rule => rule.cssText).join('\n'))
-				.join('\n');
-			svgData = `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${width}" height="${height}" style="${svgStyle}">
-				<style>@import url("/style.css")</style>
-				<defs>
-					<style type="text/css"><![CDATA[
-						${svgCssText}
-						#cell-highlights { display: none; }
-					]]></style>
-				</defs>
-				${serializer.serializeToString(svg)}
-			</svg>`;
-			resolve(svgData);
-		});
+	// Images
 		PT.dataToBlobUrl = (data, type) => window.URL.createObjectURL(new Blob([data], {type}));
+		PT.blobToBlobUrl = blob => window.URL.createObjectURL(blob);
+		PT.svgToBlob = async svg => await (await fetch(PT.svgToDataUri(svg))).blob();
+		PT.imgUriToBlob = async (src, type, quality) => {
+			if(type === undefined) return (await fetch(src)).blob();
+			const img = Object.assign(new Image(), {src});
+			await img.decode();
+			const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+			ctx.drawImage(img, 0, 0);
+			return canvasToBlob(canvas, type, quality);
+		};
+		PT.base64DataUrlToBlob = dataUrl => {
+			let [m, mime, base64Data] = (dataUrl.match(/^data:(.*?);base64,(.*)$/) || []),
+					bstr = atob(base64Data), n = bstr.length, u8arr = new Uint8Array(n);
+			while(n--) u8arr[n] = bstr.charCodeAt(n);
+			return new Blob([u8arr], {type: mime});
+		};
 		PT.urlToImg = url => new Promise((resolve, reject) => {
 			let img = document.createElement('img');
 			img.onload = () => resolve(img);
@@ -215,11 +209,11 @@ const PuzzleTools = (() => {
 			return canvas;
 		};
 		PT.imgToPngUrl = (img, opts = {}) => new Promise((resolve, reject) => {
-			let {canvas, type = 'image/png', quality} = opts;
+			let {width = 64, height = 64, background = 'var(--body-bg)', type = 'image/png', quality, canvas} = opts;
 			if(canvas === undefined) {
-				canvas = opts.canvas = document.createElement('canvas');
-				canvas.width = opts.width || 256;
-				canvas.height = opts.height || 256;
+				canvas = document.createElement('canvas');
+				canvas.width = width;
+				canvas.height = height;
 				canvas.style.cssText = `
 					image-rendering: -moz-crisp-edges;
 					image-rendering: -webkit-crisp-edges;
@@ -228,10 +222,10 @@ const PuzzleTools = (() => {
 				`;
 			}
 			let ctx = canvas.getContext('2d');
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			if(opts.background) {
-				ctx.fillStyle = opts.background;
-				ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.clearRect(0, 0, width, height);
+			if(background) {
+				ctx.fillStyle = background;
+				ctx.fillRect(0, 0, width, height);
 			}
 			let drawScale = scaleToFit(img, canvas);
 			let w = img.width * drawScale, h = img.height * drawScale;
@@ -249,6 +243,63 @@ const PuzzleTools = (() => {
 				return `data:image/svg+xml,${encodeURIComponent(svg).replace(reHex, hexEnc)}`;
 			};
 		})();
+	// Screenshots
+		PT.ThumbStaticStyles = `
+			* {font-family:Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif; vector-effect: none !important;}
+			#cell-highlights { display: none; }`;
+		PT.reSvgCssRule = /^([.](pm|cell|puzzle|colou?r|box|killer|cage|fog(?:ofwar)?|pen(hint|color|)?)-|[#]svgrenderer|[#](fog(?:ofwar)?)|[:](root))/;
+		PT.ThumbSettingsExclude = ['darkmode'];
+		PT.reSettingClassName = /^setting-(.+)$/;
+		PT.getSvgCSS = (styleSheets = document.styleSheets) => {
+			const reStyleFilters = [PT.reSvgCssRule];
+			for(const setting of PT.ThumbSettingsExclude)
+				if(Framework.getSetting(setting))
+					reStyleFilters.push(new RegExp(`\.setting-${setting}`));
+			return [...styleSheets]
+				.flatMap(style => [...(style.rules || style.cssRules)])
+				.map(rule => rule.cssText)
+				.filter(r => reStyleFilters.some(re => re.test(r)))
+				.map(r => r.replace(/#svgrenderer/g, 'svg')) // Convert #svgrenderer selectors
+				.join('\n')
+				+ PT.ThumbStaticStyles;
+		};
+		PT.injectSvgStyles = (svgElem, styles, selector = 'defs') => {
+			const xmldoc = new DOMParser().parseFromString('<xml></xml>', 'application/xml');
+			const styleElem = Object.assign(document.createElement('style'), {type: 'text/css'});
+			styleElem.append(xmldoc.createCDATASection(styles));
+			svgElem.querySelector(selector).prepend(styleElem);
+			return styleElem;
+		};
+		PT.puzzleToSvg = async (opts = {}) => {
+			const {app: {svgRenderer: {svgElem}}} = Framework;
+			const serializer = new XMLSerializer();
+			const styleElem = PT.injectSvgStyles(svgElem, PT.getSvgCSS());
+			const {width = 64, height = 64, background = 'var(--body-bg)'} = opts;
+			const attrsToSave = ['viewBox', 'width', 'height', 'style', 'class', 'id'], savedAttrs = {};
+			attrsToSave.forEach(attr => {
+				savedAttrs[attr] = svgElem.getAttribute(attr);
+				svgElem.removeAttribute(attr);
+			});
+			if(opts.trim) {
+				let b = Framework.app.svgRenderer.getContentBounds();
+				svgElem.setAttribute('viewBox', `${b.left - 1.5} ${b.top - 1.5} ${b.width + 3} ${b.height + 3}`);
+			}
+			else {
+				svgElem.setAttribute('viewBox', savedAttrs['viewBox']);
+			}
+			svgElem.setAttribute('width', width);
+			svgElem.setAttribute('height', height);
+			svgElem.setAttribute('style', `background: ${background};`);
+			const thumbSettings = [...document.body.classList].filter(c=>PT.ThumbSettingsExclude.includes(c.replace(PT.reSettingClassName, '$1')));
+			svgElem.setAttribute('class', thumbSettings.join(' '));
+			const res = serializer.serializeToString(svgElem);
+			styleElem.remove();
+			attrsToSave.forEach(attr => savedAttrs[attr]
+				? svgElem.setAttribute(attr, savedAttrs[attr])
+				: svgElem.removeAttribute(attr)
+			);
+			return res;
+		};
 		PT.startDownload = (dataUrl, opts = {}) => {
 			let {downloadA} = opts;
 			if(opts.downloadA === undefined) {

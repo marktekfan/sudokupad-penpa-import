@@ -20,8 +20,16 @@ const PuzzleLoader = (() => {
 		const apiPuzzleUrls = puzzleId => [apiPuzzleUrlLocal(puzzleId), apiPuzzleUrlLegacyProxy(puzzleId), apiPuzzleUrlLegacy(puzzleId)];
 	// Puzzle Format
 		const saveDecompress = data => {
-			let res = loadFPuzzle.decompressPuzzle(data);
-			if(res === null || res.length < data.length) return data; // Not valid compressed data
+			let res;
+			try {
+				res = loadFPuzzle.decompressPuzzle(data);
+				if(res === null || res.length < 0.5 * data.length) res = data; // Not valid compressed data
+			}
+			catch (err) {
+				console.warn('saveDecompress:', err);
+				console.log('  data:', data);
+				res = data;
+			}
 			return res;
 		};
 		const saveJsonUnzip = data => {
@@ -39,10 +47,37 @@ const PuzzleLoader = (() => {
 				}
 			}
 		};
-		const reFormatPrefix = /(^scl|ctc|fpuz|scf|)(?:zles)?(.*)/;
-		const getPuzzleFormat = puzzleId => puzzleId.replace(reFormatPrefix, '$1').replace(/^ctc$/, 'scl');
-		const stripPuzzleFormat = puzzleId => puzzleId.replace(reFormatPrefix, '$2');
-		const isRemotePuzzleId = puzzleId => getPuzzleFormat(puzzleId) === '';
+		const createReAlias = ({prefix, alias}) => alias instanceof RegExp ? alias : new RegExp(`^(${[...new Set([prefix, ...(alias ? (Array.isArray(alias) ? alias : [alias]) : [])])].sort((a, b) => b.length - a.length).join('|')})([\\s\\S]*)`, 'm');
+		const PuzzleFormats = [];
+		const parsePuzzleUnknown = async puzzleId => saveJsonUnzip(decompressPuzzleId(puzzleId));
+		const addPuzzleFormat = pf => {
+			let idx = PuzzleFormats.findIndex(({prefix}) => prefix === pf.prefix);
+			if(idx !== -1) PuzzleFormats.splice(idx, 1);
+			PuzzleFormats.push(Object.assign({}, pf, {reAlias: createReAlias(pf)}));
+		};
+		const getPuzzleFormatInfo = (puzzleId = '') => {
+			for(const pf of PuzzleFormats) if(pf.reAlias.test(puzzleId)) return pf;
+		};
+		const getPuzzleFormat = (puzzleId = '') => {
+			const pf = getPuzzleFormatInfo(puzzleId);
+			if(pf) return pf.prefix;
+			return '';
+		};
+		const stripPuzzleFormat = puzzleId => {
+			const pf = getPuzzleFormatInfo(puzzleId);
+			if(pf) return puzzleId.match(pf.reAlias)[2];
+			return puzzleId;
+		};
+		const splitPuzzleFormat = puzzleId => {
+			const pf = getPuzzleFormatInfo(puzzleId);
+			if(pf) return [pf.prefix, puzzleId.match(pf.reAlias)[2]];
+			return ['', puzzleId];
+		};
+		const isRemotePuzzleId = puzzleId => {
+			const pf = getPuzzleFormatInfo(puzzleId);
+			if(pf) return false;
+			return true;
+		};
 		const decompressPuzzleId = puzzleId => {
 			const {saveDecodeURIComponent, fixFPuzzleSlashes} = loadFPuzzle;
 			let puzzle;
@@ -52,25 +87,22 @@ const PuzzleLoader = (() => {
 			puzzle = saveDecompress(puzzle);
 			return puzzle;
 		};
-		const parsePuzzleData = puzzleId => {
-			let format, puzzle;
+		const parsePuzzleData = async puzzleId => {
 			try {
-				format = getPuzzleFormat(puzzleId);
-				puzzle = decompressPuzzleId(puzzleId);
-				switch(format) {
-					case 'scl': break;
-					case 'fpuz': puzzle = loadFPuzzle.parseFPuzzle(JSON.parse(puzzle)); break;
-					case 'scf': puzzle = PuzzleTools.decodeSCF(puzzle); break;
-				}
-				puzzle = saveJsonUnzip(puzzle);
+				const pf = getPuzzleFormatInfo(puzzleId);
+				if(!pf || (typeof pf.parse !== 'function')) return parsePuzzleUnknown(puzzleId);
+				return pf.parse(puzzleId);
 			}
 			catch(err) {
 				console.error('parsePuzzleData:', err);
 			}
-			return puzzle;
+			return puzzleId;
 		};
-		const resolvePuzzleId = async puzzleId => isRemotePuzzleId(puzzleId) ? await fetchPuzzle(puzzleId) : puzzleId;
-		const resolvePuzzleData = async puzzleId => parsePuzzleData(await resolvePuzzleId(puzzleId));
+		const resolvePuzzleData = async puzzleId => await parsePuzzleData(await fetchPuzzle(puzzleId));
+		const createPuzzleId = (puzzleData, idPrefix) => {
+			if(typeof puzzleData !== 'string') puzzleData = loadFPuzzle.compressPuzzle(JSON.stringify(puzzleData));
+			return (idPrefix || getPuzzleFormat(puzzleData)) + md5Digest(puzzleData);
+		};
 	// Fetch
 		const fetchPuzzle = async (puzzleId, opts = {timeout: 10000}) => {
 			if(!isRemotePuzzleId(puzzleId)) return puzzleId;
@@ -98,12 +130,24 @@ const PuzzleLoader = (() => {
 			throw lastError;
 		};
 	
+	// Init PuzzleFormats
+		const parsePuzzleScl = async puzzleId => saveJsonUnzip(decompressPuzzleId(puzzleId));
+		const parsePuzzleFpuz = async puzzleId => saveJsonUnzip(loadFPuzzle.parseFPuzzle(JSON.parse(decompressPuzzleId(puzzleId))));
+		const parsePuzzleScf = async puzzleId => saveJsonUnzip(PuzzleTools.decodeSCF(decompressPuzzleId(puzzleId)));
+		[
+			{prefix: 'scl', alias: ['ctc'], parse: parsePuzzleScl},
+			{prefix: 'fpuz', alias: ['fpuzzles'], parse: parsePuzzleFpuz},
+			{prefix: 'scf', parse: parsePuzzleScf},
+		].forEach(addPuzzleFormat);
+	
 	return {
+		apiEncodePuzzleId,
 		apiPuzzleUrlLocal, apiPuzzleUrlLegacyProxy, apiPuzzleUrlLegacy,
 		cache, clearCache, updateCache, cacheRaw, updateCacheRaw, clearCacheRaw, getPuzzleRaw,
-		getPuzzleFormat, stripPuzzleFormat, isRemotePuzzleId,
-		saveJsonUnzip, decompressPuzzleId,
-		parsePuzzleData, resolvePuzzleId, resolvePuzzleData,
+		addPuzzleFormat, getPuzzleFormat, stripPuzzleFormat, splitPuzzleFormat, isRemotePuzzleId,
+		saveDecompress, saveJsonUnzip, decompressPuzzleId,
+		parsePuzzleData, resolvePuzzleData,
+		createPuzzleId,
 		fetchPuzzle,
 	};
 })();

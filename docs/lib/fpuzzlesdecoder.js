@@ -464,6 +464,20 @@ const loadFPuzzle = (() => {
 			puzzleAddMeta(puzzle, metaName, metaVal);
 		});
 	};
+	const parseSolution = (fpuzzle, puzzle) => {
+		const {metadata = {}} = puzzle;
+		if(metadata.solution === undefined) {
+			// Check for solution in cell values
+			const reDigit = /^\d$/;
+			const solution = [];
+			for(const row of fpuzzle.grid) for(const cell of row) {
+				if(!reDigit.test(cell.value)) return; // Skip if not all solution digits are given
+				solution.push(reDigit.test(cell.value) ? cell.value.toString() : '?');
+			}
+			const solString = solution.join('');
+			puzzleAddMeta(puzzle, 'solution', solString);
+		}
+	};
 	const fpuzzlesParseRC = rc => rc.match(/R([0-9]+)C([0-9]+)/).slice(1, 3).map(Number).map(n => n - 1);
 	const offsetRC = (or, oc) => ([r, c]) => [r + or, c + oc];
 	const rcMinMax = rcs => {
@@ -552,8 +566,17 @@ const loadFPuzzle = (() => {
 			puzzleAdd(puzzle, 'cages', {value: `solution: ${solString}`});
 		}
 	};
-	parse.antiknight = (fpuzzle, puzzle) => puzzleAddMeta(puzzle, 'antiknight', fpuzzle.antiknight);
-	parse.antiking = (fpuzzle, puzzle) => puzzleAddMeta(puzzle, 'antiking', fpuzzle.antiking);
+	parse.antiknight = (fpuzzle, puzzle) => {
+		puzzleAddMeta(puzzle, 'antiknight', fpuzzle.antiknight);
+		if(fpuzzle.antiknight) puzzleAdd(puzzle, 'global', 'antiknight');
+	};
+	parse.antiking = (fpuzzle, puzzle) => {
+		puzzleAddMeta(puzzle, 'antiking', fpuzzle.antiking);
+		if(fpuzzle.antiking) puzzleAdd(puzzle, 'global', 'antiking');
+	};
+	parse.nonconsecutive = (fpuzzle, puzzle) => {
+		if(fpuzzle.nonconsecutive) puzzleAdd(puzzle, 'global', 'nonconsecutive');
+	};
 	parse.littlekillersum = (fpuzzle, puzzle) => {
 		(fpuzzle.littlekillersum || []).forEach(part => {
 			let rc = offsetRC(0.5, 0.5)(fpuzzlesParseRC(part.cell));
@@ -665,10 +688,12 @@ const loadFPuzzle = (() => {
 		(fpuzzle.foglight || []).forEach(rc => puzzleAdd(puzzle, 'foglight', fpuzzlesParseRC(rc), true));
 	};
 	parse['diagonal+'] = (fpuzzle, puzzle) => {
+		if(!fpuzzle['diagonal+']) return;
 		let cellHeight = puzzle.cells.length, cellWidth = puzzle.cells.reduce((acc, cur) => Math.max(cur.length, acc), 0);
 		puzzleAdd(puzzle, 'lines', {color: '#34BBE6', thickness: 2, wayPoints: [[0, cellWidth], [cellHeight, 0]]});
 	};
 	parse['diagonal-'] = (fpuzzle, puzzle) => {
+		if(!fpuzzle['diagonal-']) return;
 		let cellHeight = puzzle.cells.length, cellWidth = puzzle.cells.reduce((acc, cur) => Math.max(cur.length, acc), 0);
 		puzzleAdd(puzzle, 'lines', {color: '#34BBE6', thickness: 2, wayPoints: [[0, 0], [cellHeight, cellWidth]]});
 	};
@@ -787,16 +812,7 @@ const loadFPuzzle = (() => {
 		// TODO: Add windoku detection
 		(fpuzzle.extraregion || []).forEach(extraregion => {
 			let cells = extraregion.cells.map(fpuzzlesParseRC);
-			cells.map(offsetRC(0.5, 0.5)).forEach(cell => {
-				puzzleAdd(puzzle, 'underlays', {
-					backgroundColor: 'rgba(207, 207, 207, 0.95)',
-					center: cell,
-					rounded: false,
-					width: 1,
-					height: 1,
-				});
-			});
-			puzzleAdd(puzzle, 'cages', {cells, hidden: true});
+			puzzleAdd(puzzle, 'cages', {style: 'extraregion', unique: true, sum: triangularNumber(cells.length), cells});
 		});
 	};
 	parse.clone = (fpuzzle, puzzle) => {
@@ -966,6 +982,16 @@ const loadFPuzzle = (() => {
 		disjointGroups.forEach(cells => 
 			puzzleAdd(puzzle, 'cages', {cells, unique: true, type: 'disjoint', style: null})
 		);
+		puzzleAdd(puzzle, 'global', 'disjoint');
+	};
+	parse.negative = (fpuzzle, puzzle) => {
+		for(const negConstraint of (fpuzzle.negative || [])) {
+			if(negConstraint === 'foglight') {
+				puzzleAdd(puzzle, 'foglight', [], true);
+				continue;
+			}
+			puzzleAdd(puzzle, 'global', 'anti' + negConstraint);
+		}
 	};
 	const reFPuzPrefix = /^(fpuz(?:zles)?)(.*)/;
 	const stripPrefix = fpuzzle => fpuzzle.replace(reFPuzPrefix, '$2');
@@ -1007,18 +1033,29 @@ const loadFPuzzle = (() => {
 		return fixed;
 	};
 	const saveDecodeURIComponent = (str, dec) => (dec = decodeURIComponent(str), dec.length < str.length ? dec : str);
+	const createFpuzId = (puzzle, idPrefix = 'fpuzzle') => {
+		return idPrefix + md5Digest(
+			typeof puzzle === 'string'
+			? puzzle
+			: base64Codec.compress(JSON.stringify(puzzle))
+		);
+	};
 	const parseFPuzzle = fpuzzleRaw => {
 		let fpuzzle = fpuzzleRaw;
-		let puzzle = {id: `fpuzzle${md5Digest(typeof fpuzzle === 'string' ? fpuzzle : JSON.stringify(fpuzzle))}`};
+		let puzzle = {id: createFpuzId(fpuzzle)};
 		if(typeof fpuzzle === 'string') fpuzzle = JSON.parse(base64Codec.decompress(saveDecodeURIComponent(fpuzzle)));
 		createBlankPuzzle(fpuzzle, puzzle);
 		parseMetaData(fpuzzle, puzzle);
-		[...layerOrder, ...Object.keys(fpuzzle).filter(feature => !layerOrder.includes(feature))]
-			.filter(feature => fpuzzle[feature] !== undefined)
-			.forEach(feature => {
-				if(typeof parse[feature] !== 'function') return loadPuzzle.logUnsupported ? console.error('Unsupported feature:', feature, fpuzzle[feature]) : null;
-				parse[feature](fpuzzle, puzzle);
-			});
+		parseSolution(fpuzzle, puzzle);
+		let puzzleFeatures = [...new Set([...layerOrder, ...Object.keys(fpuzzle)])]
+			.filter(feature => fpuzzle[feature] !== undefined);
+		for(const feature of puzzleFeatures) {
+			if(typeof parse[feature] !== 'function') {
+				if(loadPuzzle.logUnsupported) console.error('Unsupported feature:', feature, fpuzzle[feature]);
+				continue;
+			}
+			parse[feature](fpuzzle, puzzle);
+		}
 		applyDefaultMeta(fpuzzle, puzzle, 'title', loadPuzzle.getDefaultTitle);
 		applyDefaultMeta(fpuzzle, puzzle, 'author', loadPuzzle.getDefaultAuthor);
 		applyDefaultMeta(fpuzzle, puzzle, 'rules', loadPuzzle.getDefaultRules);
@@ -1057,12 +1094,13 @@ const loadFPuzzle = (() => {
 	
 	const decodeFPuzzleData = fpuzzleData => JSON.parse(base64Codec.decompress(fixFPuzzleSlashes(saveDecodeURIComponent(fpuzzleData))));
 	const encodeFPuzzleData = fpuzzle => base64Codec.compress(JSON.stringify(fpuzzle));
-	const addSolution = (fpuzzleData, solution) => encodeFPuzzleData(Object.assign(decodeFPuzzleData(fpuzzleData), {solution}));
+	const addSolution = (fpuzzleData, s81) => encodeFPuzzleData(Object.assign(decodeFPuzzleData(fpuzzleData), {solution: s81.split('')}));
 
 	loadPuzzle.reFPuzPrefix = reFPuzPrefix;
 	loadPuzzle.stripPrefix = stripPrefix;
 	loadPuzzle.logUnsupported = false;
 	loadPuzzle.fetchRawId = fetchRawId;
+	loadPuzzle.createFpuzId = createFpuzId;
 	loadPuzzle.parseFPuzzle = parseFPuzzle;
 	loadPuzzle.decompressPuzzle = base64Codec.decompress;
 	loadPuzzle.compressPuzzle = base64Codec.compress;

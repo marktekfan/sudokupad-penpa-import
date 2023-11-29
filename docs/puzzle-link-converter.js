@@ -1,34 +1,36 @@
 const puzzleLinkConverter = (() => {
-	"use strict";	
+	"use strict";
 
 	const reFpuzzlesUrl = /[\.\/]+f-puzzles.com\/.*\?load=([^&]+)/;
 	const reSudokuPadUrl = /^sudokupad:\/\/puzzle\/(.+)/;
-	const reCtc = /(app.crackingthecryptic.com\/sudoku\/|sudokupad.app\/(sudoku\/)?)(.+)/
+	const reCtc = /(?:app.crackingthecryptic.com|sudokupad.app)(?:\/sudoku(?:\.html)?)?\/?(?:\?puzzleid=)?(?<puzzleid>.+)/
 
 	const loadPuzzle = {};
 	//const loadFPuzzle = loadFPuzzle;
-	
+
 	const convertPuzzleUrl = url => {
 
 		getPenpaDecoderOptions();
 
 		const {unzip, zip, propMap} = PuzzleZipper;
 		const encodeSCLPuz = puzzle => {
+			// change prefix once app is updated
 			propMap.duration = 'dur';
 			delete propMap.d;
 			propMap.d2 = 'd';
-			// change prefix once app is updated
+
 			let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(zip(puzzle));
+
 			propMap.duration = 'duration';
 			delete propMap.d2;
-			propMap.d = 'd2';	
+			propMap.d = 'd2';
 			return puzzleId;
 		};
 
 		// Penpa+ url format
 		if (PenpaDecoder.isPenpaUrl(url)) {
 			let puzzle = PenpaDecoder.convertPenpaPuzzle(url);
-			if (!puzzle) return null;
+			if (!puzzle) throw {customMessage: 'Unexpected error occured during Penpa conversion. Please contact MarkTekfan'};
 			let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
 			let puzzleId = encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 			return puzzleId;
@@ -36,39 +38,41 @@ const puzzleLinkConverter = (() => {
 
 		// f-puzzles url format
 		if (url.match(reFpuzzlesUrl)) {
-			let fpuzzle = url.match(reFpuzzlesUrl);
-			return 'fpuzzles' + fpuzzle[1];
-		}		
+			let match = url.match(reFpuzzlesUrl);
+			return 'fpuzzles' + match[1];
+		}
 
 		// sudokupad link format
 		if (url.match(reSudokuPadUrl)) {
-			let sudokupad = url.match(reSudokuPadUrl);
-			return sudokupad[1];
-		}		
+			let match = url.match(reSudokuPadUrl);
+			return match[1];
+		}
 
 		// sudokupad.app url format
 		if (url.match(reCtc)) {
-			let sudokupad = url.match(reCtc)
-			let puzzleid = sudokupad[3].replace(/^\?puzzleid=/, '');
+			let match = url.match(reCtc)
+			let puzzleid = match[1];
 			return puzzleid;
 		}
 
 		// JSON format, should be scl or f-puzzles content
-		url = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
-		if (url.startsWith('{')) {
+		let json = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
+		if (json.startsWith('{')) {
 			try {
 				let puzzle = {};
 				try {
-					puzzle = JSON.parse(url);
+					puzzle = JSON.parse(json);
 				}
 				catch {
-					puzzle = JSON.parse(unzip(url));
+					puzzle = JSON.parse(unzip(json));
 				}
-				let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');	
+				let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
+				// scl content
 				if (puzzle.id && puzzle.cells) {
 					var puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
 					return puzzleId + (settings ? '?' + settings : '');
 				}
+				// f-puzzles content
 				else if (puzzle.size && puzzle.grid) {
 					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
 					return puzzleId + (settings ? '?' + settings : '');
@@ -77,10 +81,11 @@ const puzzleLinkConverter = (() => {
 			catch(ex) {
 				throw {customMessage: ex.message};
 			}
-			throw {customMessage: "Not a recognized JSON puzzle format"};
+
+			throw {customMessage: "Not a SudokuPad or f-puzzles JSON puzzle format"};
 		}
 
-		return null;
+		throw {customMessage: "Not a SudokuPad, f-puzzles or Penpa URL"};
 	}
 
 	function getPenpaDecoderOptions() {
@@ -98,45 +103,41 @@ const puzzleLinkConverter = (() => {
 		/tinypuz.com\/(.+)/,
 	]
 	const expandShortUrl = function(url) {
-		let short = tinyurlUrls.map(re => url.match(re)).find(m => m);
-		if(short) {
-			return new Promise((resolve, reject) => {
+		return new Promise((resolve, reject) => {
+			let tinyurl = tinyurlUrls.map(re => url.match(re)).find(m => m);
+			if(tinyurl) {
 				//fetch('http://localhost:3000/tinyurl/' + short[1])
-				fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + short[1])
 				//fetch('https://marktekfan-api.azurewebsites.net/tinypuz/' + short[1])
-				.then(res => res.text())
-				.then(text => {
-					console.log('json response:', text)
-					let result = JSON.parse(text)
-					if (result.success) {
-						return resolve(result.longurl);
-					}
-					return resolve(url);
-				})
-				.catch(reject);
-			});
-		}
-		short = tinypuzUrls.map(re => url.match(re)).find(m => m);
-		if(short) {
-			return new Promise((resolve, reject) => {
+				fetch('https://marktekfan-api.azurewebsites.net/tinyurl/' + tinyurl[1])
+					.then(res => res.text())
+					.then(text => {
+						console.log('json response:', text)
+						let result = JSON.parse(text)
+						resolve(result.success ? result.longurl : url);
+					})
+					.catch(reject);
+				return;
+			}
+
+			let tinypuz = tinypuzUrls.map(re => url.match(re)).find(m => m);
+			if(tinypuz) {
 				//fetch('http://localhost:3000/tinyurl/' + short[1])
-				fetch('https://marktekfan-api.azurewebsites.net/tinypuz/' + short[1])
-				.then(res => res.text())
-				.then(text => {
-					console.log('json response:', text)
-					let result = JSON.parse(text)
-					if (result.success) {
-						return resolve(result.longurl);
-					}
-					return resolve(url);
-				})
-				.catch(reject);
-			});
-		}
-		return url;
+				fetch('https://marktekfan-api.azurewebsites.net/tinypuz/' + tinypuz[1])
+					.then(res => res.text())
+					.then(text => {
+						console.log('json response:', text)
+						let result = JSON.parse(text)
+						resolve(result.success ? result.longurl : url);
+					})
+					.catch(reject);
+				return;
+			}
+
+			resolve(url);
+		});
 	}
 
-	loadPuzzle.expandShortUrl = expandShortUrl;
+	loadPuzzle.expandShortUrlAsync = expandShortUrl;
 	loadPuzzle.convertPuzzleUrl = convertPuzzleUrl;
 
 	return loadPuzzle;

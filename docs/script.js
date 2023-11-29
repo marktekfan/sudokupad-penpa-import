@@ -1,4 +1,5 @@
 function setError(errormessage) {
+    console.log('ERROR: ', errormessage);
     document.getElementById('errortext').innerHTML = errormessage;
     let element = document.getElementById('errorcontainer')
     element.classList.remove('error');
@@ -259,7 +260,7 @@ function OnOpenInSudokupad(openinNewWindow = true) {
     convertButtonElem.innerHTML = "Converting...";
 
     Promise.resolve(urlstring)
-    .then(url => puzzleLinkConverter.expandShortUrl(url))
+    .then(url => puzzleLinkConverter.expandShortUrlAsync(url))
     .then(url => puzzleLinkConverter.convertPuzzleUrl(url))
     .then(async puzzleid => {
         if (!puzzleid) {
@@ -344,8 +345,6 @@ function OnOpenInSudokupad(openinNewWindow = true) {
         }
     })
     .catch(err => {
-        console.error('Unable to convert Penpa puzzle link');
-        console.log(err);
         setError(err.customMessage || 'An error occured while processing the URL.<br>');
     })
     .then(()=> {
