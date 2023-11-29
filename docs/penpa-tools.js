@@ -483,7 +483,7 @@ const PenpaTools = (() => {
 		const point = C.doc.point[p];
 		switch(point.type) {
 			case 0:
-				return p;
+				return Number(p);
 			case 1:
 			case 2:
 			case 3:

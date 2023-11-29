@@ -779,7 +779,7 @@ const PenpaDecoder = (() => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
 			//ctx.target = 'overlay';
-			ctx.target = 'cell-grids'; // To prevent visual outlining
+			ctx.target = pu.foglight ? 'overlay' : 'cell-grids'; // note 'overlay' can cause visual outlining 
 			set_line_style(ctx, line.value);
 			puzzleAdd(puzzle, 'lines', Object.assign(ctx.toOpts('line'), {
 				wayPoints: PenpaTools.reduceWayPoints(line.wayPoints),
@@ -955,19 +955,21 @@ const PenpaDecoder = (() => {
 				|| (c1 === width && c2 === width);
 		}
 		const perimeter = {};
+		const fogline = {};
 		if (pu.foglight) {
 			Object.keys(list).forEach(k => {
 				// Move line to perimeter list, which is rendered last
 				if (isOnPerimeter(k)) {
-					perimeter[k] = '#FFFFFF'; // perimeter color
-					list[k] = 0;
+				 	perimeter[k] = 'perimeter';
+				 	list[k] = 0;
 				}
 				else {
-					list[k] = '#afafaf'; // fog cover color
+					// duplicate to fogline list
+					fogline[k] = 'fog';
 				}
 			});
 		}
-		else {		
+		else {
 			//const darkBackgrounds = [Color.BLACK, Color.BLACK_LIGHT, Color.GREY_DARK_VERY];
 			Object.keys(list).forEach(k => {
 				const [p1, p2] = PenpaTools.getAdjacentCellsOfELine(pu, k);
@@ -1002,13 +1004,23 @@ const PenpaDecoder = (() => {
 		}
 		const combined = PenpaTools.reducePenpaLines2WaypointLines(list);
 		const combinedPerimeter = PenpaTools.reducePenpaLines2WaypointLines(perimeter);
-		[].concat(combined, combinedPerimeter).forEach(line => {
+		const combinedFogline = PenpaTools.reducePenpaLines2WaypointLines(fogline);
+		[].concat(combined, combinedFogline, combinedPerimeter).forEach(line => {
 			if (line.value <= 0) return; // Skip not visible line
 			let {wayPoints} = line;
 			let width = 4;
 			let color = '#FFFFFF';
+			let target = pu.foglight ? 'overlay' : 'cell-grids';
 			wayPoints = PenpaTools.shortenLine(wayPoints, 1.2/64, 1.2/64);
-			if (typeof line.value === 'string') {
+			if (line.value === 'fog') {
+				width = 1;
+				color = '#afafaf';
+				target = 'cell-grids';
+			}
+			else if (line.value === 'perimeter') {
+				target = 'cell-grids'; // Should never be hidden by fog
+			}
+			else if (typeof line.value === 'string') {
 				width = 1;
 				color = line.value;
 			}
@@ -1018,7 +1030,7 @@ const PenpaDecoder = (() => {
 				color: color,
 				 // color: '#FF40A0'
 				thickness: width,
-				target: 'cell-grids',
+				target: target
 			}), feature);
 		});
 	}
@@ -1640,7 +1652,7 @@ const PenpaDecoder = (() => {
 						break;
 					}
 					// Special case for foglight
-					else if (num[0].includes('FOGLIGHT')) {
+					else if (num[0].includes('FOGLIGHT') || /^foglight/i.test(num[0])) {
 						killer['value'] = 'FOGLIGHT';
 						num.role = 'killer'; // Exclude from rendering
 						break;
@@ -1651,7 +1663,7 @@ const PenpaDecoder = (() => {
 				if (labelCell === point2centerPoint(k)) {
 					const num = number[k];
 					// Special case for foglight
-					if (num[0].includes('FOGLIGHT')) {
+					if (num[0].includes('FOGLIGHT') || /^foglight/i.test(num[0])) {
 						killer['value'] = 'FOGLIGHT';
 						num.role = 'killer'; // Exclude from rendering
 						break;
