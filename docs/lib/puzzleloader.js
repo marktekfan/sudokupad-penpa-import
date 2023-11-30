@@ -14,7 +14,7 @@ const PuzzleLoader = (() => {
 		const getPuzzleRaw = puzzleId => cacheRaw[puzzleId];
 	// URLs
 		const apiEncodePuzzleId = puzzleId => puzzleId.split('/').map(encodeURIComponent).join('/');
-		const apiPuzzleUrlLocal = puzzleId => `/api/puzzle/${apiEncodePuzzleId(puzzleId)}`;
+		const apiPuzzleUrlLocal = puzzleId => `https://beta.sudokupad.app/api/puzzle/${apiEncodePuzzleId(puzzleId)}`;
 		const apiPuzzleUrlLegacyProxy = puzzleId => `https://sudokupad.svencodes.com/ctclegacy/${encodeURIComponent(puzzleId)}`;
 		const apiPuzzleUrlLegacy = puzzleId => `https://firebasestorage.googleapis.com/v0/b/sudoku-sandbox.appspot.com/o/${encodeURIComponent(puzzleId)}?alt=media`;
 		const apiPuzzleUrls = puzzleId => [apiPuzzleUrlLocal(puzzleId), apiPuzzleUrlLegacyProxy(puzzleId), apiPuzzleUrlLegacy(puzzleId)];

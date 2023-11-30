@@ -264,7 +264,7 @@ function OnOpenInSudokupad(openinNewWindow = true) {
     .then(url => puzzleLinkConverter.convertPuzzleUrl(url))
     .then(async puzzleid => {
         if (!puzzleid) {
-            throw {customMessage: 'Not a recognized puzzle URL'}
+            throw {customMessage: 'Not a recognized puzzle URL'};
         }
         if (destination.includes('?')) {
             puzzleid = puzzleid.replace('?', '&');
@@ -307,10 +307,14 @@ function OnOpenInSudokupad(openinNewWindow = true) {
                 puzzleid = puzzleid.split('&')[0];
 
                 if(isRemotePuzzleId(puzzleid)) {
-                    puzzleid = await fetchPuzzle(puzzleid);
-                    if(isRemotePuzzleId(puzzleid)) {
-                        setError('Not a recognized JSON puzzle format');
-                        return;
+                    try {
+                        puzzleid = await fetchPuzzle(puzzleid);
+                        if(isRemotePuzzleId(puzzleid)) {
+                            throw {customMessage: 'Not a recognized JSON puzzle format'};
+                        }
+                    }
+                    catch(err) {
+                        throw {customMessage: 'Short puzzle ID not found'};
                     }
                 }
                 if (reFPuzPrefix.test(puzzleid)) {
