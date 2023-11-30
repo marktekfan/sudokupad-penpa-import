@@ -55,9 +55,15 @@ const puzzleLinkConverter = (() => {
 			return puzzleid;
 		}
 
+		// raw puzzle id
+		if (PuzzleLoader.getPuzzleFormat(url)) {
+			return url;
+		}
+
 		// JSON format, should be scl or f-puzzles content
-		let json = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
-		if (json.startsWith('{')) {
+		if (/^[\s'"]*\{/.test(url)) {
+			url = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
+
 			try {
 				let puzzle = {};
 				try {
@@ -84,6 +90,11 @@ const puzzleLinkConverter = (() => {
 
 			throw {customMessage: "Not a SudokuPad or f-puzzles JSON puzzle format"};
 		}
+		
+		// not a URL, probably a short ID
+		if (!/[:]/.test(url) && url.length < 50) {
+			return url;
+		}
 
 		throw {customMessage: "Not a SudokuPad, f-puzzles or Penpa URL"};
 	}
@@ -102,7 +113,7 @@ const puzzleLinkConverter = (() => {
 	const tinypuzUrls = [
 		/tinypuz.com\/(.+)/,
 	]
-	const expandShortUrl = function(url) {
+	const expandTinyUrl = function(url) {
 		return new Promise((resolve, reject) => {
 			let tinyurl = tinyurlUrls.map(re => url.match(re)).find(m => m);
 			if(tinyurl) {
@@ -137,7 +148,7 @@ const puzzleLinkConverter = (() => {
 		});
 	}
 
-	loadPuzzle.expandShortUrl = expandShortUrl;
+	loadPuzzle.expandTinyUrl = expandTinyUrl;
 	loadPuzzle.convertPuzzleUrl = convertPuzzleUrl;
 
 	return loadPuzzle;

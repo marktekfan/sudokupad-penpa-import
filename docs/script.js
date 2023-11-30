@@ -260,7 +260,7 @@ function OnOpenInSudokupad(openinNewWindow = true) {
     convertButtonElem.innerHTML = "Converting...";
 
     Promise.resolve(urlstring)
-    .then(url => puzzleLinkConverter.expandShortUrl(url))
+    .then(url => puzzleLinkConverter.expandTinyUrl(url))
     .then(url => puzzleLinkConverter.convertPuzzleUrl(url))
     .then(async puzzleid => {
         if (!puzzleid) {
