@@ -62,7 +62,7 @@ const puzzleLinkConverter = (() => {
 
 		// JSON format, should be scl or f-puzzles content
 		if (/^[\s'"]*\{/.test(url)) {
-			url = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
+			let json = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
 
 			try {
 				let puzzle = {};
