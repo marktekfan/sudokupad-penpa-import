@@ -179,6 +179,12 @@ const PenpaRegions = (() => {
 		return regions;
 	}
 
+	const getRegionSizes = function(regions) {
+		let sizes = {};
+		Object.keys(regions).forEach(reg => sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1);
+		return sizes;
+	}
+
 	function finishIncompleteRegions(r0, c0, size, regions) {
 		const regkeys = Object.keys(regions);
 		let cellcount = regkeys.reduce((acc, reg) => acc + regions[reg].length, 0);
@@ -453,11 +459,12 @@ const PenpaRegions = (() => {
 			let sizes = {};
 			Object.keys(regions).forEach(reg => sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1);
 			let sortedSizes = Object.keys(sizes).map(Number).sort((a, b) => a - b).reverse();
-			for (let size of sortedSizes) {
-				if (size >= 4 && size === sizes[size]) {
-					let selectedRegions = Object.keys(regions).filter(reg => regions[reg].length === size).map(reg => regions[reg]);
+			for (let regionSize of sortedSizes) {
+				if (regionSize >= 4 && sizes[regionSize] >= 4) {
+					let selectedRegions = Object.keys(regions).filter(reg => regions[reg].length === regionSize).map(reg => regions[reg]);
 					const {top, left, height, width} = getBoundsRC(selectedRegions.flat());
-					if (height === size && width === size) {
+					// All found regions must tightly pack into a square
+					if (height === width && regionSize * sizes[regionSize] === width * height) {
 						let squares = [{r: top, c: left, size: height, regions: selectedRegions}];
 						return {squares, regions: selectedRegions};
 					}
