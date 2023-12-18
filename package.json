@@ -20,5 +20,8 @@
     "zlibjs": "^0.3.1"
   },
   "overrides": {
+    "vite": {
+      "rollup": "npm:@rollup/wasm-node"
+    }
   }
 }
