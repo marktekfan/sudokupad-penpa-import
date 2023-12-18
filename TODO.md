@@ -1,13 +1,16 @@
-# TODO List - Penpa Link Converter
+# TODO List - SudokuPad Puzzle Converter
 
-2023-01-05
+2023-12-18
 
 ## BUGFIX
 
+ - Detect foglight cages for rotated boards
+
 ## FEATURES
 
--   Generate SP settings for e.g. grid style
--   Detect pen-only puzzles and generate SP setting
+-   Metadata editor
+-   Convert f-puzzle to scl
+-   Detect mutiple grids
 
 ## NOT IMPLEMENTED
 

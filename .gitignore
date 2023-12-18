@@ -4,7 +4,10 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 lerna-debug.log*
+
+node_modules
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -71,6 +74,7 @@ typings/
 # dotenv environment variables file
 .env
 .env.test
+*.local
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
