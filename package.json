@@ -12,8 +12,7 @@
   "devDependencies": {
     "@types/tinycolor2": "^1.4.6",
     "typescript": "^5.3.3",
-    "vite": "^5.0.8",
-    "vite-plugin-inspect": "^0.8.1"
+    "vite": "^5.0.8"
   },
   "dependencies": {
     "json-stringify-pretty-compact": "^4.0.0",
@@ -21,8 +20,5 @@
     "zlibjs": "^0.3.1"
   },
   "overrides": {
-    "vite": {
-      "rollup": "npm:@rollup/wasm-node"
-    }  
   }
 }
