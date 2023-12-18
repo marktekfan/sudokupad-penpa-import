@@ -13,6 +13,11 @@ html, body {
 html, body, textarea {
 	font-family: Roboto,Oxygen,Ubuntu,Cantarell,Fira Sans,Droid Sans,Helvetica Neue,sans-serif;
 }
+html {
+	-moz-text-size-adjust: none;
+	-webkit-text-size-adjust: none;
+	text-size-adjust: none;
+}
 
 html * {
 	-webkit-touch-callout: none;
@@ -279,7 +284,7 @@ ul.menu
     -moz-border-radius: 100px;
     -ms-border-radius: 100px;
     -o-border-radius: 100px;
-	border-radius: 100px;
+    border-radius: 100px;
     display: flex!important;
 	/* opacity: 80%; */
 }
