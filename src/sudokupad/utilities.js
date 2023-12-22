@@ -136,7 +136,7 @@
 		e.textContent = text;
 		return e.innerHTML.replace(/(\\n|\n)/g, '<br />\n');
 	};
-	async function fetchWithTimeout(uri, opts = {}) {
+	export async function fetchWithTimeout(uri, opts = {}) {
 		const {timeout = 8000} = opts;
 		const controller = new AbortController();
 		const id = setTimeout(() => controller.abort(), timeout);
