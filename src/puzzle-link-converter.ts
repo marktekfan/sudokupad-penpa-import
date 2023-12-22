@@ -41,8 +41,7 @@ export async function convertPuzzleAsync(input: string, flags?: Flags) {
 		let settings = Object.entries(puzzle.settings || {})
 			.map(([k, v]) => `setting-${k}=${v}`)
 			.join('&');
-		let puzzleId = encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
-		return puzzleId;
+		return encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 	}
 
 	// f-puzzles url format
@@ -94,8 +93,13 @@ export async function convertPuzzleAsync(input: string, flags?: Flags) {
 			}
 			// f-puzzles content
 			else if (puzzle.size && puzzle.grid) {
-				var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
-				return puzzleId + (settings ? '?' + settings : '');
+				if (ConverterSettings.flags.fpuzzles2scl) {
+					let sclPuzzle = loadFPuzzle.parseFPuzzle(puzzle) as SclPuzzle;
+					return encodeSCLPuz(sclPuzzle) + (settings ? '?' + settings : '');
+				} else {
+					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
+					return puzzleId + (settings ? '?' + settings : '');
+				}
 			}
 		} catch (ex: any) {
 			throw { customMessage: ex.message };
