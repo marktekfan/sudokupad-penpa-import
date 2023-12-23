@@ -1,20 +1,41 @@
+import { PuInfo } from './penpa-analyzer';
 import { PenpaTools } from './penpa-tools';
 
-function extractRegionData(r, c, height, width, edge_elements, borderStyle = undefined, centerlist = undefined) {
+type Regions = Record<string, RC[]>;
+type Squares = Array<Square>;
+type Square = {
+	r: number;
+	c: number;
+	size: number;
+	regions: Regions;
+	region_outline?: Record<string, Array<string>>;
+	outline?: Array<string>;
+	dominantBorderStyle?: number;
+	dominantBorderStyleCount?: number;
+};
+
+const defaultBorderStyle = [2, 8, 21];
+
+function extractRegionData(
+	puinfo: PuInfo,
+	r: number,
+	c: number,
+	height: number,
+	width: number,
+	edge_elements: Record<string, number>,
+	borderStyle: Array<number> = defaultBorderStyle,
+	centerlist?: Array<number>
+): Regions {
+	const { penpaTools } = puinfo;
 	// 2 = black line
 	// 8 = red line
 	// 21 = thick black line
-	const defaultBorderStyle = [2, 8, 21];
-	const { point2matrix, matrix2point } = PenpaTools;
-	if (borderStyle === undefined) borderStyle = defaultBorderStyle;
-	if (!Array.isArray(borderStyle)) {
-		borderStyle = [borderStyle];
-	}
+	const { point2matrix, matrix2point } = penpaTools;
 
 	// Regions
-	var cell_matrix = [];
-	var up_matrix = [];
-	var right_matrix = [];
+	var cell_matrix: Array<Array<number>> = [];
+	var up_matrix: Array<Array<number>> = [];
+	var right_matrix: Array<Array<number>> = [];
 
 	function _fillMatrix() {
 		cell_matrix.length = 0;
@@ -35,7 +56,7 @@ function extractRegionData(r, c, height, width, edge_elements, borderStyle = und
 		let count = 0;
 		for (edge in edge_elements) {
 			// If black edge or thicker edge
-			if (borderStyle.includes(edge_elements[edge])) {
+			if (borderStyle!.includes(edge_elements[edge])) {
 				points = edge.split(',');
 				let [y, x] = point2matrix(points[0]);
 				x -= c - 1;
@@ -54,7 +75,7 @@ function extractRegionData(r, c, height, width, edge_elements, borderStyle = und
 		return count;
 	}
 
-	const minimumLineCount = {
+	const minimumLineCount: Record<number, number> = {
 		1: 0,
 		2: 0,
 		3: 0,
@@ -70,11 +91,12 @@ function extractRegionData(r, c, height, width, edge_elements, borderStyle = und
 	};
 
 	const linecountMinimum = minimumLineCount[Math.min(height, width)] || 0;
-	let linecount = _fillMatrix(borderStyle);
+	let linecount = _fillMatrix();
 	if (linecount < linecountMinimum) {
 		if (borderStyle !== defaultBorderStyle) {
 			// try again with default borderStyle;
-			linecount = _fillMatrix(defaultBorderStyle);
+			// FIXME: this has no effect. Probably need to set borderStyle !== defaultBorderStyle
+			linecount = _fillMatrix();
 		}
 	}
 	// Not enough edges found to determine a minimum 50% of the cages.
@@ -152,7 +174,7 @@ function extractRegionData(r, c, height, width, edge_elements, borderStyle = und
 	}
 	var size_unique_nums = unique_nums.length;
 
-	let regions = {};
+	let regions: Regions = {};
 	for (var region = 0; region < size_unique_nums; region++) {
 		for (var i = 0; i < height; i++) {
 			for (var j = 0; j < width; j++) {
@@ -173,13 +195,13 @@ function extractRegionData(r, c, height, width, edge_elements, borderStyle = und
 	return regions;
 }
 
-const getRegionSizes = function (regions) {
-	let sizes = {};
-	Object.keys(regions).forEach(reg => (sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1));
-	return sizes;
-};
+// const getRegionSizes = function (regions) {
+// 	let sizes = {};
+// 	Object.keys(regions).forEach(reg => (sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1));
+// 	return sizes;
+// };
 
-function finishIncompleteRegions(r0, c0, size, regions) {
+function finishIncompleteRegions(r0: number, c0: number, size: number, regions: Regions) {
 	const regkeys = Object.keys(regions);
 	let cellcount = regkeys.reduce((acc, reg) => acc + regions[reg].length, 0);
 	let complete = regkeys.filter(reg => regions[reg].length === size).length;
@@ -199,7 +221,7 @@ function finishIncompleteRegions(r0, c0, size, regions) {
 
 	// Merge sparse cells into single region
 	if (complete === size - 1 && regkeys.length === size + size - 1) {
-		let newregion;
+		let newregion: RC[];
 		regkeys.forEach(reg => {
 			if (regions[reg].length !== size) {
 				if (!newregion) {
@@ -247,8 +269,8 @@ function finishIncompleteRegions(r0, c0, size, regions) {
 	return regions;
 }
 
-function findLargestFixedSquareAtRC(squares, centerlist, r0, c0, maxSize) {
-	const { matrix2point } = PenpaTools;
+function findLargestFixedSquareAtRC(puinfo: PuInfo, squares: Squares, centerlist: Array<number>, r0: number, c0: number, maxSize: number) {
+	const { matrix2point } = puinfo.penpaTools;
 	let size = 2;
 	let foundSquare = null;
 
@@ -292,21 +314,21 @@ function findLargestFixedSquareAtRC(squares, centerlist, r0, c0, maxSize) {
 		if (clash) break;
 
 		// Record last found square
-		foundSquare = { r: r0, c: c0, size: size };
+		foundSquare = { r: r0, c: c0, size: size } as Square;
 	} while (size < maxSize);
 
 	return foundSquare;
 }
 
 //Find unused centerList cell
-function findNextSquare(squares, centerlist, height, width) {
-	const { matrix2point } = PenpaTools;
+function findNextSquare(puinfo: PuInfo, squares: Squares, centerlist: Array<number>, height: number, width: number) {
+	const { matrix2point } = puinfo.penpaTools;
 	const maxSize = Math.min(width, height);
 	for (let r0 = 0; r0 < maxSize; r0++) {
 		for (let c0 = 0; c0 < maxSize; c0++) {
 			if (!centerlist.includes(matrix2point(r0, c0))) continue;
 
-			let square = findLargestFixedSquareAtRC(squares, centerlist, r0, c0, maxSize);
+			let square = findLargestFixedSquareAtRC(puinfo, squares, centerlist, r0, c0, maxSize);
 			if (square) {
 				squares.push(square);
 				return square;
@@ -317,13 +339,14 @@ function findNextSquare(squares, centerlist, height, width) {
 }
 
 export class PenpaRegions {
-	static cleanupCenterlist(pu, solutionPoints) {
-		const { getAdjacentCellsOfEdgeLine: getAdjacentCellsOfELine, point2matrix } = PenpaTools;
+	static cleanupCenterlist(puinfo: PuInfo, solutionPoints: Array<number>) {
+		const { pu, penpaTools } = puinfo;
+		const { getAdjacentCellsOfEdgeLine, point2matrix } = penpaTools;
 		const { height, width } = PenpaTools.getBoundsRC(pu.centerlist, point2matrix);
 
 		// Remove obsolete deletelineE's
 		Object.keys(pu.pu_q.deletelineE).forEach(k => {
-			let adj = getAdjacentCellsOfELine(pu, k);
+			let adj = getAdjacentCellsOfEdgeLine(pu, k);
 			if (!pu.centerlist.includes(adj[0]) && !pu.centerlist.includes(adj[1])) {
 				delete pu.pu_q.deletelineE[k];
 			}
@@ -340,7 +363,7 @@ export class PenpaRegions {
 			if (k in pu.pu_q.lineE) {
 				continue;
 			}
-			let adj = getAdjacentCellsOfELine(pu, k);
+			let adj = getAdjacentCellsOfEdgeLine(pu, k);
 			// Is on border of centerlist (one side in centerlist, the other side not)
 			let inside1 = pu.centerlist.includes(adj[0]);
 			let inside2 = pu.centerlist.includes(adj[1]);
@@ -371,7 +394,7 @@ export class PenpaRegions {
 				if (k in pu.pu_q.lineE) {
 					return;
 				}
-				let adj = getAdjacentCellsOfELine(pu, k);
+				let adj = getAdjacentCellsOfEdgeLine(pu, k);
 				// Don't remove when on a surface
 				if (pu.pu_q.surface[adj[0]] || pu.pu_q.surface[adj[1]]) {
 					return;
@@ -397,12 +420,12 @@ export class PenpaRegions {
 			// Should have no grid lines, no frame, and no grid points
 			if (noFrame && noGridLines && noGridPoints) {
 				// recreate centerlist based on lineE
-				let cl = {};
+				let cl: Record<string, number> = {};
 				let lineE = pu.pu_q.lineE;
 				const gridLineStyles = [1, 2, 21, 80];
 				for (let k in pu.pu_q.lineE) {
 					if (gridLineStyles.includes(lineE[k])) {
-						let adj = getAdjacentCellsOfELine(pu, k);
+						let adj = getAdjacentCellsOfEdgeLine(pu, k);
 						if (!cl[adj[0]]) {
 							cl[adj[0]] = 1;
 						} else {
@@ -428,8 +451,10 @@ export class PenpaRegions {
 		}
 	}
 
-	static findSudokuSquares(pu) {
-		const { point2matrix, matrix2point, getBoundsRC } = PenpaTools;
+	static findSudokuSquares(puinfo: PuInfo) {
+		const { pu, penpaTools } = puinfo;
+		const { point2matrix, matrix2point, matrixRC2point } = penpaTools;
+		const { getBoundsRC } = PenpaTools;
 
 		// Get combined edge lines (LineE) plus the outside frame.
 		// Exclude thin or dash grid lines (=1 or 11).
@@ -440,6 +465,9 @@ export class PenpaRegions {
 
 		const { top, left, height, width } = getBoundsRC(pu.centerlist, point2matrix);
 
+		let allEqualSize = true;
+		let regions: Regions;
+
 		const edgeStyles = [
 			[2], // Black frame
 			[8], // Thick black frame
@@ -447,10 +475,10 @@ export class PenpaRegions {
 			[2, 8, 21], // Combo
 		];
 		for (let edgeStyle of edgeStyles) {
-			var regions = extractRegionData(top, left, height, width, edge_elements, edgeStyle, pu.centerlist);
-			console.log('regions', regions);
+			regions = extractRegionData(puinfo, top, left, height, width, edge_elements, edgeStyle, pu.centerlist);
+			//console.log('regions', regions);
 
-			let sizes = {};
+			let sizes: Record<number, number> = {};
 			Object.keys(regions).forEach(reg => (sizes[regions[reg].length] = (sizes[regions[reg].length] | 0) + 1));
 			let sortedSizes = Object.keys(sizes)
 				.map(Number)
@@ -464,12 +492,12 @@ export class PenpaRegions {
 					const { top, left, height, width } = getBoundsRC(selectedRegions.flat());
 					// All found regions must tightly pack into a square
 					if (height === width && regionSize * sizes[regionSize] === width * height) {
-						let squares = [{ r: top, c: left, size: height, regions: selectedRegions }];
-						return { squares, regions: selectedRegions };
+						let squares = [{ r: top, c: left, size: height, regions: selectedRegions as unknown as Regions }] as Squares;
+						return { squares, regions: selectedRegions as unknown as Regions };
 					}
 				}
 			}
-			var allEqualSize = false;
+			allEqualSize = false;
 
 			// // All found regions should have equal size.
 			// let size = -1;
@@ -479,14 +507,16 @@ export class PenpaRegions {
 			// })
 			// if (allEqualSize) break;
 		}
-		const squares = [];
-		while (findNextSquare(squares, pu.centerlist, height, width)) {}
+		const squares: Squares = [];
+		while (findNextSquare(puinfo, squares, pu.centerlist, height, width)) {}
 
 		if (allEqualSize) {
-			const eqSet = (xs, ys) => xs.size === ys.size && [...xs].every(x => ys.has(x));
+			function eqSet<T extends Set<number>>(xs: T, ys: T) {
+				return xs.size === ys.size && [...xs].every(x => ys.has(x));
+			}
 
-			let regionsSet = new Set(Object.keys(regions).flatMap(reg => regions[reg].map(matrix2point)));
-			let squaresSet = new Set(
+			let regionsSet = new Set(Object.keys(regions!).flatMap(reg => regions[reg].map(matrixRC2point)));
+			let squaresSet = new Set<number>(
 				squares.flatMap(sq => {
 					let points = [];
 					for (let r = 0; r < sq.size; r++) {
@@ -500,18 +530,21 @@ export class PenpaRegions {
 
 			let equal = eqSet(regionsSet, squaresSet);
 			if (!equal) {
-				regions = null;
+				regions = null!;
 			}
 		} else {
-			regions = null;
+			regions = null!;
 		}
 
+		regions ??= null!;
 		return { squares, regions };
 	}
 
-	static createOutline(pu, regionyx) {
-		const { matrix2point, makePointPair } = PenpaTools;
-		let frame = {};
+	static createOutline(puinfo: PuInfo, regionyx: Array<RC>): string[] {
+		const { pu, penpaTools } = puinfo;
+		const { matrix2point } = penpaTools;
+		const { makePointPair } = PenpaTools;
+		let frame: Record<string, number> = {};
 		for (let yx of regionyx) {
 			let [y, x] = yx;
 			let point = pu.point[matrix2point(y, x)];
@@ -529,19 +562,21 @@ export class PenpaRegions {
 		return outline;
 	}
 
-	static createRegionOutlines(pu, sq) {
-		sq.region_outline = {};
+	static createRegionOutlines(puinfo: PuInfo, sq: Square) {
+		sq.region_outline = {} as typeof sq.region_outline;
 		for (let reg in sq.regions) {
 			let region = sq.regions[reg];
 			if (region.length !== sq.size) {
 				continue;
 			}
-			sq.region_outline[reg] = PenpaRegions.createOutline(pu, region);
+			sq.region_outline![reg] = PenpaRegions.createOutline(puinfo, region);
 		}
 	}
 
-	static findSudokuRegions(pu, squares) {
-		const { matrix2point, makePointPair } = PenpaTools;
+	static findSudokuRegions(puinfo: PuInfo, squares: Squares) {
+		const { pu, penpaTools } = puinfo;
+		const { matrix2point } = penpaTools;
+		const { makePointPair } = PenpaTools;
 		const lineE = Object.assign({}, pu.pu_q.lineE, pu.frame);
 
 		// Single square found.
@@ -550,7 +585,7 @@ export class PenpaRegions {
 		if (squares.length === 1) {
 			let edge_elements = pu.pu_q.lineE;
 			let { r, c, size } = squares[0];
-			squares[0].regions = extractRegionData(r, c, size, size, edge_elements);
+			squares[0].regions = extractRegionData(puinfo, r, c, size, size, edge_elements);
 		} else {
 			// For overlapping squares try several strategies to resolve all regions.
 
@@ -572,19 +607,19 @@ export class PenpaRegions {
 					sq.outline.push(makePointPair(p41, p42));
 				}
 				// Get dominant linestyle of outline
-				let lineStyleCount = {};
+				let lineStyleCount: Record<number, number> = {};
 				sq.outline.forEach(k => {
 					let linestyle = lineE[k];
 					if (linestyle) {
 						lineStyleCount[linestyle] = (lineStyleCount[linestyle] || 0) + 1;
 					}
 				});
-				sq.dominantBorderStyle = undefined;
+				sq.dominantBorderStyle = undefined!;
 				sq.dominantBorderStyleCount = 0;
 				Object.keys(lineStyleCount).forEach(k => {
-					if (lineStyleCount[k] > sq.dominantBorderStyleCount) {
+					if (lineStyleCount[Number(k)] > sq.dominantBorderStyleCount!) {
 						sq.dominantBorderStyle = Number(k);
-						sq.dominantBorderStyleCount = lineStyleCount[k];
+						sq.dominantBorderStyleCount = lineStyleCount[Number(k)];
 					}
 				});
 			}
@@ -594,12 +629,12 @@ export class PenpaRegions {
 				//let edge_elements = pu.pu_q.lineE;
 				let edge_elements = lineE;
 				// First pass, try with dominant border linestyle
-				sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edge_elements, sq.dominantBorderStyle);
+				sq.regions = extractRegionData(puinfo, sq.r, sq.c, sq.size, sq.size, edge_elements, [sq.dominantBorderStyle!]);
 				// When failed then try again with default borderStyle
 				if (Object.keys(sq.regions).length !== sq.size) {
-					sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edge_elements);
+					sq.regions = extractRegionData(puinfo, sq.r, sq.c, sq.size, sq.size, edge_elements);
 				}
-				PenpaRegions.createRegionOutlines(pu, sq);
+				PenpaRegions.createRegionOutlines(puinfo, sq);
 				// console.log(sq);
 			}
 
@@ -611,12 +646,12 @@ export class PenpaRegions {
 				let noRegionEdges = Object.assign({}, pu.pu_q.lineE, pu.frame);
 				for (let sq of squares) {
 					// Remove square outlines
-					sq.outline.forEach(k => delete noFrameEdges[k]);
-					sq.outline.forEach(k => delete noRegionEdges[k]);
+					sq.outline!.forEach(k => delete noFrameEdges[k]);
+					sq.outline!.forEach(k => delete noRegionEdges[k]);
 					// Remove region outlines
 					Object.keys(sq.regions).forEach(reg => {
 						if (sq.regions[reg].length === sq.size) {
-							sq.region_outline[reg].forEach(k => delete noRegionEdges[k]);
+							sq.region_outline![reg].forEach(k => delete noRegionEdges[k]);
 						}
 					});
 					if (Object.keys(sq.regions).length !== sq.size) {
@@ -626,21 +661,22 @@ export class PenpaRegions {
 
 				// Revisit failed squares, but now with selectively erased lines.
 				for (let sq of failedSquares) {
-					let validRegionOutlines = [];
-					let resolved = [noFrameEdges, noRegionEdges].some(noEdges => {
+					let validRegionOutlines: Array<string[]> = [];
+					//let resolved = 
+					[noFrameEdges, noRegionEdges].some(noEdges => {
 						// try again with erased lines
 						let edges = Object.assign({}, noEdges);
 						Object.keys(sq.regions) // collect valid regions
 							.filter(reg => sq.regions[reg].length === sq.size)
-							.forEach(reg => validRegionOutlines.push(sq.region_outline[reg]));
+							.forEach(reg => validRegionOutlines.push(sq.region_outline![reg]));
 						// Add all valid region outlines of current square
 						validRegionOutlines.forEach(outline =>
 							outline.forEach(k => {
 								edges[k] = 21;
 							})
 						); // draw (thick) outline
-						sq.regions = extractRegionData(sq.r, sq.c, sq.size, sq.size, edges);
-						PenpaRegions.createRegionOutlines(pu, sq);
+						sq.regions = extractRegionData(puinfo, sq.r, sq.c, sq.size, sq.size, edges);
+						PenpaRegions.createRegionOutlines(puinfo, sq);
 						let resolved = Object.keys(sq.regions).length === sq.size;
 						// if (!resolved) pu.pu_q.lineE = edges;
 						return resolved;

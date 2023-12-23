@@ -32,7 +32,8 @@ export class Stack {
 }
 
 export class PenpaPuzzle {
-	constructor(gridtype) {
+	constructor(document, gridtype) {
+		this.document = document; // MarkTekfan
 		this.gridtype = gridtype;
 		this.canvasx = 0; //predefine
 		this.canvasy = 0; //predefine
@@ -181,10 +182,10 @@ export class PenpaPuzzle {
 	reset_frame(){
 		this.create_point();
 		this.space = [//ML
-			parseInt(PenpaPuzzle.document.getElementById("nb_space1").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space2").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space3").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space4").value)
+			parseInt(this.document.getElementById("nb_space1").value),
+			parseInt(this.document.getElementById("nb_space2").value),
+			parseInt(this.document.getElementById("nb_space3").value),
+			parseInt(this.document.getElementById("nb_space4").value)
 		];
 
 		this.centerlist = []
@@ -1788,9 +1789,9 @@ export class PenpaPuzzle {
 }
 
 export class Puzzle_square extends PenpaPuzzle {
-	constructor(nx, ny, size) {
+	constructor(document, nx, ny, size) {
 		// Board information
-		super('square');
+		super(document, 'square');
 		this.nx = nx;
 		this.ny = ny;
 		this.nx0 = this.nx + 4;
@@ -1806,10 +1807,10 @@ export class Puzzle_square extends PenpaPuzzle {
 		this.canvasx = this.width_c //* this.size;
 		this.canvasy = this.height_c //* this.size;
 		this.space = [//ML
-			parseInt(PenpaPuzzle.document.getElementById("nb_space1").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space2").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space3").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space4").value)
+			parseInt(this.document.getElementById("nb_space1").value),
+			parseInt(this.document.getElementById("nb_space2").value),
+			parseInt(this.document.getElementById("nb_space3").value),
+			parseInt(this.document.getElementById("nb_space4").value)
 		];
 		this.size = 1;
 		this._size = Math.max(size, 38);
@@ -1978,9 +1979,9 @@ export class Puzzle_square extends PenpaPuzzle {
 }
 
 export class Puzzle_sudoku extends Puzzle_square {
-	constructor(nx, ny, size) {
+	constructor(document, nx, ny, size) {
 		// Board information
-		super('sudoku');
+		super(document, 'sudoku');
 		this.gridtype = "sudoku";
 		this.nx = nx;
 		this.ny = ny;
@@ -1997,16 +1998,16 @@ export class Puzzle_sudoku extends Puzzle_square {
 		this.canvasx = this.width_c //* this.size;
 		this.canvasy = this.height_c //* this.size;
 		this.sudoku = [
-			Number(PenpaPuzzle.document.getElementById("nb_sudoku1").checked),
-			Number(PenpaPuzzle.document.getElementById("nb_sudoku2").checked),
-			Number(PenpaPuzzle.document.getElementById("nb_sudoku3").checked),
-			Number(PenpaPuzzle.document.getElementById("nb_sudoku4").checked)
+			Number(this.document.getElementById("nb_sudoku1").checked),
+			Number(this.document.getElementById("nb_sudoku2").checked),
+			Number(this.document.getElementById("nb_sudoku3").checked),
+			Number(this.document.getElementById("nb_sudoku4").checked)
 		];
 		this.space = [
-			parseInt(PenpaPuzzle.document.getElementById("nb_space1").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space2").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space3").value),
-			parseInt(PenpaPuzzle.document.getElementById("nb_space4").value)
+			parseInt(this.document.getElementById("nb_space1").value),
+			parseInt(this.document.getElementById("nb_space2").value),
+			parseInt(this.document.getElementById("nb_space3").value),
+			parseInt(this.document.getElementById("nb_space4").value)
 		];
 		this.size = 1;
 		this._size = size;
@@ -2015,8 +2016,8 @@ export class Puzzle_sudoku extends Puzzle_square {
 }
 
 export class Puzzle_kakuro extends Puzzle_square {
-	constructor(nx, ny, size) {
-		super(nx, ny, size);
+	constructor(document, nx, ny, size) {
+		super(document, nx, ny, size);
 	}
 }
 

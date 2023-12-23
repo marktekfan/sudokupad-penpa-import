@@ -1,8 +1,10 @@
+import { PuInfo } from './penpa-analyzer';
 import { PenpaPuzzle } from './penpa-loader/penpa-puzzle';
 import { PenpaTools } from './penpa-tools';
 
-export function getSolutionInfo(pu: PenpaPuzzle) {
-	const { point2matrix } = PenpaTools;
+export function getSolutionInfo(puinfo: PuInfo) {
+	const { pu } = puinfo;
+	const { point2matrix } = puinfo.penpaTools;
 	let solutionPoints = [] as number[];
 	['surface'].forEach(constraint => {
 		let solution = getPuSolution(pu, constraint) || [];
@@ -145,22 +147,13 @@ export function makeSolutionFromSolutionModeDigits(pu: PenpaPuzzle) {
 		[], // 5 = Symbol
 	];
 	for (let key in pu['pu_a'].number) {
-		if (
-			pu['pu_q'].number[key] &&
-			pu['pu_q'].number[key][1] === 1 &&
-			(pu['pu_q'].number[key][2] === '1' || pu['pu_q'].number[key][2] === '10')
-		) {
+		if (pu['pu_q'].number[key] && pu['pu_q'].number[key][1] === 1 && (pu['pu_q'].number[key][2] === '1' || pu['pu_q'].number[key][2] === '10')) {
 			// (Black) and (Normal or L) in Problem mode then ignore
 		} else {
 			// Sudoku only one number and multiple digits in same cell should not be considered, this is for single digit obtained from candidate submode
 			if (pu['pu_a'].number[key][2] === '7') {
 				// (Green or light blue or dark blue or red)
-				if (
-					pu['pu_a'].number[key][1] === 2 ||
-					pu['pu_a'].number[key][1] === 8 ||
-					pu['pu_a'].number[key][1] === 9 ||
-					pu['pu_a'].number[key][1] === 10
-				) {
+				if (pu['pu_a'].number[key][1] === 2 || pu['pu_a'].number[key][1] === 8 || pu['pu_a'].number[key][1] === 9 || pu['pu_a'].number[key][1] === 10) {
 					let sum = 0,
 						a;
 					for (let j = 0; j < 10; j++) {

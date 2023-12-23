@@ -6,11 +6,8 @@ import { Color } from '../penpa-style';
 
 export const PenpaGeneral = function(fakedoc) {
 
-    // Inject custom global
+    // override global with instance document
     const document = fakedoc;
-
-    // Inject into puzzle class
-    PenpaPuzzle.document = fakedoc;
 
     // Create stub functions
     const penpa_constraints = {
@@ -41,7 +38,7 @@ export const PenpaGeneral = function(fakedoc) {
     }
 
     let panel_pu = new Panel();
-    let pu = new Puzzle_square(10, 10, 38);
+    let pu = new Puzzle_square(document, 10, 10, 38);
 
     // Initialize to boot state
     boot_parameters();
@@ -297,7 +294,7 @@ function make_class(gridtype, loadtype = 'new') {
             document.getElementById("nb_sudoku3_lb").style.display = "inline";
             document.getElementById("nb_sudoku3_lb").innerHTML = "*White space is subtracted from the row/column size";
             if (nx <= gridmax['square'] && nx > 0 && ny <= gridmax['square'] && ny > 0 && space1 + space2 < ny && space3 + space4 < nx) {
-                pu = new Puzzle_square(nx, ny, size);
+                pu = new Puzzle_square(document, nx, ny, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -313,7 +310,7 @@ function make_class(gridtype, loadtype = 'new') {
             document.getElementById("nb_sudoku3_lb").style.display = "inline";
             document.getElementById("nb_sudoku3_lb").innerHTML = "*White space is subtracted from the Side size";
             if (n0 <= gridmax['hex'] && n0 > 0 && space1 < n0) {
-                pu = new Puzzle_hex(n0, n0, size);
+                pu = new Puzzle_hex(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -329,7 +326,7 @@ function make_class(gridtype, loadtype = 'new') {
             document.getElementById("nb_sudoku3_lb").style.display = "inline";
             document.getElementById("nb_sudoku3_lb").innerHTML = "*White space is subtracted from the Side size";
             if (n0 <= gridmax['tri'] && n0 > 0 && space1 < n0 / 3) {
-                pu = new Puzzle_tri(n0, n0, size);
+                pu = new Puzzle_tri(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -345,7 +342,7 @@ function make_class(gridtype, loadtype = 'new') {
             document.getElementById("nb_sudoku3_lb").style.display = "inline";
             document.getElementById("nb_sudoku3_lb").innerHTML = "*White space is subtracted from the Side size";
             if (n0 <= gridmax['pyramid'] && n0 > 0 && space1 < n0 / 3) {
-                pu = new Puzzle_pyramid(n0, n0, size);
+                pu = new Puzzle_pyramid(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -358,7 +355,7 @@ function make_class(gridtype, loadtype = 'new') {
         case "iso":
             var n0 = parseInt(document.getElementById("nb_size1").value, 10);
             if (n0 <= gridmax['cube'] && n0 > 0) {
-                pu = new Puzzle_iso(n0, n0, size);
+                pu = new Puzzle_iso(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -431,7 +428,7 @@ function make_class(gridtype, loadtype = 'new') {
             }
 
             // Create Sudoku object
-            pu = new Puzzle_sudoku(nx, ny, size);
+            pu = new Puzzle_sudoku(document, nx, ny, size);
 
             if (loadtype === 'new') {
                 let rows, cols;
@@ -531,7 +528,7 @@ function make_class(gridtype, loadtype = 'new') {
 
             if (nx <= gridmax['kakuro'] && nx > 0 && ny <= gridmax['kakuro'] && ny > 0) {
                 // Create Kakuro object
-                pu = new Puzzle_kakuro(nx, ny, size);
+                pu = new Puzzle_kakuro(document, nx, ny, size);
 
                 if (loadtype === "new") {
                     pu.draw_kakurogrid();
@@ -548,7 +545,7 @@ function make_class(gridtype, loadtype = 'new') {
         case "truncated_square":
             var n0 = parseInt(document.getElementById("nb_size1").value, 10);
             if (n0 <= 20 && n0 > 0) {
-                pu = new Puzzle_truncated_square(n0, n0, size);
+                pu = new Puzzle_truncated_square(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -561,7 +558,7 @@ function make_class(gridtype, loadtype = 'new') {
         case "tetrakis_square":
             var n0 = parseInt(document.getElementById("nb_size1").value, 10);
             if (n0 <= 20 && n0 > 0) {
-                pu = new Puzzle_tetrakis_square(n0, n0, size);
+                pu = new Puzzle_tetrakis_square(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -574,7 +571,7 @@ function make_class(gridtype, loadtype = 'new') {
         case "snub_square":
             var n0 = parseInt(document.getElementById("nb_size1").value, 10);
             if (n0 <= 20 && n0 > 0) {
-                pu = new Puzzle_snub_square(n0, n0, size);
+                pu = new Puzzle_snub_square(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -587,7 +584,7 @@ function make_class(gridtype, loadtype = 'new') {
         case "cairo_pentagonal":
             var n0 = parseInt(document.getElementById("nb_size1").value, 10);
             if (n0 <= 20 && n0 > 0) {
-                pu = new Puzzle_cairo_pentagonal(n0, n0, size);
+                pu = new Puzzle_cairo_pentagonal(document, n0, n0, size);
             } else {
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -3207,7 +3204,7 @@ function decode_puzzlink(url) {
         case "renban":
         case "ripple":
             // Setup board
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "number");
 
             // Decode URL
@@ -3235,7 +3232,7 @@ function decode_puzzlink(url) {
             break;
         case "onsen":
             // Setup board
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // change gridlines to dashes
             setupProblem(pu, "combi");
 
@@ -3257,7 +3254,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['onsen'];
             break;
         case "sudoku":
-            pu = new Puzzle_sudoku(cols, rows, size);
+            pu = new Puzzle_sudoku(document, cols, rows, size);
             if (cols === 9 && rows === 9) {
                 pu.draw_sudokugrid([4, 7], [4, 7], 1, 9, 2);
             } else if (cols === 6 && rows === 6) {
@@ -3265,7 +3262,7 @@ function decode_puzzlink(url) {
             } else if (cols === 4 && rows === 4) {
                 pu.draw_sudokugrid([3], [3], 1, 4, 2);
             } else {
-                pu = new Puzzle_square(10, 10, size);
+                pu = new Puzzle_square(document, 10, 10, size);
                 setupProblem(pu, "surface");
                 Swal.fire({
                     title: 'Swaroop says:',
@@ -3294,7 +3291,7 @@ function decode_puzzlink(url) {
             bstr = urldata[4];
             puzzlink_pu = new Puzzlink(cols, rows, bstr);
 
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // change gridlines to dashes
             setupProblem(pu, "lineE");
 
@@ -3329,7 +3326,7 @@ function decode_puzzlink(url) {
             document.getElementById("nb_space3").value = 1;
             document.getElementById("nb_space4").value = 1;
 
-            pu = new Puzzle_square(cols + 2, rows + 2, size);
+            pu = new Puzzle_square(document, cols + 2, rows + 2, size);
             setupProblem(pu, "sudoku");
 
             info_number = puzzlink_pu.decodeNumber16ExCell(false);
@@ -3350,7 +3347,7 @@ function decode_puzzlink(url) {
             // Decode URL
             info_number = puzzlink_pu.decodeNumber4();
 
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             if (type === 'shakashaka') {
                 pu.mode_grid("nb_grid2"); // change gridlines to dashes
             }
@@ -3379,7 +3376,7 @@ function decode_puzzlink(url) {
             // Decode URL
             info_number = puzzlink_pu.decodeKakuro();
 
-            pu = new Puzzle_kakuro(cols + 1, rows + 1, size);
+            pu = new Puzzle_kakuro(document, cols + 1, rows + 1, size);
             pu.draw_kakurogrid();
             setupProblem(pu, "sudoku");
 
@@ -3448,7 +3445,7 @@ function decode_puzzlink(url) {
         case "shimaguni":
         case "stostone":
             // Setup board
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "surface");
 
             // Decode URL
@@ -3490,7 +3487,7 @@ function decode_puzzlink(url) {
         case "nurikabe":
         case "nurimisaki":
             // Setup board
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             if (type !== "kurochute" && type !== "nurikabe") {
@@ -3531,7 +3528,7 @@ function decode_puzzlink(url) {
             break;
         case "slitherlink":
         case "slither": // slitherlink alias
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             // Draw grid dots only
             pu.mode_grid("nb_grid3");
             pu.mode_grid("nb_lat1");
@@ -3561,7 +3558,7 @@ function decode_puzzlink(url) {
             if (type === "yajirin-regions") {
                 type = "yajilin-regions";
             }
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             if (type === "detour" || type === "maxi" || type === "nagenawa" || type === "juosan") {
                 pu.mode_grid("nb_grid2"); // Dashed gridlines
             }
@@ -3616,7 +3613,7 @@ function decode_puzzlink(url) {
         case "mashu": // masyu alias
         case "masyu":
         case "pearl": // masyu alias
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             setupProblem(pu, "combi");
 
@@ -3649,7 +3646,7 @@ function decode_puzzlink(url) {
             pu.user_tags = [type === "moonsun" ? "moon or sun" : "masyu"];
             break;
         case "haisu":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             // The "S" and "G" of the puzzle are stored at the beginning of the string
@@ -3674,7 +3671,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['haisu'];
             break;
         case "balance":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             setupProblem(pu, "combi");
 
@@ -3700,7 +3697,7 @@ function decode_puzzlink(url) {
             break;
         case "midloop":
         case "tentaisho":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             setupProblem(pu, "combi");
 
@@ -3736,7 +3733,7 @@ function decode_puzzlink(url) {
                 rows = parseInt(urldata[3]);
                 puzzlink_pu = new Puzzlink(cols, rows, urldata[4]);
             }
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             if (type === "yajikazu") {
                 pu.mode_grid("nb_grid2");
             }
@@ -3838,7 +3835,7 @@ function decode_puzzlink(url) {
             break;
         case "tapa":
         case "tapaloop":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             info_number = type === "tapa" ?
@@ -3865,7 +3862,7 @@ function decode_puzzlink(url) {
         case "fillomino01": // fillomino alias
         case "symmarea":
         case "view":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             if (type !== "view") {
                 pu.mode_grid("nb_grid2"); // Dashed grid lines
             }
@@ -3893,7 +3890,7 @@ function decode_puzzlink(url) {
             }
             break;
         case "araf":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed grid lines
             setupProblem(pu, "combi");
 
@@ -3909,7 +3906,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['araf'];
             break;
         case "compass":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed grid lines
             setupProblem(pu, "combi");
 
@@ -3943,7 +3940,7 @@ function decode_puzzlink(url) {
             document.getElementById("nb_space1").value = rows_offset;
             document.getElementById("nb_space3").value = cols_offset;
 
-            pu = new Puzzle_square(cols + cols_offset, rows + rows_offset, size);
+            pu = new Puzzle_square(document, cols + cols_offset, rows + rows_offset, size);
             setupProblem(pu, "combi");
 
             // Draw numbers
@@ -4007,7 +4004,7 @@ function decode_puzzlink(url) {
             if (type === "bag" || type === "corral" || type === "correl") {
                 type = "cave";
             }
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             if (type === "cave") {
                 pu.mode_grid("nb_grid2"); // Dashed gridlines
                 pu.mode_grid("nb_out2"); // No outside frame
@@ -4027,7 +4024,7 @@ function decode_puzzlink(url) {
             break;
         case "lits":
         case "norinori":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             info_edge = puzzlink_pu.decodeBorder();
@@ -4051,7 +4048,7 @@ function decode_puzzlink(url) {
         case "hashikake":
         case "hashi": // hashikake alias
         case "bridges": // hashikake alias
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
 
             // Don't draw any of the grid
             pu.mode_grid("nb_grid3");
@@ -4072,7 +4069,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['hashiwokakero (hashi/bridges)'];
             break;
         case "pencils":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2");
             setupProblem(pu, "lineE");
 
@@ -4152,7 +4149,7 @@ function decode_puzzlink(url) {
 
             bstr = urldata[4];
             puzzlink_pu = new Puzzlink(cols, rows, bstr);
-            pu = new Puzzle_square(cols + 2, rows + 2, size);
+            pu = new Puzzle_square(document, cols + 2, rows + 2, size);
             setupProblem(pu, "number");
 
             info_number = puzzlink_pu.decodeNumber16ExCell(false);
@@ -4182,7 +4179,7 @@ function decode_puzzlink(url) {
             document.getElementById("nb_space3").value = 1;
             document.getElementById("nb_space4").value = 1;
 
-            pu = new Puzzle_square(cols + 2, rows + 2, size);
+            pu = new Puzzle_square(document, cols + 2, rows + 2, size);
             setupProblem(pu, "combi");
 
             info_number = puzzlink_pu.decodeNumber16ExCell(true);
@@ -4212,7 +4209,7 @@ function decode_puzzlink(url) {
             document.getElementById("nb_space3").value = 1;
             document.getElementById("nb_space4").value = 1;
 
-            pu = new Puzzle_square(cols + 2, rows + 2, size);
+            pu = new Puzzle_square(document, cols + 2, rows + 2, size);
             setupProblem(pu, "combi");
 
             // Add snake ends
@@ -4242,7 +4239,7 @@ function decode_puzzlink(url) {
         case "geradeweg":
         case "numlin": // numberlink alias
         case "numberlink":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             var style = type === "geradeweg" ? 6 : 1;
@@ -4266,7 +4263,7 @@ function decode_puzzlink(url) {
             }
             break;
         case "simpleloop":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed lines
             setupProblem(pu, "combi");
 
@@ -4290,7 +4287,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['simple loop'];
             break;
         case "nurimaze":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "surface");
 
             info_edge = puzzlink_pu.decodeBorder();
@@ -4322,7 +4319,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['nurimaze'];
             break;
         case "kropki":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "number");
 
             info_number = puzzlink_pu.decodeNumber3();
@@ -4356,7 +4353,7 @@ function decode_puzzlink(url) {
             document.getElementById("nb_space3").value = 1;
             document.getElementById("nb_space4").value = 1;
 
-            pu = new Puzzle_square(cols + 1, rows + 1, size);
+            pu = new Puzzle_square(document, cols + 1, rows + 1, size);
 
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             pu.mode_grid("nb_out2"); // No grid frame
@@ -4389,7 +4386,7 @@ function decode_puzzlink(url) {
             document.getElementById("nb_space3").value = 1;
             document.getElementById("nb_space4").value = 1;
 
-            pu = new Puzzle_square(cols + 2, rows + 2, size);
+            pu = new Puzzle_square(document, cols + 2, rows + 2, size);
 
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             pu.mode_grid("nb_out2"); // No grid frame
@@ -4412,7 +4409,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['slant (gokigen)']; // Genre Tags
             break
         case "ringring":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             setupProblem(pu, "combi");
 
@@ -4444,7 +4441,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['ring-ring']; // Genre Tags
             break;
         case "doubleback":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             setupProblem(pu, "combi");
 
@@ -4470,7 +4467,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['double back']; // Genre Tags
             break;
         case "yinyang":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             info_number = puzzlink_pu.decodeNumber3();
@@ -4493,7 +4490,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['yin-yang']; // Genre Tags
             break;
         case "hitori":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "surface");
 
             info_number = puzzlink_pu.decodeNumber36(cols * rows);
@@ -4506,7 +4503,7 @@ function decode_puzzlink(url) {
             break;
         case "aho":
         case "shikaku":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed lines
             setupProblem(pu, "combi");
 
@@ -4524,7 +4521,7 @@ function decode_puzzlink(url) {
         case "fillmat":
         case "lookair":
         case "usotatami":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed lines
             setupProblem(pu, "combi");
 
@@ -4546,7 +4543,7 @@ function decode_puzzlink(url) {
             pu.user_tags = [type]; // Genre tags
             break;
         case "paintarea":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "surface");
 
             info_edge = puzzlink_pu.decodeBorder();
@@ -4563,7 +4560,7 @@ function decode_puzzlink(url) {
             break;
         case "sukoro":
         case "sukororoom":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "number");
 
             if (type === "sukororoom") {
@@ -4581,7 +4578,7 @@ function decode_puzzlink(url) {
             pu.user_tags = [type]; // Genre tags
             break;
         case "usoone":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "surface");
 
             info_edge = puzzlink_pu.decodeBorder();
@@ -4597,7 +4594,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ["usoone"];
             break;
         case "scrin":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             // Draw grid dots only
             pu.mode_grid("nb_grid3");
             pu.mode_grid("nb_lat1");
@@ -4615,7 +4612,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ["scrin"];
             break;
         case "tasquare":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             info_number = puzzlink_pu.decodeNumber16();
@@ -4638,7 +4635,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ['tasquare'];
             break;
         case "mines":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             info_number = puzzlink_pu.decodeNumber16();
@@ -4654,7 +4651,7 @@ function decode_puzzlink(url) {
         case "ichimaga":
         case "ichimagam":
         case "ichimagax":
-            pu = new Puzzle_square(cols - 1, rows - 1, size);
+            pu = new Puzzle_square(document, cols - 1, rows - 1, size);
             pu.mode_grid("nb_grid2"); // Dashed grid lines
             pu.mode_grid("nb_out2"); // No grid border
             setupProblem(pu, "combi");
@@ -4685,7 +4682,7 @@ function decode_puzzlink(url) {
             pu.user_tags = [map_genre_tag[type]]; // Set tags
             break;
         case "nawabari":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed grid lines
             setupProblem(pu, "combi");
 
@@ -4700,7 +4697,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ["territory (nawabari)"]; // Set tags
             break;
         case "dbchoco":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed grid lines
             pu.mode_grid("nb_lat1"); // Grid Points
             setupProblem(pu, "combi");
@@ -4730,7 +4727,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ["double choco"]; // Set tags
             break;
         case "tateyoko":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed grid lines
             setupProblem(pu, "combi");
 
@@ -4759,7 +4756,7 @@ function decode_puzzlink(url) {
         case "canal":
         case "cbanana":
         case "tontti":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             info_number = puzzlink_pu.decodeNumber16();
@@ -4789,7 +4786,7 @@ function decode_puzzlink(url) {
             }
             break;
         case "dotchi":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             setupProblem(pu, "combi");
 
@@ -4816,7 +4813,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ["dotchi-loop"];
             break;
         case "chainedb":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "combi");
 
             info_number = puzzlink_pu.decodeNumber16();
@@ -4838,7 +4835,7 @@ function decode_puzzlink(url) {
             break;
         case "oneroom":
             // Setup board
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             setupProblem(pu, "surface");
 
             // Decode URL
@@ -4856,7 +4853,7 @@ function decode_puzzlink(url) {
             pu.user_tags = ["one room one door"];
             break;
         case "rassi":
-            pu = new Puzzle_square(cols, rows, size);
+            pu = new Puzzle_square(document, cols, rows, size);
             pu.mode_grid("nb_grid2"); // Dashed gridlines
             setupProblem(pu, "combi");
 

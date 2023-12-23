@@ -6,9 +6,20 @@ import { addHandler, addDownEventHandler, removeDownEventHandler, loadFromFile }
 import { convertPuzzleAsync } from './puzzle-link-converter';
 import { Testing } from './testing.js';
 import { AppVersion } from './appversion.js';
-import { ConverterSetting, ConverterSettings, FlagName, Flags } from './converter-settings';
+import { ConverterSettings, FlagName, Flags } from './converter-settings';
 
 setAppVersion();
+
+// const sudoku6x6_square_nosol =
+// 'https://swaroopg92.github.io/penpa-edit/#m=edit&p=7VVPb5tOFLz7U1h73oP5szjhlqZJL4l/TeMqipAVrR2SWMYmXeCXCMvfPfMeJCyYqmqrqjlUiNUwPGbnLcySfSu0iWWAwzuQI+ngcIOAT8f3+RzVx3SZJ3E4nMZZPgyeA3lU5A+pCYfn2qzAru70RspJOjRFEmfyv9NTeaeTLB5EtcBssC0Pw/JClp/CSDhCChenI2ayvAi35XlYTmR5iVtCOuDOqiIX8KSBV3yf0HFFOiPgSY0BrwEXS7NI4puzivkcRuVUCprnAz9NUKzT/2NR+6DrRbqeL4mY6xx9Zg/Lx/pOVtymq6KudWY7WR5Vdi977HqNXYKVXUI9dqmLP2z3cLbbYdm/wPBNGJH3rw08aOBluMU4CbfCdelRBS/VuxFuQETQEJ5HhG8R6nVxXokxEV5D+CxqVfh+t4JnsUQVV+ALeSO4wtII2IdN8COWRsDGLOsBG7OaG7OGVTHmR940sCgOL801j6c8ujxOsXKy9Hj8yOOIR8XjGdecYEEdBzFyYc2Fogvs1djjeFWYokYdE1bA1ArhAHj8Wo9welhIxi4wvDP22pr0OhgrYCwaY8SZ3grrQ0fVOgo6qtZR0LE9qFpHQYcWnzF0FOmguStu8ZhHn8eAWx/TJ/VTH93vr/IP7UQuOn070NGv4tkgwkYmsjS5yQpzpxeIJe9zSB64TbGex6ZFJWn6mCw37brl/SY1ce8tIuPb+776eWpuO+pPOklaRLWlt6hqg2lRucHuYV1rY9KnFrPW+UOLsHaallK8ydsGct22qFe6M9u66Xk3EM+Cz8ijH9C/38Tf+k3QOxi9t9y+Nzv8+aamN/uge+IPtjfmNb+XdPB7maYJ92MNtifZYLvhBrWfb5B7EQf3nZSTajfo5KqbdZpqL+40lZ147KCMXgA=';
+
+// import { PenpaLoader } from './penpa-loader/penpa-loader';
+// import { PenpaAnalyzer } from './penpa-analyzer';
+// {
+// 	let pu = PenpaLoader.loadPenpaPuzzle(sudoku6x6_square_nosol)!;
+// 	let { puinfo } = PenpaAnalyzer.preparePenpaPuzzle(pu);
+// 	console.log(puinfo);
+// }
 
 export function setError(errormessage: string) {
 	console.log('ERROR: ', errormessage);
@@ -84,10 +95,11 @@ function doInitialize() {
 
 	function createSettings(fieldset: HTMLElement, test: string | null) {
 		// Initialize Setting
-		let settings = ConverterSettings.settings;
-		for (let name of Object.keys(settings) as Array<FlagName>) {
-			const setting = settings[name] as ConverterSetting;
+		let settings = ConverterSettings.getSettings();
+		for (let name in settings) {
+			const setting = settings[name as FlagName];
 			if (!setting.hidden) {
+				// Produces:
 				// <div>
 				// 	<input type="checkbox" id="thickLines" name="thickLines">
 				// 	<label for="thickLines">Thicken lines to match Sudokupad feature lines</label>
@@ -105,7 +117,6 @@ function doInitialize() {
 				divElem.appendChild(labelElem);
 				fieldset.appendChild(divElem);
 			}
-			ConverterSettings.flags[name] = setting.defaultValue;
 		}
 
 		// Show settings in test mode.
@@ -117,7 +128,8 @@ function doInitialize() {
 
 		let options = document.querySelectorAll<HTMLInputElement>('fieldset input[type=checkbox]');
 		for (let option of options) {
-			option.checked = ConverterSettings.getFlag(option.name) || false;
+			let defaultValue = option.name === 'debug' && document.location.host.startsWith('127.0.0.1') ? true : false;
+			option.checked = ConverterSettings.getFlag(option.name) || defaultValue;
 		}
 	}
 

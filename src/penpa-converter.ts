@@ -39,9 +39,10 @@ function getGiven(pu: PenpaPuzzle, pos: string) {
 	return given;
 }
 
-function addGivens(pu: PenpaPuzzle, puzzle: SclPuzzle) {
+function addGivens(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
 	const { number } = pu.pu_q;
-	const { point2cell } = PenpaTools;
+	const { point2cell } = penpaTools;
 	for (let pos in number) {
 		let given = getGiven(pu, pos);
 		if (given !== null) {
@@ -75,7 +76,8 @@ const metaTagsWithoutCells = [
 ];
 const reMetaTagsStripCells = new RegExp(`^(${metaTagsWithoutCells.join('|')}):\\s*([\\s\\S]+)`, 'im');
 
-function addCageMetadata(pu: PenpaPuzzle, puzzle: SclPuzzle) {
+function addCageMetadata(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
 	const { numberS, killercages } = pu.pu_q;
 	Object.keys(numberS).forEach(pos => {
 		let matches = String(numberS[pos][0]).trim().match(reMetaTagsStripCells);
@@ -83,7 +85,7 @@ function addCageMetadata(pu: PenpaPuzzle, puzzle: SclPuzzle) {
 			applyDefaultMeta(puzzle, matches[1], matches[2]);
 			delete numberS[pos];
 			// Remove meta killercage
-			let killerCell = PenpaTools.point2centerPoint(pos);
+			let killerCell = penpaTools.point2centerPoint(pos);
 			for (let i = 0; i < killercages.length; i++) {
 				if (killercages[i].length === 1 && killercages[i].includes(killerCell)) {
 					killercages[i] = [];
@@ -93,8 +95,9 @@ function addCageMetadata(pu: PenpaPuzzle, puzzle: SclPuzzle) {
 	});
 }
 
-function addSudokuRegions(pu: PenpaPuzzle, puzzle: SclPuzzle, { squares, regions, uniqueRowsCols }: PuInfo) {
-	const { matrix2point, point2cell } = PenpaTools;
+function addSudokuRegions(puinfo: PuInfo, puzzle: SclPuzzle, { squares, regions, uniqueRowsCols }: PuInfo) {
+	const { pu, penpaTools } = puinfo;
+	const { matrix2point, point2cell } = penpaTools;
 	let enableConflictChecker = false;
 
 	if (['square', 'sudoku'].includes(pu.gridtype)) {
@@ -132,8 +135,9 @@ function addSudokuRegions(pu: PenpaPuzzle, puzzle: SclPuzzle, { squares, regions
 }
 
 // Add puzzle solution
-function addSolution(pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
-	const { point2cell } = PenpaTools;
+function addSolution(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
+	const { point2cell } = penpaTools;
 	const { width, height } = puinfo;
 	let sol = Array(height * width).fill('?');
 	['surface'].forEach(constraint => {
@@ -194,8 +198,10 @@ function addSolution(pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
 	}
 }
 
-function hideGridLines(pu: PenpaPuzzle, _puzzle: SclPuzzle, puinfo: PuInfo) {
-	const { point2matrix, matrix2point, getBoundsRC, makePointPair } = PenpaTools;
+function hideGridLines(puinfo: PuInfo, _puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
+	const { getBoundsRC, makePointPair } = PenpaTools;
+	const { point2matrix, matrix2point } = penpaTools;
 	const { centerlist } = pu;
 
 	const { top, left, bottom, right, height, width } = getBoundsRC(centerlist, point2matrix);
@@ -246,8 +252,9 @@ function hideGridLines(pu: PenpaPuzzle, _puzzle: SclPuzzle, puinfo: PuInfo) {
 	return true;
 }
 
-function drawBoardLattice(pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
-	const { point2RC } = PenpaTools;
+function drawBoardLattice(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
+	const { point2RC } = penpaTools;
 	// Dotted grid lines
 	// if (pu.mode.grid[0] === '2') {
 	// 	puzzle.settings['dashedgrid'] = 1;
@@ -281,7 +288,8 @@ function drawBoardLattice(pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
 	}
 }
 
-function positionBoard(_pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
+function positionBoard(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { penpaTools } = puinfo;
 	// Add transparant rectangle to position the puzzle
 	const ctx = new DrawingContext();
 	// const opts = Object.assign(ctx.toOpts(), {
@@ -294,7 +302,7 @@ function positionBoard(_pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
 	const opts = Object.assign(ctx.toOpts(), {
 		backgroundColor: Color.TRANSPARENTWHITE,
 		//  backgroundColor: '#cc4440',
-		center: PenpaTools.point2RC(puinfo.center_n),
+		center: penpaTools.point2RC(puinfo.center_n),
 		width: puinfo.width_c - 1,
 		height: puinfo.height_c - 1,
 		class: 'board-position',
@@ -313,10 +321,11 @@ const applyDefaultMeta = (puzzle: SclPuzzle, metaName: string, value?: string, d
 	}
 };
 
-function render_surface(pu: PenpaPuzzle, puzzle: SclPuzzle) {
+function render_surface(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
 	const list = pu['pu_q'].surface || [];
 	const listCol = pu['pu_q_col'].surface || [];
-	const { point2RC, isBoardCell } = PenpaTools;
+	const { point2RC, isBoardCell } = penpaTools;
 	const keys = Object.keys(list); //keys.sort();
 	let centers = keys.map(k => ({ center: point2RC(k), value: list[k], key: Number(k), height: 1, width: 1 }));
 	const predicate: ReduceSurfacesPredicate = (s1, s2) => {
@@ -352,8 +361,9 @@ function render_surface(pu: PenpaPuzzle, puzzle: SclPuzzle) {
 	});
 }
 
-function render_number(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: NumberFeature = 'number') {
-	const draw = new PenpaSymbol(pu, puzzle, 64, { puzzleAdd });
+function render_number(puinfo: PuInfo, puzzle: SclPuzzle, feature: NumberFeature = 'number') {
+	const { pu } = puinfo;
+	const draw = new PenpaSymbol(puinfo, puzzle, 64, { puzzleAdd });
 	const list = pu.pu_q[feature] || [];
 	Object.keys(list).forEach(key => {
 		if (key.slice(-1) === 'E') {
@@ -366,10 +376,11 @@ function render_number(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: NumberFeatur
 	});
 }
 
-function render_numberS(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: NumberFeature = 'numberS') {
-	const draw = new PenpaSymbol(pu, puzzle, 64, { puzzleAdd });
+function render_numberS(puinfo: PuInfo, puzzle: SclPuzzle, feature: NumberFeature = 'numberS') {
+	const { pu, penpaTools } = puinfo;
+	const draw = new PenpaSymbol(puinfo, puzzle, 64, { puzzleAdd });
 	const list = pu.pu_q[feature] || [];
-	const { point2cell, point2centerPoint } = PenpaTools;
+	const { point2cell, point2centerPoint } = penpaTools;
 	Object.keys(list).forEach(key => {
 		const number = list[key];
 		let ctx = new DrawingContext();
@@ -389,12 +400,13 @@ function render_numberS(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: NumberFeatu
 	});
 }
 
-function render_symbol(pu: PenpaPuzzle, puzzle: SclPuzzle, layer = 1) {
+function render_symbol(puinfo: PuInfo, puzzle: SclPuzzle, layer = 1) {
+	const { pu, penpaTools } = puinfo;
 	const feature = 'symbol';
-	const draw = new PenpaSymbol(pu, puzzle, 64, { puzzleAdd });
+	const draw = new PenpaSymbol(puinfo, puzzle, 64, { puzzleAdd });
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
-	const { point2RC } = PenpaTools;
+	const { point2RC } = penpaTools;
 	Object.keys(list).forEach(key => {
 		const symbol = list[key];
 		if (symbol[2] !== layer) return;
@@ -402,7 +414,7 @@ function render_symbol(pu: PenpaPuzzle, puzzle: SclPuzzle, layer = 1) {
 		if (key.slice(-1) === 'E') {
 			key = key.slice(0, -1);
 		}
-		let maskedCell = isMaskedCell(pu, Number(key));
+		let maskedCell = isMaskedCell(puinfo, Number(key));
 		// In front of lines or on an outside/masked cell.
 		if (symbol[2] === 2 || maskedCell) {
 			ctx.target = 'overlay';
@@ -413,19 +425,20 @@ function render_symbol(pu: PenpaPuzzle, puzzle: SclPuzzle, layer = 1) {
 	});
 }
 
-function render_freeline(pu: PenpaPuzzle, puzzle: SclPuzzle) {
-	draw_line(pu, puzzle, 'freeline');
+function render_freeline(puinfo: PuInfo, puzzle: SclPuzzle) {
+	draw_line(puinfo, puzzle, 'freeline');
 }
 
-function render_freelineE(pu: PenpaPuzzle, puzzle: SclPuzzle) {
-	draw_line(pu, puzzle, 'freelineE', 'overlay');
+function render_freelineE(puinfo: PuInfo, puzzle: SclPuzzle) {
+	draw_line(puinfo, puzzle, 'freelineE', 'overlay');
 }
 
-function render_thermo(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature = 'thermo') {
+function render_thermo(puinfo: PuInfo, puzzle: SclPuzzle, feature: CellFeature = 'thermo') {
+	const { pu, penpaTools } = puinfo;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
-	const { point2RC } = PenpaTools;
-	render_nobulbthermo(pu, puzzle, feature);
+	const { point2RC } = penpaTools;
+	render_nobulbthermo(puinfo, puzzle, feature);
 	list.forEach((line, i) => {
 		if (line.length === 0) return;
 		let cells = line.map(point2RC);
@@ -447,13 +460,14 @@ function render_thermo(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature 
 	});
 }
 
-function render_arrows(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature = 'arrows') {
+function render_arrows(puinfo: PuInfo, puzzle: SclPuzzle, feature: CellFeature = 'arrows') {
+	const { pu, penpaTools } = puinfo;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
-	const { point2RC } = PenpaTools;
+	const { point2RC } = penpaTools;
 	list.forEach((line, i) => {
 		if (line.length < 2) return;
-		const target = isMaskedLine(pu, line) ? { target: 'overlay' } : {};
+		const target = isMaskedLine(puinfo, line) ? { target: 'overlay' } : {};
 		let points = PenpaTools.reduceWayPoints(line.map(point2RC));
 		let commonend = pu.find_common(pu.pu_q, i, line[line.length - 1], feature);
 		points = PenpaTools.shortenLine(points, 0.4, commonend ? 0.1 : 0);
@@ -495,13 +509,14 @@ function render_arrows(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature 
 	});
 }
 
-function render_direction(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature = 'direction') {
+function render_direction(puinfo: PuInfo, puzzle: SclPuzzle, feature: CellFeature = 'direction') {
+	const { pu, penpaTools } = puinfo;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
-	const { point2RC } = PenpaTools;
+	const { point2RC } = penpaTools;
 	list.forEach((line, i) => {
 		if (line.length < 2) return;
-		const target = isMaskedLine(pu, line) ? { target: 'overlay' } : {};
+		const target = isMaskedLine(puinfo, line) ? { target: 'overlay' } : {};
 		let points = line.map(point2RC);
 		let commonend = pu.find_common(pu.pu_q, i, line[line.length - 1], feature);
 		points = PenpaTools.shortenLine(points, 0, commonend ? 0.1 : 0);
@@ -523,13 +538,14 @@ function render_direction(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeatu
 	});
 }
 
-function render_squareframe(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature = 'squareframe') {
+function render_squareframe(puinfo: PuInfo, puzzle: SclPuzzle, feature: CellFeature = 'squareframe') {
+	const { pu, penpaTools } = puinfo;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
-	const { point2RC } = PenpaTools;
+	const { point2RC } = penpaTools;
 	list.forEach((line, i) => {
 		if (line.length === 0) return;
-		const target = isMaskedLine(pu, line) ? { target: 'overlay' } : {};
+		const target = isMaskedLine(puinfo, line) ? { target: 'overlay' } : {};
 		let cells = line.map(point2RC);
 		let color = listCol[i] || '#CFCFCF';
 		puzzleAdd(
@@ -550,8 +566,10 @@ function render_squareframe(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFea
 	});
 }
 
-function render_polygon(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature = 'polygon') {
-	const { point2RC, ColorIsVisible, getMinMaxRC, round1, round3 } = PenpaTools;
+function render_polygon(puinfo: PuInfo, puzzle: SclPuzzle, feature: CellFeature = 'polygon') {
+	const { pu, penpaTools } = puinfo;
+	const { ColorIsVisible, getMinMaxRC, round1, round3 } = PenpaTools;
+	const { point2RC } = penpaTools;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
 	for (let key in list) {
@@ -611,9 +629,10 @@ function render_polygon(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature
 	}
 }
 
-function render_frame(pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
+function render_frame(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
 	const list = pu.frame || [];
-	let wpList = PenpaTools.reducePenpaLines2WaypointLines(list);
+	let wpList = penpaTools.reducePenpaLines2WaypointLines(list);
 	wpList.forEach(line => {
 		if (line.wayPoints.length < 2) return;
 		let ctx = new DrawingContext();
@@ -631,17 +650,18 @@ function render_frame(pu: PenpaPuzzle, puzzle: SclPuzzle, puinfo: PuInfo) {
 	});
 }
 
-function draw_line(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: LineFeature, target?: string) {
+function draw_line(puinfo: PuInfo, puzzle: SclPuzzle, feature: LineFeature, target?: string) {
+	const { pu, penpaTools } = puinfo;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
 	const excludedLines: Dictionary = feature === 'lineE' ? pu.pu_q.deletelineE || [] : [];
-	let wpList = PenpaTools.reducePenpaLines2WaypointLines(list, listCol, excludedLines);
+	let wpList = penpaTools.reducePenpaLines2WaypointLines(list, listCol, excludedLines);
 	wpList.forEach(line => {
 		if (line.wayPoints.length < 2) return;
 		let ctx = new DrawingContext();
 		if (target) {
 			ctx.target = target;
-		} else if (isMaskedLine(pu, line.keys)) {
+		} else if (isMaskedLine(puinfo, line.keys)) {
 			ctx.target = 'overlay';
 		}
 		// This is a line over a deleted grid line -> Move to cell-grids to prevent visual outlines.
@@ -676,29 +696,31 @@ function draw_line(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: LineFeature, tar
 			);
 		}
 	});
-	drawXmarks(pu, puzzle, feature);
+	drawXmarks(puinfo, puzzle, feature);
 }
 
-function render_line(pu: PenpaPuzzle, puzzle: SclPuzzle) {
-	draw_line(pu, puzzle, 'line');
+function render_line(puinfo: PuInfo, puzzle: SclPuzzle) {
+	draw_line(puinfo, puzzle, 'line');
 }
 
-function render_lineE(pu: PenpaPuzzle, puzzle: SclPuzzle) {
-	draw_line(pu, puzzle, 'lineE', 'overlay');
+function render_lineE(puinfo: PuInfo, puzzle: SclPuzzle) {
+	draw_line(puinfo, puzzle, 'lineE', 'overlay');
 }
 
-function render_wall(pu: PenpaPuzzle, puzzle: SclPuzzle) {
-	draw_line(pu, puzzle, 'wall');
+function render_wall(puinfo: PuInfo, puzzle: SclPuzzle) {
+	draw_line(puinfo, puzzle, 'wall');
 }
 
-function render_cage(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: LineFeature = 'cage') {
+function render_cage(puinfo: PuInfo, puzzle: SclPuzzle, feature: LineFeature = 'cage') {
+	const { pu, penpaTools } = puinfo;
+	const { objectEquals, round3, concatenateEndpoints } = PenpaTools;
+	const { point2centerPoint, getOutlinePoints } = penpaTools;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature];
-	let wpLines = PenpaTools.penpaLines2WaypointLines(list, listCol);
+	let wpLines = penpaTools.penpaLines2WaypointLines(list, listCol);
 	const killercages = pu.pu_q.killercages || [];
-	const { point2centerPoint, objectEquals, round3 } = PenpaTools;
-	let cageLines = PenpaTools.concatenateEndpoints(wpLines);
-	const killerOutlines = killercages.map(cells => PenpaTools.getOutlinePoints(cells));
+	let cageLines = concatenateEndpoints(wpLines);
+	const killerOutlines = killercages.map(cells => getOutlinePoints(cells));
 	const cageOutlines = cageLines.map(line => [...new Set<number>(line.keys.map((p: number) => point2centerPoint(p)))].sort((a, b) => a - b));
 
 	// Find cage lines which 100% cover a killercage
@@ -770,11 +792,12 @@ function render_cage(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: LineFeature = 
 }
 
 // Must be rendered before numberS
-function render_killercages(pu: PenpaPuzzle, puzzle: SclPuzzle) {
+function render_killercages(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
 	const feature = 'killercages';
 	const list = pu.pu_q.killercages || [];
 	const listCol = pu.pu_q_col[feature];
-	const { point2cell } = PenpaTools;
+	const { point2cell } = penpaTools;
 	list.forEach((cageArray, i) => {
 		if (cageArray.length === 0) return;
 		let cagePart: SclCage = {
@@ -791,12 +814,13 @@ function render_killercages(pu: PenpaPuzzle, puzzle: SclPuzzle) {
 	});
 }
 
-function render_deletelineE(pu: PenpaPuzzle, puzzle: SclPuzzle) {
+function render_deletelineE(puinfo: PuInfo, puzzle: SclPuzzle) {
+	const { pu, penpaTools } = puinfo;
 	const feature = 'deletelineE';
 	const list: Dictionary<any> = pu.pu_q[feature] || [];
 	const surface = pu.pu_q.surface;
 	const surfaceCol = pu.pu_q_col.surface || [];
-	const { point2RC, puinfo } = PenpaTools;
+	const { point2RC, getAdjacentCellsOfEdgeLine, reducePenpaLines2WaypointLines } = penpaTools;
 	const { width, height } = puinfo;
 	const isOnPerimeter = function (k: string) {
 		const [p1, p2] = k.split(',');
@@ -820,7 +844,7 @@ function render_deletelineE(pu: PenpaPuzzle, puzzle: SclPuzzle) {
 	} else {
 		//const darkBackgrounds = [Color.BLACK, Color.BLACK_LIGHT, Color.GREY_DARK_VERY];
 		Object.keys(list).forEach(k => {
-			const [p1, p2] = PenpaTools.getAdjacentCellsOfEdgeLine(pu, k);
+			const [p1, p2] = getAdjacentCellsOfEdgeLine(pu, k);
 			const s1 = surface[p1];
 			const s2 = surface[p2];
 			if (s1 || s2) {
@@ -850,9 +874,9 @@ function render_deletelineE(pu: PenpaPuzzle, puzzle: SclPuzzle) {
 			}
 		});
 	}
-	const combined = PenpaTools.reducePenpaLines2WaypointLines(list);
-	const combinedPerimeter = PenpaTools.reducePenpaLines2WaypointLines(perimeter);
-	const combinedFogline = PenpaTools.reducePenpaLines2WaypointLines(fogline);
+	const combined = reducePenpaLines2WaypointLines(list);
+	const combinedPerimeter = reducePenpaLines2WaypointLines(perimeter);
+	const combinedFogline = reducePenpaLines2WaypointLines(fogline);
 	([] as WayPointLine[]).concat(combined, combinedFogline, combinedPerimeter).forEach(line => {
 		if (line.value <= 0) return; // Skip not visible line
 		let { wayPoints } = line;
@@ -886,20 +910,21 @@ function render_deletelineE(pu: PenpaPuzzle, puzzle: SclPuzzle) {
 	});
 }
 
-function render_nobulbthermo(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFeature = 'nobulbthermo') {
+function render_nobulbthermo(puinfo: PuInfo, puzzle: SclPuzzle, feature: CellFeature = 'nobulbthermo') {
+	const { pu, penpaTools } = puinfo;
 	function find_common(pu: Pu_qa, line: number[], endpoint: number) {
 		if (pu.thermo && pu.thermo.find(l => l !== line && l.includes(endpoint))) return true;
 		if (pu.nobulbthermo && pu.nobulbthermo.find(l => l !== line && l.includes(endpoint))) return true;
 		return false;
 	}
-	const { point2RC, puinfo } = PenpaTools;
+	const { point2RC } = penpaTools;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature];
 	const reduce_straight = 0.32;
 	const reduce_diagonal = 0.22;
 	list.forEach((line, i) => {
 		if (line.length < 2) return;
-		const maskedLine = isMaskedLine(pu, line);
+		const maskedLine = isMaskedLine(puinfo, line);
 		const target = maskedLine ? { target: 'overlay' } : {};
 		if (maskedLine) {
 			line.forEach(p => puinfo.maskedCells.push(p));
@@ -938,8 +963,9 @@ function render_nobulbthermo(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: CellFe
 	});
 }
 
-function isMaskedCell(pu: PenpaPuzzle, p: number) {
-	const { puinfo, point2RC, isBoardCell } = PenpaTools;
+function isMaskedCell(puinfo: PuInfo, p: number) {
+	const { pu, penpaTools } = puinfo;
+	const { point2RC, isBoardCell } = penpaTools;
 	if (!puinfo.hasCellMask) return false;
 	p = Number(p);
 	if (puinfo.maskedCells.includes(p)) return true;
@@ -948,14 +974,15 @@ function isMaskedCell(pu: PenpaPuzzle, p: number) {
 	return false;
 }
 
-function isMaskedLine(pu: PenpaPuzzle, line: number[]) {
-	const { puinfo, point2matrix, matrix2point } = PenpaTools;
+function isMaskedLine(puinfo: PuInfo, line: number[]) {
+	const { penpaTools } = puinfo;
+	const { point2matrix, matrix2point } = penpaTools;
 	if (!puinfo.hasCellMask || line.length < 2) return false;
 	let p = line[0];
 	// Must be center line (cell or edge)
 	if (![0, 2, 3].includes(puinfo.point[p].type)) return false;
 	if (puinfo.maskedCells.includes(p)) return true;
-	let prevMasked = isMaskedCell(pu, p);
+	let prevMasked = isMaskedCell(puinfo, p);
 	let [y, x] = point2matrix(p);
 	for (let i = 1; i < line.length; i++) {
 		let pnext = line[i];
@@ -969,7 +996,7 @@ function isMaskedLine(pu: PenpaPuzzle, line: number[]) {
 			y += stepy;
 			pnext = matrix2point(y, x);
 			if (puinfo.maskedCells.includes(pnext)) return true;
-			let masked = isMaskedCell(pu, pnext);
+			let masked = isMaskedCell(puinfo, pnext);
 			if (masked && prevMasked) return true;
 			if (masked !== prevMasked) {
 				// Diagonal border crossing
@@ -981,8 +1008,9 @@ function isMaskedLine(pu: PenpaPuzzle, line: number[]) {
 	return false;
 }
 
-function drawXmarks(pu: PenpaPuzzle, puzzle: SclPuzzle, feature: LineFeature) {
-	const { point2RC } = PenpaTools;
+function drawXmarks(puinfo: PuInfo, puzzle: SclPuzzle, feature: LineFeature) {
+	const { pu, penpaTools } = puinfo;
+	const { point2RC } = penpaTools;
 	const list = pu.pu_q[feature] || [];
 	const listCol = pu.pu_q_col[feature] || [];
 	const keys = Object.keys(list);
@@ -1066,7 +1094,8 @@ function drawDoubleLine(ctx: DrawingContext, line: WayPointLine, puzzle: SclPuzz
 	);
 }
 
-function removeFrameWhenEqualToRegions(pu: PenpaPuzzle, _puzzle: SclPuzzle, puinfo: PuInfo, regions: Dictionary) {
+function removeFrameWhenEqualToRegions(puinfo: PuInfo, _puzzle: SclPuzzle, regions: Dictionary) {
+	const { pu } = puinfo;
 	if (!regions) return;
 	if (puinfo.hasCellMask) return;
 
@@ -1074,7 +1103,7 @@ function removeFrameWhenEqualToRegions(pu: PenpaPuzzle, _puzzle: SclPuzzle, puin
 	// Then frame can be removed
 	let frame = Object.assign({}, pu.frame);
 	(regions as RC[][]).forEach(reg => {
-		let outline = PenpaRegions.createOutline(pu, reg) as string[];
+		let outline = PenpaRegions.createOutline(puinfo, reg) as string[];
 		outline.forEach(line => delete frame[line]);
 	});
 
@@ -1104,52 +1133,53 @@ export class PenpaConverter {
 		puzzle.cellSize = 64;
 		puzzle.settings = {};
 
-		positionBoard(pu, puzzle, puinfo);
+		positionBoard(puinfo, puzzle);
 
-		if (!hideGridLines(pu, puzzle, puinfo)) {
+		if (!hideGridLines(puinfo, puzzle)) {
 			// must be after hideGridLines
 			if (ConverterSettings.flags.removeFrame) {
-				removeFrameWhenEqualToRegions(pu, puzzle, puinfo, puinfo.regions);
+				removeFrameWhenEqualToRegions(puinfo, puzzle, puinfo.regions);
 			}
 		}
 
-		addSudokuRegions(pu, puzzle, puinfo);
+		addSudokuRegions(puinfo, puzzle, puinfo);
 
-		addCageMetadata(pu, puzzle);
+		addCageMetadata(puinfo, puzzle);
 
-		addGivens(pu, puzzle);
+		addGivens(puinfo, puzzle);
 
 		//let qa = 'pu_q';
-		render_surface(pu, puzzle);
-		render_deletelineE(pu, puzzle);
+		render_surface(puinfo, puzzle);
+		render_deletelineE(puinfo, puzzle);
 
-		render_symbol(pu, puzzle, 1);
-		render_squareframe(pu, puzzle);
-		render_thermo(pu, puzzle);
-		render_nobulbthermo(pu, puzzle);
-		render_arrows(pu, puzzle);
-		render_wall(pu, puzzle);
+		render_symbol(puinfo, puzzle, 1);
+		render_squareframe(puinfo, puzzle);
+		render_thermo(puinfo, puzzle);
+		render_nobulbthermo(puinfo, puzzle);
+		render_arrows(puinfo, puzzle);
+		render_wall(puinfo, puzzle);
 		// draw_frame()
-		render_polygon(pu, puzzle);
-		render_freeline(pu, puzzle);
-		render_freelineE(pu, puzzle);
-		render_line(pu, puzzle);
-		render_lineE(pu, puzzle);
-		render_direction(pu, puzzle);
+		render_polygon(puinfo, puzzle);
+		render_freeline(puinfo, puzzle);
+		render_freelineE(puinfo, puzzle);
+		render_line(puinfo, puzzle);
+		render_lineE(puinfo, puzzle);
+		render_direction(puinfo, puzzle);
 		// draw_lattice();
-		render_symbol(pu, puzzle, 2);
-		render_cage(pu, puzzle);
-		render_killercages(pu, puzzle);
-		render_number(pu, puzzle);
-		render_numberS(pu, puzzle);
+		render_symbol(puinfo, puzzle, 2);
+		render_cage(puinfo, puzzle);
+		render_killercages(puinfo, puzzle);
+		render_number(puinfo, puzzle);
+		render_numberS(puinfo, puzzle);
 
-		drawBoardLattice(pu, puzzle, puinfo);
+		drawBoardLattice(puinfo, puzzle);
 
-		render_frame(pu, puzzle, puinfo);
+		render_frame(puinfo, puzzle);
 
 		// Create cage to define the board bounds when there are no regions
 		if (!puzzle.regions || puzzle.regions.length === 0) {
-			const { matrixRC2point, point2cell } = PenpaTools;
+			const { penpaTools } = puinfo;
+			const { matrixRC2point, point2cell } = penpaTools;
 			const { squares } = puinfo;
 			let tlbr = (
 				(squares.length !== 1
@@ -1173,7 +1203,7 @@ export class PenpaConverter {
 			puinfo.rules = puinfo.rules.replace('Box 4: Antiknight', 'Box 4: Antik\u0578ight');
 		}
 
-		addSolution(pu, puzzle, puinfo);
+		addSolution(puinfo, puzzle);
 
 		const defaultTitle = 'Untitled';
 		const defaultAuthor = 'Unknown';

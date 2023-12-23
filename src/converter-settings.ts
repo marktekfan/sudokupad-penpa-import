@@ -1,13 +1,20 @@
 export type Flags = Record<string, boolean>;
 export type FlagName = keyof typeof ConverterSettings.settings;
 
-export interface ConverterSetting {
+export interface Setting {
 	readonly defaultValue: boolean;
 	readonly title: string;
 	readonly hidden?: boolean;
-};
+}
 
 export class ConverterSettings {
+	static {
+		for (let name in ConverterSettings.settings) {
+			let setting = ConverterSettings.settings[name as FlagName];
+			ConverterSettings.setFlag(name, setting.defaultValue);
+		}
+	}
+
 	static setFlags(flags: Flags) {
 		for (let name in flags) {
 			ConverterSettings.setFlag(name, flags[name]);
@@ -21,6 +28,10 @@ export class ConverterSettings {
 		(ConverterSettings.flags as any)[flag] = !!value;
 	}
 
+	static getSettings() {
+		return ConverterSettings.settings as Record<FlagName, Setting>; 
+	}
+
 	static settings = {
 		thickLines: { defaultValue: true, title: 'Thicker Penpa lines to match SudokuPad feature lines' },
 		fadeLines: { defaultValue: true, title: 'Fade colors on Penpa feature lines' },
@@ -29,9 +40,9 @@ export class ConverterSettings {
 		answerGen: { defaultValue: true, title: 'Generate answer check from Penpa Solution mode digits' },
 		expandGrid: { defaultValue: false, title: 'Always expand Penpa grid to force editable outside clues' },
 		useClipPath: { defaultValue: false, title: 'Use clip-path for Penpa shapes', hidden: true },
-        fpuzzles2scl: { defaultValue: false, title: 'Convert f-puzzles to SCL format' },
-		debug: { defaultValue: false || document.location.host.startsWith('127.0.0.1'), title: 'Add Penpa debug info to puzzle' },
-	};
+		fpuzzles2scl: { defaultValue: false, title: 'Convert f-puzzles to SCL format' },
+		debug: { defaultValue: false, title: 'Add Penpa debug info to puzzle' },
+	} as const;
 
 	// TODO: make strongly typed dictionary by infering from settings.keys
 	static flags = {} as Record<FlagName, boolean>; // Will be initalized with PenpaConverter.settings values
@@ -53,3 +64,6 @@ export class ConverterSettings {
 		});
 	}
 }
+
+export const instance = new ConverterSettings();
+

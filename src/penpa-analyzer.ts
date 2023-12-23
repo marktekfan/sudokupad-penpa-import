@@ -1,21 +1,14 @@
-import { PenpaTools } from './penpa-tools.js';
-import { PenpaRegions } from './penpa-regions.js';
-import { getPuSolution, getSolutionInfo, makeSolutionFromSolutionModeDigits } from './penpa-solution.js';
-import { ConverterSettings } from './converter-settings.js';
-import { Color } from './penpa-style.js';
+import { PenpaTools } from './penpa-tools';
+import { PenpaRegions } from './penpa-regions';
+import { getPuSolution, getSolutionInfo, makeSolutionFromSolutionModeDigits } from './penpa-solution';
+import { ConverterSettings } from './converter-settings';
+import { Color } from './penpa-style';
 import tinycolor from 'tinycolor2';
-import type {
-	PenpaPuzzle,
-	Point,
-	LineFeature,
-	NumberFeature,
-	SymbolFeature,
-	SurfaceFeature,
-	ColFeature,
-	Pu_qa_col,
-} from './penpa-loader/penpa-puzzle.js';
+import type { PenpaPuzzle, Point, LineFeature, NumberFeature, SymbolFeature, SurfaceFeature, ColFeature, Pu_qa_col } from './penpa-loader/penpa-puzzle';
 
 export type PuInfo = {
+	pu: PenpaPuzzle;
+	penpaTools: PenpaTools;
 	// From PenpaPuzzle:
 	point: Point[]; // point coordinate map
 	nx: number; // width
@@ -49,8 +42,10 @@ export type PuInfo = {
 
 const dashLineStyle = [10, 11, 12, 13, 14, 15, 17, 110, 115];
 
-function convertFeature2Line(pu: PenpaPuzzle, fromFeature: LineFeature, lineFeature: LineFeature) {
-	const { point2matrix, makePointPair } = PenpaTools;
+// Move and convert lines into consistent format, to allow concatenation.
+function convertFeature2Line(puinfo: PuInfo, fromFeature: LineFeature, lineFeature: LineFeature) {
+	const { pu, penpaTools } = puinfo;
+	const { point2matrix, makePointPair } = penpaTools;
 	const fromline = pu.pu_q[fromFeature];
 	const line = pu.pu_q[lineFeature];
 	const fromlineCol = pu.pu_q_col[fromFeature] || {};
@@ -115,6 +110,7 @@ function convertFeature2Line(pu: PenpaPuzzle, fromFeature: LineFeature, lineFeat
 	});
 }
 
+// Add cell to centerlist and make its cell border invisible
 const addToCenterlist = function (pu: PenpaPuzzle, p: number) {
 	if (pu.centerlist.includes(p)) return;
 	const { makePointPair } = PenpaTools;
@@ -124,13 +120,20 @@ const addToCenterlist = function (pu: PenpaPuzzle, p: number) {
 	const { frame } = pu;
 	for (let i = 0; i < 4; i++) {
 		let k = makePointPair(pu.point[p].surround[i], pu.point[p].surround[(i + 1) % 4]);
+		// FIXME: lineE and frame probably are empty here, caused cleanupFrame() will remove thin lines.
 		if (!lineE[k] && !frame[k]) {
 			pu.pu_q.deletelineE[k] = 8;
 		}
 	}
 };
 
-function expandGridForFillableOutsideFeatures(pu: PenpaPuzzle) {
+// Expand grid to include all:
+// - Thermos
+// - Killercage cells
+// - Lines + Freelines (non-edge)
+// - Cage lines
+function expandGridForFillableOutsideFeatures(puinfo: PuInfo) {
+	const { pu, penpaTools } = puinfo;
 	function getLineCenterPoints(pu: PenpaPuzzle, feature: LineFeature) {
 		let points: number[] = [];
 		let lines = pu.pu_q[feature];
@@ -157,23 +160,23 @@ function expandGridForFillableOutsideFeatures(pu: PenpaPuzzle) {
 		return points;
 	}
 
-	let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, PenpaTools.point2matrix);
+	let clBounds = PenpaTools.getMinMaxRC(pu.centerlist, penpaTools.point2matrix);
 	let bounds = [];
 	bounds.push(
 		PenpaTools.getMinMaxRC(
 			pu.pu_q.thermo.flatMap(p => p),
-			PenpaTools.point2matrix
+			penpaTools.point2matrix
 		)
 	);
 	bounds.push(
 		PenpaTools.getMinMaxRC(
 			pu.pu_q.killercages.flatMap(p => p),
-			PenpaTools.point2matrix
+			penpaTools.point2matrix
 		)
 	);
-	bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'line'), PenpaTools.point2matrix));
-	bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'freeline'), PenpaTools.point2matrix));
-	bounds.push(PenpaTools.getMinMaxRC(getCageLinePoints(pu, 'cage'), PenpaTools.point2matrix));
+	bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'line'), penpaTools.point2matrix));
+	bounds.push(PenpaTools.getMinMaxRC(getLineCenterPoints(pu, 'freeline'), penpaTools.point2matrix));
+	bounds.push(PenpaTools.getMinMaxRC(getCageLinePoints(pu, 'cage'), penpaTools.point2matrix));
 
 	// bounds for all fillable clues
 	let top = Math.min(...bounds.map(b => b[0]));
@@ -182,15 +185,22 @@ function expandGridForFillableOutsideFeatures(pu: PenpaPuzzle) {
 	let right = Math.max(...bounds.map(b => b[3]));
 
 	if (top < clBounds[0] || left < clBounds[1]) {
-		addToCenterlist(pu, PenpaTools.matrix2point(top, left));
+		addToCenterlist(pu, penpaTools.matrix2point(top, left));
 	}
 	if (bottom > clBounds[2] || right > clBounds[3]) {
-		addToCenterlist(pu, PenpaTools.matrix2point(bottom, right));
+		addToCenterlist(pu, penpaTools.matrix2point(bottom, right));
 	}
 }
 
-function expandGridForWideOutsideClues(pu: PenpaPuzzle, margin = 0) {
-	const { getMinMaxRC, point2matrix, matrix2point } = PenpaTools;
+// Expand grid to include all:
+// - Numbers
+// - Small numbers
+// - Symbols
+// - Colored surfaces
+function expandGridForWideOutsideClues(puinfo: PuInfo, margin = 0) {
+	const { pu, penpaTools } = puinfo;
+	const { getMinMaxRC } = PenpaTools;
+	const { point2matrix, matrix2point } = penpaTools;
 	let clBounds = getMinMaxRC(pu.centerlist, point2matrix);
 	let bounds = [];
 	bounds.push(getMinMaxRC(Object.keys(pu.pu_q.number), point2matrix));
@@ -217,6 +227,9 @@ function expandGridForWideOutsideClues(pu: PenpaPuzzle, margin = 0) {
 	}
 }
 
+// Ensure all features are available
+// Make custom colors consistent
+// Remove all trivially invalid features
 function cleanupPu(pu: PenpaPuzzle) {
 	// Ensure all fields exist
 	pu.frame = pu.frame || {};
@@ -280,7 +293,7 @@ function cleanupPu(pu: PenpaPuzzle) {
 		}
 	}
 
-	// Make lines with custom colors have consistent style.
+	// Ensure lines with custom colors have consistent style.
 	// This allows them to be concatenated.
 	['line', 'lineE', 'freeline', 'freelineE', 'wall'].forEach(f => {
 		const feature = f as LineFeature;
@@ -306,7 +319,7 @@ function cleanupPu(pu: PenpaPuzzle) {
 	});
 	['lineE', 'freelineE', 'deletelineE'].forEach(f => {
 		const feature = f as LineFeature;
-		Object.keys(pu.pu_q[feature as LineFeature]).forEach(key => {
+		Object.keys(pu.pu_q[feature]).forEach(key => {
 			const p = Number(key);
 			if (pu.pu_q[feature][p] == 98) {
 				// X-mark on edge
@@ -369,8 +382,11 @@ function cleanupPu(pu: PenpaPuzzle) {
 	});
 }
 
-function moveBlackEdgelinesToFrame(pu: PenpaPuzzle) {
-	const { point2matrix } = PenpaTools;
+// - All thick edgelines should be treated as frame lines
+// - Allow dashed frame lines
+function moveBlackEdgelinesToFrame(puinfo: PuInfo) {
+	const { pu, penpaTools } = puinfo;
+	const { point2matrix } = penpaTools;
 	const lineE = pu.pu_q.lineE;
 	const frame = pu.frame;
 	const lineECol = pu.pu_q_col.lineE;
@@ -419,12 +435,19 @@ function moveBlackEdgelinesToFrame(pu: PenpaPuzzle) {
 	});
 }
 
-function prepareKillercages(pu: PenpaPuzzle) {
-	const { point2cell, point2centerPoint, puinfo } = PenpaTools;
+// - Remove invisible killercages (with no cage lines)
+// - Join disconnected cages
+// - Determine cage values
+// - Remove single-cell cages on board edge
+//   Because they were only used to define the grid outline
+// - Detect foglight cages
+function prepareKillercages(puinfo: PuInfo) {
+	const { pu, penpaTools } = puinfo;
+	const { point2cell, point2centerPoint, penpaLines2WaypointLines } = penpaTools;
 
 	// Remove killercages which have no visible lines
 	const list = pu.pu_q.cage || [];
-	const wpLines = PenpaTools.penpaLines2WaypointLines(list);
+	const wpLines = penpaLines2WaypointLines(list);
 	const cageSet = new Set();
 	wpLines.forEach(line => {
 		const p1 = line.keys[0];
@@ -432,18 +455,20 @@ function prepareKillercages(pu: PenpaPuzzle) {
 		cageSet.add(point2centerPoint(p1));
 		cageSet.add(point2centerPoint(p2));
 	});
-	const killercages = (pu.pu_q.killercages || []) as number[][];
+	const killercages = pu.pu_q.killercages || [];
 	killercages.forEach(cage => {
 		if (cage && !cage.some(p => cageSet.has(p))) {
 			cage.length = 0;
 		}
 	});
 
-	joinDisconnectedKillercages(pu);
+	joinDisconnectedKillercages(puinfo);
 
 	// Collect killercage values
+	// Value is stored in killercage array at index 'value'.
+	// Should find another way as this violates typechecking.
 	const { numberS, number } = pu.pu_q;
-	const { point2matrix, matrix2point } = PenpaTools;
+	const { point2matrix, matrix2point } = penpaTools;
 	const sortTopLeftRC = ([r1, c1]: RC, [r2, c2]: RC) => (r1 === r2 ? c2 - c1 : r2 - r1);
 	killercages.forEach(killer => {
 		if (!killer) return;
@@ -488,10 +513,7 @@ function prepareKillercages(pu: PenpaPuzzle) {
 		if (killer.length !== 1 || (killer as any)['value'] !== undefined) return;
 		const cageOutsideRegions = killer
 			.map(point2cell)
-			.some(
-				([r, c]) =>
-					(r === 0 && (c === 0 || c === width - 1)) || (r === height - 1 && (c === 0 || c === width - 1))
-			);
+			.some(([r, c]) => (r === 0 && (c === 0 || c === width - 1)) || (r === height - 1 && (c === 0 || c === width - 1)));
 		if (cageOutsideRegions) {
 			//Remove cage lines
 			const { cage } = pu.pu_q;
@@ -509,9 +531,11 @@ function prepareKillercages(pu: PenpaPuzzle) {
 	puinfo.foglight = killercages.some(killer => /^foglight/i.test((killer as any)['value'] || ''));
 }
 
-function GetCageConnectionCells(pu: PenpaPuzzle, key: number | string, symbol: [number, string, number]) {
+// Get the two cells which are connected by the cell-connection symbol
+function getCageConnectionCells(puinfo: PuInfo, key: number | string, symbol: [number, string, number]) {
+	const { pu, penpaTools } = puinfo;
 	key = Number(key);
-	const { point2centerPoint } = PenpaTools;
+	const { point2centerPoint } = penpaTools;
 	if (pu.point[key].type !== 1) return; // must be a corner
 	if (symbol[1] !== 'frameline') return;
 	// symbol:  \
@@ -530,12 +554,14 @@ function GetCageConnectionCells(pu: PenpaPuzzle, key: number | string, symbol: [
 	}
 }
 
-function joinDisconnectedKillercages(pu: PenpaPuzzle) {
+// Connect killercages wich are joined by a cell-connection symbol
+function joinDisconnectedKillercages(puinfo: PuInfo) {
+	const { pu } = puinfo;
 	const killercages = (pu.pu_q.killercages || []) as number[][];
 	const symbols = pu.pu_q['symbol'] || [];
 	Object.keys(symbols).forEach(key => {
 		const symbol = symbols[key];
-		const [p1, p2] = GetCageConnectionCells(pu, key, symbol) || [];
+		const [p1, p2] = getCageConnectionCells(puinfo, key, symbol) || [];
 		if (p1 == null || p2 == null) return;
 		const kc1 = killercages.findIndex(cage => cage?.some(p => p === p1));
 		const kc2 = killercages.findIndex(cage => cage?.some(p => p === p2));
@@ -548,6 +574,9 @@ function joinDisconnectedKillercages(pu: PenpaPuzzle) {
 	});
 }
 
+// - Apply deletelineE to framelines
+// - Remove lines which are identical to frame line
+// - Keep only thick framelines
 function cleanupFrame(pu: PenpaPuzzle) {
 	// Cleanup frame
 	for (let k in pu.pu_q.deletelineE) {
@@ -581,9 +610,33 @@ function cleanupFrame(pu: PenpaPuzzle) {
 		.forEach(k => delete pu.frame[k]);
 }
 
+// All solution cells should be in the centerlist
+function addSolutionCellsToCenterlist(pu: PenpaPuzzle) {
+	['number', 'surface'].forEach(constraint => {
+		const solution = getPuSolution(pu, constraint) || [];
+		solution.forEach(s => {
+			let [point, _val] = s.split(',');
+			addToCenterlist(pu, Number(point));
+		});
+		pu.centerlist.sort();
+	});
+	['loopline'].forEach(constraint => {
+		const solution = getPuSolution(pu, constraint) || [];
+		solution.forEach(s => {
+			let [p1, p2, _val] = s.split(',');
+			[p1, p2].forEach(point => {
+				addToCenterlist(pu, Number(point));
+			});
+		});
+		pu.centerlist.sort();
+	});
+}
+
 export class PenpaAnalyzer {
-	static preparePenpaPuzzle = function (pu: PenpaPuzzle) {
+	static preparePenpaPuzzle(pu: PenpaPuzzle) {
 		const puinfo: PuInfo = {
+			pu: pu,
+			penpaTools: undefined!,
 			// Copied from pu:
 			point: pu.point, // point coordinate map
 			nx: pu.nx, // width
@@ -618,7 +671,7 @@ export class PenpaAnalyzer {
 		};
 
 		// Inject puzzle/puinfo metrics into helper classes
-		PenpaTools.puinfo = puinfo;
+		puinfo.penpaTools = new PenpaTools(puinfo);
 
 		if (!pu.solution) {
 			if (ConverterSettings.flags.answerGen) {
@@ -628,52 +681,35 @@ export class PenpaAnalyzer {
 
 		cleanupPu(pu);
 
-		convertFeature2Line(pu, 'freeline', 'line');
-		convertFeature2Line(pu, 'freelineE', 'lineE');
-		convertFeature2Line(pu, 'wall', 'line');
+		convertFeature2Line(puinfo, 'freeline', 'line');
+		convertFeature2Line(puinfo, 'freelineE', 'lineE');
+		convertFeature2Line(puinfo, 'wall', 'line');
 
 		// Add solution cells to centerlist
-		['number', 'surface'].forEach(constraint => {
-			const solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
-				let [point, _val] = s.split(',');
-				addToCenterlist(pu, Number(point));
-			});
-			pu.centerlist.sort();
-		});
-		['loopline'].forEach(constraint => {
-			const solution = getPuSolution(pu, constraint) || [];
-			solution.forEach(s => {
-				let [p1, p2, _val] = s.split(',');
-				[p1, p2].forEach(point => {
-					addToCenterlist(pu, Number(point));
-				});
-			});
-			pu.centerlist.sort();
-		});
+		addSolutionCellsToCenterlist(pu);
 
-		moveBlackEdgelinesToFrame(pu);
+		moveBlackEdgelinesToFrame(puinfo);
 		cleanupFrame(pu);
 
-		const { solutionPoints, uniqueRowsCols } = getSolutionInfo(pu);
-		PenpaRegions.cleanupCenterlist(pu, solutionPoints);
+		const { solutionPoints, uniqueRowsCols } = getSolutionInfo(puinfo);
+		PenpaRegions.cleanupCenterlist(puinfo, solutionPoints);
 
-		let { squares, regions } = PenpaRegions.findSudokuSquares(pu);
+		let { squares, regions } = PenpaRegions.findSudokuSquares(puinfo);
 		if (!regions) {
-			PenpaRegions.findSudokuRegions(pu, squares);
+			PenpaRegions.findSudokuRegions(puinfo, squares);
 		}
 
 		//TODO: Can/should this be done before region detection?
-		expandGridForFillableOutsideFeatures(pu);
+		expandGridForFillableOutsideFeatures(puinfo);
 
 		if (ConverterSettings.flags.expandGrid) {
-			expandGridForWideOutsideClues(pu);
+			expandGridForWideOutsideClues(puinfo);
 		}
 
-		prepareKillercages(pu);
+		prepareKillercages(puinfo);
 
 		// Determine visual cell grid bounding box
-		let { top, left, height, width } = PenpaTools.getBoundsRC(pu.centerlist, PenpaTools.point2cell);
+		let { top, left, height, width } = PenpaTools.getBoundsRC(pu.centerlist, puinfo.penpaTools.point2cell);
 
 		// Update with calculated dimensions
 		puinfo.col0 = left;
@@ -692,5 +728,5 @@ export class PenpaAnalyzer {
 		puinfo.sourcelink = pu._document.sourcelink || '';
 
 		return { puinfo };
-	};
+	}
 }
