@@ -27,7 +27,7 @@ export class PenpaTools {
 
 	constructor(puinfo: PuInfo) {
 		this.puinfo = puinfo;
-	}	
+	}
 
 	static reduceSurfaces(centers: CombinedSurface[], predicate: ReduceSurfacesPredicate = () => true): CombinedSurface[] {
 		//Sort centers, this will give best results.
@@ -120,7 +120,7 @@ export class PenpaTools {
 		return 0;
 	}
 
-	combineStraightPenpaLines(lines: Dictionary, linesCol?: Dictionary<string>, excludedLines: Dictionary = []): Dictionary {
+	combineStraightPenpaLines = (lines: Dictionary, linesCol?: Dictionary<string>, excludedLines: Dictionary = []): Dictionary => {
 		const { makePointPair } = PenpaTools;
 		lines = Object.assign({}, lines);
 		const point = this.puinfo.point;
@@ -154,16 +154,16 @@ export class PenpaTools {
 			}
 		});
 		return lines;
-	}
+	};
 
-	reducePenpaLines2WaypointLines(list: Dictionary<number>, listCol?: Dictionary<string>, excludedLines: Dictionary = []): WayPointLine[] {
+	reducePenpaLines2WaypointLines = (list: Dictionary<number>, listCol?: Dictionary<string>, excludedLines: Dictionary = []): WayPointLine[] => {
 		let comblist = this.combineStraightPenpaLines(list, listCol, excludedLines);
 		let wpLines = this.penpaLines2WaypointLines(comblist, listCol);
 		let combined = PenpaTools.concatenateEndpoints(wpLines, excludedLines);
 		return combined;
-	}
+	};
 
-	penpaLines2WaypointLines(list: Dictionary<number>, listCol?: Dictionary<string>): WayPointLine[] {
+	penpaLines2WaypointLines = (list: Dictionary<number>, listCol?: Dictionary<string>): WayPointLine[] => {
 		const keys = Object.keys(list);
 		keys.sort(PenpaTools.comparePenpaLinePoints);
 		let listwp = keys.map(k => {
@@ -173,7 +173,7 @@ export class PenpaTools {
 			return line;
 		});
 		return listwp;
-	}
+	};
 
 	// Shorten line by a fixed amount
 	static shortenLine(wayPoints: RC[], shortenStart: number, shortenEnd: number): RC[] {
@@ -301,7 +301,7 @@ export class PenpaTools {
 	// 	return line;
 	// }
 
-	getAdjacentCellsOfEdgeLine(pu: PenpaPuzzle, lineKey: string): number[] {
+	getAdjacentCellsOfEdgeLine = (pu: PenpaPuzzle, lineKey: string): number[] => {
 		const { point2centerPoint } = this;
 		let [k1, k2] = lineKey.split(',').map(Number);
 		let p1 = pu.point[k1];
@@ -311,9 +311,9 @@ export class PenpaTools {
 		let adjacent2 = [k2, p2.adjacent[2], p2.adjacent[3], p2.adjacent_dia[3]].map(point2centerPoint);
 		let commonCells = adjacent1.filter(k => adjacent2.includes(k));
 		return commonCells;
-	}
+	};
 
-	getOutlinePoints(cells: number[], os = 0.25): number[] {
+	getOutlinePoints = (cells: number[], os = 0.25): number[] => {
 		const { point2matrix, matrix2point } = this;
 
 		let input = cells.map(point2matrix);
@@ -329,7 +329,7 @@ export class PenpaTools {
 		const outlinePoints = [...outlineSet];
 		outlinePoints.sort((a, b) => a - b);
 		return outlinePoints;
-	}
+	};
 
 	static getRCOutline(cells: RC[], os = 0): RC[][] {
 		type Seg = [row: number, col: number, cell: RC, pattern: (typeof patterns)[0]];
@@ -459,47 +459,47 @@ export class PenpaTools {
 		return [PenpaTools.round(r), PenpaTools.round(c)];
 	}
 
-	isBoardCell(rc: RC) {
+	isBoardCell = (rc: RC) => {
 		const [r, c] = rc;
 		return r >= 0 && r < this.puinfo.height && c >= 0 && c < this.puinfo.width;
-	}
+	};
 
-	point2RC(p: number | string): RC {
+	point2RC = (p: number | string): RC => {
 		const point = this.puinfo.point[Number(p)];
 		const r = point.y - 2 - this.puinfo.row0;
 		const c = point.x - 2 - this.puinfo.col0;
 		return [r, c];
-	}
-	point2cell(p: number | string): RC {
+	};
+	point2cell = (p: number | string): RC => {
 		let [r, c] = this.point2RC(p);
 		return [Math.floor(r), Math.floor(c)];
-	}
+	};
 
 	// static point(p: number | string): Point {
 	// 	return this.puinfo.point[Number(p)];
 	// }
 
-	point2matrix(p: number | string): RC {
+	point2matrix = (p: number | string): RC => {
 		p = this.point2centerPoint(p);
 		let x = p % this.puinfo.nx0; //column
 		let y = Math.floor(p / this.puinfo.nx0); //row
 		return [y - 2, x - 2];
-	}
-	matrix2point(y: number | RC, x?: number, type = 0): number {
+	};
+	matrix2point = (y: number | RC, x?: number, type = 0): number => {
 		if (Array.isArray(y)) {
 			[y, x] = y;
 			type = 0;
 		}
 		let p = (y + 2) * this.puinfo.nx0 + (x! + 2) + type * (this.puinfo.nx0 * this.puinfo.ny0);
 		return p;
-	}
-	matrixRC2point([y, x]: RC): number {
+	};
+	matrixRC2point = ([y, x]: RC): number => {
 		const type = 0;
 		let p = (y + 2) * this.puinfo.nx0 + (x! + 2) + type * (this.puinfo.nx0 * this.puinfo.ny0);
 		return p;
-	}
+	};
 
-	point2centerPoint(p: number | string): number {
+	point2centerPoint = (p: number | string): number => {
 		p = Number(p);
 		const point = this.puinfo.point[p];
 		switch (point.type) {
@@ -511,17 +511,15 @@ export class PenpaTools {
 				return p - point.type * this.puinfo.nx0 * this.puinfo.ny0;
 			case 4:
 			case 5:
-				return (
-					Math.floor((p - 4 * this.puinfo.nx0 * this.puinfo.ny0) / 4) - (point.type - 4) * this.puinfo.nx0 * this.puinfo.ny0
-				);
+				return Math.floor((p - 4 * this.puinfo.nx0 * this.puinfo.ny0) / 4) - (point.type - 4) * this.puinfo.nx0 * this.puinfo.ny0;
 		}
 		return 0;
-	}
+	};
 
-	makePointPair(p1: number | string, p2: number | string): string {
+	makePointPair = (p1: number | string, p2: number | string): string => {
 		return PenpaTools.makePointPair(p1, p2);
-	}
-	
+	};
+
 	static makePointPair(p1: number | string, p2: number | string): string {
 		return Math.min(Number(p1), Number(p2)).toString() + ',' + Math.max(Number(p1), Number(p2)).toString();
 	}

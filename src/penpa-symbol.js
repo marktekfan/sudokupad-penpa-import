@@ -421,7 +421,7 @@ export const PenpaSymbol = (() => {
 	};
 
 	P.draw_number = function (ctx, number, p) {
-		const { point2RC } = penpaTools;
+		const { point2RC } = this.penpaTools;
 		let text = String(number[0]).trim();
 		let factor = 'abcdefghijklmnopqrstuvwxyz'.indexOf(text) === -1 ? 1 : 0;
 		if (p.slice(-1) === 'E') p = slice(0, -1);
@@ -632,7 +632,7 @@ export const PenpaSymbol = (() => {
 	};
 
 	P.draw_numberS = function (ctx, number, p) {
-		const { point2RC } = penpaTools;
+		const { point2RC } = this.penpaTools;
 		let rc = point2RC(p);
 		if (number[1] === 5) {
 			// WHITE

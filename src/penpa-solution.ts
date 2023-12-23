@@ -3,8 +3,8 @@ import { PenpaPuzzle } from './penpa-loader/penpa-puzzle';
 import { PenpaTools } from './penpa-tools';
 
 export function getSolutionInfo(puinfo: PuInfo) {
-	const { pu } = puinfo;
-	const { point2matrix } = puinfo.penpaTools;
+	const { pu, penpaTools } = puinfo;
+	const { point2matrix } = penpaTools;
 	let solutionPoints = [] as number[];
 	['surface'].forEach(constraint => {
 		let solution = getPuSolution(pu, constraint) || [];

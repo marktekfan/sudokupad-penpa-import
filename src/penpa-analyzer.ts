@@ -671,7 +671,8 @@ export class PenpaAnalyzer {
 		};
 
 		// Inject puzzle/puinfo metrics into helper classes
-		puinfo.penpaTools = new PenpaTools(puinfo);
+		const penpaTools = new PenpaTools(puinfo);		
+		puinfo.penpaTools = penpaTools;
 
 		if (!pu.solution) {
 			if (ConverterSettings.flags.answerGen) {
