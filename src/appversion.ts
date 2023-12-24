@@ -1,5 +1,7 @@
+const version = '0.34.0';
+
 export class AppVersion {
-	static version = '0.33.3';
+	static version = version;
 	static name = 'SudokuPad Penpa+ Importer';
 	static getAppTitle() {
 		return `${AppVersion.name} v${AppVersion.version}`;

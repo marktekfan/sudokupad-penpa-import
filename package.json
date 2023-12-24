@@ -8,7 +8,10 @@
     "dev": "vite --port 5173",
     "build": "tsc && vite build",
     "preview": "vite preview --port 4173",
-    "test": "vitest"
+    "test": "vitest",
+    "bump-major": "node scripts/bumpversion.js -major=1",
+    "bump-minor": "node scripts/bumpversion.js -minor=1",
+    "bump-patch": "node scripts/bumpversion.js -patch=1"
   },
   "devDependencies": {
     "@types/tinycolor2": "^1.4.6",
