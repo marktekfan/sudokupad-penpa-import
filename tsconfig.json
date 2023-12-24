@@ -10,10 +10,11 @@
     "checkJs": false,
     //"verbatimModuleSyntax": false,
 
-    "typeRoots": [
-      "src/types",
-      "node_modules/@types"
-    ],
+    // "typeRoots": [
+    //   "src/types",
+    //   "node_modules/@types"
+    // ],
+    
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -27,6 +28,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "src/main.ts"],
+  "include": ["src", "tests"],
   // "exclude": ["src/types/**", "node_modules"],
 }
