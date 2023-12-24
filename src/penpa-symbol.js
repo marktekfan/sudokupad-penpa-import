@@ -1,11 +1,11 @@
 import { Color, set_line_style, set_font_style, set_circle_style } from './penpa-style';
 import { PenpaTools } from './penpa-tools';
 import { PenpaConverter } from './penpa-converter';
-import { ConverterSettings } from './converter-settings';
 
 export const PenpaSymbol = (() => {
 	function _constructor(puinfo, puzzle, size, decoder) {
 		this.pu = puinfo.pu;
+		this.flags = puinfo.flags;
 		this.penpaTools = puinfo.penpaTools;
 		this.puzzle = puzzle;
 		this.size = size;
@@ -372,7 +372,7 @@ export const PenpaSymbol = (() => {
 		const { round1, round3, ColorIsVisible, getMinMaxRC } = PenpaTools;
 		let { lineWidth, fillStyle, strokeStyle } = ctx;
 		let wp = ctx.convertPathToWaypoints();
-		if (ConverterSettings.flags.useClipPath && wp && ctx.isFill && ColorIsVisible(fillStyle)) {
+		if (this.flags.useClipPath && wp && ctx.isFill && ColorIsVisible(fillStyle)) {
 			ctx.push();
 			const [top, left, bottom, right] = getMinMaxRC(wp);
 			let centerx = round3((right + left) / 2);

@@ -1,12 +1,13 @@
 import stringifyPretty from 'json-stringify-pretty-compact';
-import { loadFPuzzle } from './sudokupad/fpuzzlesdecoder.js';
-import { PuzzleLoader } from './sudokupad/puzzleloader.js';
+import { loadFPuzzle } from './sudokupad/fpuzzlesdecoder';
+import { PuzzleLoader } from './sudokupad/puzzleloader';
 import { Swal } from './Swal';
-import { addHandler, addDownEventHandler, removeDownEventHandler, loadFromFile } from './sudokupad/utilities.js';
+import { addHandler, addDownEventHandler, removeDownEventHandler, loadFromFile } from './sudokupad/utilities';
 import { convertPuzzleAsync } from './puzzle-link-converter';
-import { Testing } from './testing.js';
-import { AppVersion } from './appversion.js';
-import { ConverterSettings, FlagName, Flags } from './converter-settings';
+import { Testing } from './testing';
+import { AppVersion } from './appversion';
+import { ConverterFlags, FlagName, FlagValues } from './converter-flags';
+import { ConverterError } from './converter-error';
 
 setAppVersion();
 
@@ -93,12 +94,37 @@ function doInitialize() {
 
 	Testing.init(addDestination);
 
-	function createSettings(fieldset: HTMLElement, test: string | null) {
-		// Initialize Setting
-		let settings = ConverterSettings.getSettings();
-		for (let name in settings) {
-			const setting = settings[name as FlagName];
-			if (!setting.hidden) {
+	function getDefaultFlags() {
+		let converterFlags = new ConverterFlags();
+		// Parse URL settings
+		[...new URLSearchParams(document.location.search)].forEach(([key, val]) => {
+			let settingName = key.replace(/^setting-/, '');
+			// Make case insentitive
+			settingName = Object.keys(converterFlags.getFlagValues()).reduce(
+				(prev, cur) => (prev.toLowerCase() === cur.toLowerCase() ? cur : prev),
+				settingName
+			);
+			const settingValueTrue = ['true', 't', '1', ''].includes(val.toLowerCase());
+			const settingValueFalse = ['false', 'f', '0'].includes(val.toLowerCase());
+			const settingValue = settingValueTrue ? true : settingValueFalse ? false : val;
+			if (converterFlags.getValue(settingName) === undefined) {
+				console.info(`Extra URL option: ${settingName}=${settingValue}`);
+			} else {
+				console.info(`Extra URL setting: ${settingName}=${settingValue}`);
+			}
+			converterFlags.setValue(settingName, settingValue);
+		});
+		return converterFlags;
+	}
+
+	function createSettings(parent: HTMLElement, test: string | null) {
+		let converterFlags = getDefaultFlags();
+
+		// Create UI elements
+		let descriptions = ConverterFlags.FlagDescriptions();
+		for (let name in descriptions) {
+			const flag = descriptions[name as FlagName];
+			if (!flag.hidden) {
 				// Produces:
 				// <div>
 				// 	<input type="checkbox" id="thickLines" name="thickLines">
@@ -109,27 +135,25 @@ function doInitialize() {
 				inputElem.type = 'checkbox';
 				inputElem.id = name;
 				inputElem.name = name;
+				inputElem.checked = converterFlags.getValue(name);
+
+				// Auto enable 'debug' flag when in development mode
+				if (name === 'debug' && import.meta.env.DEV) {
+					inputElem.checked = true;
+				}
 
 				let labelElem = document.createElement('label');
 				labelElem.htmlFor = name;
-				labelElem.innerText = setting.title;
+				labelElem.innerText = flag.title;
 				divElem.appendChild(inputElem);
 				divElem.appendChild(labelElem);
-				fieldset.appendChild(divElem);
+				parent.appendChild(divElem);
 			}
 		}
 
-		// Show settings in test mode.
+		// Show settings when in test mode.
 		if (test !== null) {
-			fieldset.classList.toggle('show', true);
-		}
-
-		ConverterSettings.ParseUrlSettings();
-
-		let options = document.querySelectorAll<HTMLInputElement>('fieldset input[type=checkbox]');
-		for (let option of options) {
-			let defaultValue = option.name === 'debug' && document.location.host.startsWith('127.0.0.1') ? true : false;
-			option.checked = ConverterSettings.getFlag(option.name) || defaultValue;
+			parent.classList.toggle('show', true);
 		}
 	}
 
@@ -273,7 +297,7 @@ function getPenpaDecoderOptions() {
 	for (let option of options) {
 		flags[option.name] = option.checked;
 	}
-	return flags as Flags;
+	return flags as FlagValues;
 }
 
 async function OnConvert(redirect = false) {
@@ -286,12 +310,12 @@ async function OnConvert(redirect = false) {
 	let input = inputUrlElem.value.trim();
 
 	try {
-		ConverterSettings.setFlags(getPenpaDecoderOptions());
+		const flags = getPenpaDecoderOptions();
 
-		let puzzleId = await convertPuzzleAsync(input);
+		let puzzleId = await convertPuzzleAsync(input, flags);
 
 		if (puzzleId === undefined) {
-			throw { customMessage: 'Not a recognized puzzle URL' };
+			throw new ConverterError('Not a recognized puzzle URL');
 		}
 		if (destination.includes('?')) {
 			puzzleId = puzzleId.replace('?', '&'); // Replace 2nd '?' with '&'
@@ -342,11 +366,11 @@ async function OnConvert(redirect = false) {
 							// expand short puzzleid
 							puzzleId = await fetchPuzzle(puzzleId);
 							if (!puzzleId || isRemotePuzzleId(puzzleId)) {
-								throw { customMessage: 'Not a recognized JSON puzzle format' };
+								throw new ConverterError('Not a recognized JSON puzzle format');
 							}
 						} catch (err) {
 							console.error(err);
-							throw { customMessage: 'Short puzzle ID not found' };
+							throw new ConverterError('Short puzzle ID not found');
 						}
 					}
 
@@ -378,9 +402,13 @@ async function OnConvert(redirect = false) {
 				return;
 			}
 		}
-	} catch (err: any) {
+	} catch (err) {
 		console.error(err);
-		setError(err.customMessage || 'An error occured while processing the URL.<br>');
+		if (err instanceof ConverterError) {
+			setError(err.message);
+		} else {
+			setError('An error occured while processing the URL.<br>');
+		}
 	} finally {
 		convertButtonElem.disabled = false;
 		convertButtonElem.innerHTML = 'Convert URL';

@@ -1,13 +1,14 @@
 import { PenpaTools } from './penpa-tools';
 import { PenpaRegions } from './penpa-regions';
 import { getPuSolution, getSolutionInfo, makeSolutionFromSolutionModeDigits } from './penpa-solution';
-import { ConverterSettings } from './converter-settings';
+import { FlagValues } from './converter-flags';
 import { Color } from './penpa-style';
 import tinycolor from 'tinycolor2';
 import type { PenpaPuzzle, Point, LineFeature, NumberFeature, SymbolFeature, SurfaceFeature, ColFeature, Pu_qa_col } from './penpa-loader/penpa-puzzle';
 
 export type PuInfo = {
 	pu: PenpaPuzzle;
+	flags: FlagValues;
 	penpaTools: PenpaTools;
 	// From PenpaPuzzle:
 	point: Point[]; // point coordinate map
@@ -633,9 +634,10 @@ function addSolutionCellsToCenterlist(pu: PenpaPuzzle) {
 }
 
 export class PenpaAnalyzer {
-	static preparePenpaPuzzle(pu: PenpaPuzzle) {
+	static preparePenpaPuzzle(pu: PenpaPuzzle, flags: FlagValues) {
 		const puinfo: PuInfo = {
 			pu: pu,
+			flags: flags,
 			penpaTools: undefined!,
 			// Copied from pu:
 			point: pu.point, // point coordinate map
@@ -675,7 +677,7 @@ export class PenpaAnalyzer {
 		puinfo.penpaTools = penpaTools;
 
 		if (!pu.solution) {
-			if (ConverterSettings.flags.answerGen) {
+			if (puinfo.flags.answerGen) {
 				makeSolutionFromSolutionModeDigits(pu);
 			}
 		}
@@ -703,7 +705,7 @@ export class PenpaAnalyzer {
 		//TODO: Can/should this be done before region detection?
 		expandGridForFillableOutsideFeatures(puinfo);
 
-		if (ConverterSettings.flags.expandGrid) {
+		if (puinfo.flags.expandGrid) {
 			expandGridForWideOutsideClues(puinfo);
 		}
 

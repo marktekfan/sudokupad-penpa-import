@@ -1,11 +1,12 @@
-import { loadFPuzzle } from './sudokupad/fpuzzlesdecoder.js';
-import { PuzzleZipper } from './sudokupad/puzzlezipper.js';
-import { PuzzleLoader } from './sudokupad/puzzleloader.js';
+import { loadFPuzzle } from './sudokupad/fpuzzlesdecoder';
+import { PuzzleZipper } from './sudokupad/puzzlezipper';
+import { PuzzleLoader } from './sudokupad/puzzleloader';
 import { PenpaConverter } from './penpa-converter';
 import { PenpaLoader } from './penpa-loader/penpa-loader';
 import { SclPuzzle } from './sclpuzzle';
 import { expandTinyUrlAsync } from './tinyurl';
-import { ConverterSettings, Flags } from './converter-settings';
+import { ConverterError } from './converter-error';
+import { type FlagValues } from './converter-flags';
 
 const reFpuzzlesUrl = /[\.\/]+f-puzzles.com\/.*\?load=([^&]+)/;
 const reSudokuPadUrl = /^sudokupad:\/\/puzzle\/(.+)/;
@@ -27,17 +28,15 @@ export function encodeSCLPuz(puzzle: SclPuzzle | string) {
 	return puzzleId;
 }
 
-export async function convertPuzzleAsync(input: string, flags?: Flags) {
+export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	const { unzip } = PuzzleZipper;
 	let url = await expandTinyUrlAsync(input);
 	if (!url) return;
 
-	ConverterSettings.setFlags(flags || {});
-
 	// Penpa+ url format
 	if (PenpaLoader.isPenpaUrl(url)) {
-		let puzzle = PenpaConverter.convertPenpaPuzzle(url);
-		if (!puzzle) throw { customMessage: 'Unexpected error occured during Penpa conversion. Please contact MarkTekfan' };
+		let puzzle = new PenpaConverter().convertPenpaToScl(url);
+		if (!puzzle) throw new ConverterError('Unexpected error occured during Penpa conversion. Please contact MarkTekfan');
 		let settings = Object.entries(puzzle.settings || {})
 			.map(([k, v]) => `setting-${k}=${v}`)
 			.join('&');
@@ -47,7 +46,7 @@ export async function convertPuzzleAsync(input: string, flags?: Flags) {
 	// f-puzzles url format
 	if (url.match(reFpuzzlesUrl)) {
 		let match = url.match(reFpuzzlesUrl);
-		if (ConverterSettings.flags.fpuzzles2scl) {
+		if (flags.fpuzzles2scl) {
 			let puzzle = loadFPuzzle.parseFPuzzle(match![1]) as SclPuzzle;
 			return encodeSCLPuz(puzzle);
 		} else {
@@ -83,17 +82,20 @@ export async function convertPuzzleAsync(input: string, flags?: Flags) {
 			} catch {
 				puzzle = JSON.parse(unzip(json));
 			}
+
 			let settings = Object.entries(puzzle.settings || {})
 				.map(([k, v]) => `setting-${k}=${v}`)
 				.join('&');
+
 			// scl content
 			if (puzzle.id && puzzle.cells) {
 				var puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
 				return puzzleId + (settings ? '?' + settings : '');
 			}
+
 			// f-puzzles content
-			else if (puzzle.size && puzzle.grid) {
-				if (ConverterSettings.flags.fpuzzles2scl) {
+			if (puzzle.size && puzzle.grid) {
+				if (flags.fpuzzles2scl) {
 					let sclPuzzle = loadFPuzzle.parseFPuzzle(puzzle) as SclPuzzle;
 					return encodeSCLPuz(sclPuzzle) + (settings ? '?' + settings : '');
 				} else {
@@ -101,11 +103,12 @@ export async function convertPuzzleAsync(input: string, flags?: Flags) {
 					return puzzleId + (settings ? '?' + settings : '');
 				}
 			}
-		} catch (ex: any) {
-			throw { customMessage: ex.message };
-		}
 
-		throw { customMessage: 'Not a SudokuPad or f-puzzles JSON puzzle format' };
+			throw new ConverterError('Not a SudokuPad or f-puzzles JSON puzzle format');
+
+		} catch (ex: any) {
+			throw new ConverterError(ex.message);
+		}
 	}
 
 	// not a URL, probably a short ID
@@ -113,5 +116,5 @@ export async function convertPuzzleAsync(input: string, flags?: Flags) {
 		return url;
 	}
 
-	throw { customMessage: 'Not a SudokuPad, f-puzzles or Penpa URL' };
+	throw new ConverterError('Not a SudokuPad, f-puzzles or Penpa URL');
 }

@@ -1,5 +1,6 @@
 import { FakeDoc } from './fakedoc';
 import { PenpaGeneral } from './penpa-general';
+import { ConverterError } from '../converter-error';
 
 const rePenpaUrl = /\/penpa-edit\//i;
 const rePuzzlinkUrl = /\/puzz\.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p(\.html)?\?/;
@@ -302,9 +303,7 @@ const parsePenpaPuzzle = (urlstring: string) => {
 	} catch (err: any) {
 		let gridtype = err.message.match(/Puzzle_(\w+) is not defined/);
 		if (gridtype) {
-			throw {
-				penpa: `Penpa grid type '${gridtype[1]}' is not supported in SudokuPad`,
-			};
+			throw new ConverterError(`Penpa grid type '${gridtype[1]}' is not supported in SudokuPad`);
 		}
 		throw err;
 	}
