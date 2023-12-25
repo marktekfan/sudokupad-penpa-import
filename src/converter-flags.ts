@@ -54,6 +54,10 @@ export class ConverterFlags {
 	getFlagValues() {
 		return this.flagValues as FlagValues;
 	}
+	
+	getFlagValuesUnsafe() {
+		return this.flagValues as FlagsRecord;
+	}
 
 	getValue(flag: string): boolean {
 		return this.flagValues[flag as FlagName] ?? false;

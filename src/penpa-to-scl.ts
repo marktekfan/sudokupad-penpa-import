@@ -10,9 +10,9 @@ import { getPuSolution } from './penpa-solution.js';
 import { PenpaAnalyzer, PuInfo } from './penpa-analyzer.js';
 import { ConverterFlags, FlagValues } from './converter-flags.js';
 import { CellFeature, LineFeature, NumberFeature, PenpaPuzzle, Pu_qa } from './penpa-loader/penpa-puzzle.js';
-import { SclPuzzle } from './sclpuzzle';
-import type { SclCage, SclFeature } from './sclpuzzle';
-import type { WayPointLine } from './penpa-tools';
+import { SclPuzzle } from './sclpuzzle.js';
+import type { SclCage, SclFeature } from './sclpuzzle.js';
+import type { WayPointLine } from './penpa-tools.js';
 
 //let _rnd = 0; // static random seed
 
@@ -217,7 +217,7 @@ function removeFrameWhenEqualToRegions(puinfo: PuInfo, _puzzle: SclPuzzle, regio
 	}
 }
 
-export class PenpaConverter {
+export class PenpaToSclConverter {
 	flags: FlagValues;
 
 	constructor(flags?: FlagValues) {

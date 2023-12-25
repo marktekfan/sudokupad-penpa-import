@@ -1,7 +1,7 @@
 import { loadFPuzzle } from './sudokupad/fpuzzlesdecoder';
 import { PuzzleZipper } from './sudokupad/puzzlezipper';
 import { PuzzleLoader } from './sudokupad/puzzleloader';
-import { PenpaConverter } from './penpa-converter';
+import { PenpaToSclConverter } from './penpa-to-scl';
 import { PenpaLoader } from './penpa-loader/penpa-loader';
 import { SclPuzzle } from './sclpuzzle';
 import { expandTinyUrlAsync } from './tinyurl';
@@ -35,7 +35,7 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 
 	// Penpa+ url format
 	if (PenpaLoader.isPenpaUrl(url)) {
-		let puzzle = new PenpaConverter().convertPenpaToScl(url);
+		let puzzle = new PenpaToSclConverter().convertPenpaToScl(url);
 		if (!puzzle) throw new ConverterError('Unexpected error occured during Penpa conversion. Please contact MarkTekfan');
 		let settings = Object.entries(puzzle.settings || {})
 			.map(([k, v]) => `setting-${k}=${v}`)
