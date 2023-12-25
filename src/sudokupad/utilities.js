@@ -1,10 +1,10 @@
 
 // System
-	const VisChangeEventName = document.webkitHidden ? 'webkitvisibilitychange' : 'visibilitychange';
-	const reportAndRethrow = note => err => {
-		console.error('%s\n%s', (note || 'Error:'), err);
-		throw err;
-	};
+	// const VisChangeEventName = document.webkitHidden ? 'webkitvisibilitychange' : 'visibilitychange';
+	// const reportAndRethrow = note => err => {
+	// 	console.error('%s\n%s', (note || 'Error:'), err);
+	// 	throw err;
+	// };
 	export const sleep = ms => res => new Promise(resolve => setTimeout(() => resolve(res), ms));
 	export const bindHandlers = (obj, proto) => {
 		if(proto === undefined) proto = Object.getPrototypeOf(obj);
@@ -278,37 +278,37 @@ let SudokuPadUtilities = (() => {
 	};
 })();
 
-// Fullscreen
-	let docEl = document.documentElement, reqFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-	let doc = document, exitFs = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
-	const isFullscreen = () => document.fullscreenElement != null;
-	const requestFullscreen = (el) => (typeof reqFs === 'function') ? Promise.resolve(reqFs.call(el || docEl)) : Promise.reject('Fullscreen API is not supported.');
-	const exitFullscreen = () => (typeof exitFs === 'function') ? Promise.resolve(exitFs.call(doc)) : Promise.reject('Fullscreen API is not supported.');
-	const toggleFullscreen = (el) => isFullscreen() ? exitFullscreen() : requestFullscreen(el || docEl);
+// // Fullscreen
+// 	let docEl = document.documentElement, reqFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+// 	let doc = document, exitFs = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+// 	const isFullscreen = () => document.fullscreenElement != null;
+// 	const requestFullscreen = (el) => (typeof reqFs === 'function') ? Promise.resolve(reqFs.call(el || docEl)) : Promise.reject('Fullscreen API is not supported.');
+// 	const exitFullscreen = () => (typeof exitFs === 'function') ? Promise.resolve(exitFs.call(doc)) : Promise.reject('Fullscreen API is not supported.');
+// 	const toggleFullscreen = (el) => isFullscreen() ? exitFullscreen() : requestFullscreen(el || docEl);
 
-// SVG Tools
-	const $ = selector => document.querySelector(selector);
-	const bounds = elem => {
-		if(typeof elem === 'string') elem = $(elem);
-		return elem.getBoundingClientRect();
-	};
-	const scaleToFit = (content, container, margins = {}) => {
-		var containerWidth = container.width - (margins.h || 0);
-		var containerHeight = container.height - (margins.v || 0);
-		var xRatio = containerWidth / content.width;
-		var yRatio = containerHeight / content.height;
-		var scale = (content.height * xRatio > containerHeight) ? yRatio : xRatio;
-		return scale;
-	};
-	const getTransform = elem => {
-		if(typeof elem === 'string') elem = document.querySelector(elem);
-		let res = {elem};
-		let computedStyle = window.getComputedStyle(elem, null);
-		let transform = ((computedStyle.transform.match(/matrix\((.*?)\)/i) || [])[1] || '').split(/\s*,\s*/).map(parseFloat);
-		'sx,b,c,sy,tx,ty'.split(',').forEach((prop, i) => res[prop] = transform[i]);
-		'left,top,width,height'.split(',').forEach((prop, i) => res[prop] = parseFloat(computedStyle[prop]));
-		return res;
-	};
+// // SVG Tools
+// 	const $ = selector => document.querySelector(selector);
+// 	const bounds = elem => {
+// 		if(typeof elem === 'string') elem = $(elem);
+// 		return elem.getBoundingClientRect();
+// 	};
+// 	const scaleToFit = (content, container, margins = {}) => {
+// 		var containerWidth = container.width - (margins.h || 0);
+// 		var containerHeight = container.height - (margins.v || 0);
+// 		var xRatio = containerWidth / content.width;
+// 		var yRatio = containerHeight / content.height;
+// 		var scale = (content.height * xRatio > containerHeight) ? yRatio : xRatio;
+// 		return scale;
+// 	};
+// 	const getTransform = elem => {
+// 		if(typeof elem === 'string') elem = document.querySelector(elem);
+// 		let res = {elem};
+// 		let computedStyle = window.getComputedStyle(elem, null);
+// 		let transform = ((computedStyle.transform.match(/matrix\((.*?)\)/i) || [])[1] || '').split(/\s*,\s*/).map(parseFloat);
+// 		'sx,b,c,sy,tx,ty'.split(',').forEach((prop, i) => res[prop] = transform[i]);
+// 		'left,top,width,height'.split(',').forEach((prop, i) => res[prop] = parseFloat(computedStyle[prop]));
+// 		return res;
+// 	};
 
 // Numbers
 	const triangularNumber = value => {
