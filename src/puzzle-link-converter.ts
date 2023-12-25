@@ -35,7 +35,7 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 
 	// Penpa+ url format
 	if (PenpaLoader.isPenpaUrl(url)) {
-		let puzzle = new PenpaToSclConverter().convertPenpaToScl(url);
+		let puzzle = new PenpaToSclConverter(flags).convertPenpaToScl(url);
 		if (!puzzle) throw new ConverterError('Unexpected error occured during Penpa conversion. Please contact MarkTekfan');
 		let settings = Object.entries(puzzle.settings || {})
 			.map(([k, v]) => `setting-${k}=${v}`)

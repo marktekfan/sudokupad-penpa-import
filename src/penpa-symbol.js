@@ -10,6 +10,7 @@ export const PenpaSymbol = (() => {
 		this.puzzle = puzzle;
 		this.size = size;
 		this.decoder = decoder;
+		this.isDoubleLayer = (ctx) => this.flags.doubleLayer && PenpaTools.ColorIsVisible(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
 	}
 	const C = _constructor,
 		P = Object.assign(C.prototype, { constructor: C });
@@ -83,8 +84,6 @@ export const PenpaSymbol = (() => {
 		bars_G: { fillStyle: Color.GREY_LIGHT, strokeStyle: Color.BLACK },
 		bars_W: { fillStyle: Color.WHITE, strokeStyle: Color.BLACK },
 	};
-
-	P.isDoubleLayer = (ctx) => (this.flags.doubleLayer || 0) && PenpaTools.ColorIsVisible(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
 
 	P.draw_symbol = function (ctx, x, y, num, sym, cc) {
 		switch (sym) {
