@@ -959,9 +959,9 @@ export class PenpaToSclConverter {
 				if (s1 || s2) {
 					const ctx = new DrawingContext();
 					set_surface_style(ctx, s1 || s2);
-					const fillStyle1 = (s1 && surfaceCol[p1]) || ctx.fillStyle;
+					const fillStyle1 = s1 ? surfaceCol[p1] || ctx.fillStyle : surfaceCol[p2] || ctx.fillStyle;
 					set_surface_style(ctx, s2 || s1);
-					const fillStyle2 = (s2 && surfaceCol[p2]) || ctx.fillStyle;
+					const fillStyle2 = s2 ? surfaceCol[p2] || ctx.fillStyle : surfaceCol[p1] || ctx.fillStyle;
 					// Don't remove when not visible due to dark background
 					//if (darkBackgrounds.includes(fillStyle1) || darkBackgrounds.includes(fillStyle2)) {
 					const { doubleLayer } = puinfo.flags;
