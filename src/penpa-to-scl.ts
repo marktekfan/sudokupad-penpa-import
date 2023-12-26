@@ -393,6 +393,12 @@ export class PenpaToSclConverter {
 					}
 				}
 			}
+			for (let k in pu.frame) {
+				let [p1, p2] = k.split(',').map(Number);
+				verticelist.push(p1);
+				verticelist.push(p2);
+			}
+
 			verticelist = Array.from(new Set(verticelist));
 			if (verticelist.length > 0) {
 				for (let i = 0; i < verticelist.length; i++) {
@@ -1199,14 +1205,12 @@ export class PenpaToSclConverter {
 		this.render_nobulbthermo(puinfo, puzzle);
 		this.render_arrows(puinfo, puzzle);
 		this.render_wall(puinfo, puzzle);
-		// draw_frame()
 		this.render_polygon(puinfo, puzzle);
 		this.render_freeline(puinfo, puzzle);
 		this.render_freelineE(puinfo, puzzle);
 		this.render_line(puinfo, puzzle);
 		this.render_lineE(puinfo, puzzle);
 		this.render_direction(puinfo, puzzle);
-		// draw_lattice();
 		this.render_symbol(puinfo, puzzle, 2);
 		this.render_cage(puinfo, puzzle);
 		this.render_killercages(puinfo, puzzle);
