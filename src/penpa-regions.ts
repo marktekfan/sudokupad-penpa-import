@@ -360,7 +360,7 @@ export class PenpaRegions {
 		let removeCells = false;
 		for (let k in pu.pu_q.deletelineE) {
 			// Don't remove when replaced with another line
-			if (k in pu.pu_q.lineE) {
+			if (k in pu.pu_q.lineE || k in pu.frame) {
 				continue;
 			}
 			let adj = getAdjacentCellsOfEdgeLine(pu, k);
@@ -391,7 +391,7 @@ export class PenpaRegions {
 			// remove cells from centerlist based on deletelineE
 			Object.keys(pu.pu_q.deletelineE).forEach(k => {
 				// Don't remove when replaced with another line
-				if (k in pu.pu_q.lineE) {
+				if (k in pu.pu_q.lineE || k in pu.frame) {
 					return;
 				}
 				let adj = getAdjacentCellsOfEdgeLine(pu, k);
