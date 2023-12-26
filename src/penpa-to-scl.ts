@@ -729,6 +729,7 @@ export class PenpaToSclConverter {
 		const { pu, penpaTools } = puinfo;
 		const list = pu.pu_q[feature] || [];
 		const listCol = pu.pu_q_col[feature] || [];
+		const usesCustomColor = Object.keys(listCol).some(k => typeof listCol[k] === 'string');
 		const excludedLines: Dictionary = feature === 'lineE' ? pu.pu_q.deletelineE || [] : [];
 		let wpList = penpaTools.reducePenpaLines2WaypointLines(list, listCol, excludedLines);
 		wpList.forEach(line => {
@@ -754,8 +755,8 @@ export class PenpaToSclConverter {
 			} else {
 				const isCenter = [0, 2, 3].includes(pu.point[line.keys[0]].type);
 				if (isCenter && [3, 3 * 0.85].includes(ctx.lineWidth) && ctx.lineDash.length === 0) {
-					if (puinfo.flags.fadeLines) {
-						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle, puinfo.flags.doubleLayer as boolean);
+					if (!usesCustomColor && puinfo.flags.fadeLines) {
+						ctx.strokeStyle = PenpaTools.ColorApplyAlpha(ctx.strokeStyle, true);
 					}
 					if (puinfo.flags.thickLines) {
 						ctx.lineWidth = (11 * ctx.penpaSize) / ctx.ctcSize;
