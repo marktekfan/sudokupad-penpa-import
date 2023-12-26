@@ -217,6 +217,37 @@ function removeFrameWhenEqualToRegions(puinfo: PuInfo, _puzzle: SclPuzzle, regio
 	}
 }
 
+function hasCommonEnd(pu: Pu_qa, idx: number, endpoint: number, feature: CellFeature) {
+	const mapper: Record<string, Array<CellFeature>> = {
+		thermo: ['thermo', 'nobulbthermo'],
+		nobulbthermo: ['thermo', 'nobulbthermo'],
+		arrows: ['arrows', 'direction'],
+		direction: ['arrows', 'direction'],
+	};
+	const types = mapper[feature];
+	if (!types) {
+		return false;
+	}
+	for (let type of types) {
+		const cellList = pu[type];
+		if (!cellList) {
+			continue;
+		}
+		for (var k = 0; k < cellList.length; k++) {
+			if (k != idx || type !== feature) {
+				if (cellList[k]) {
+					for (var m = 1; m < cellList[k].length; m++) {
+						if (cellList[k][m] === endpoint) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
+
 export class PenpaToSclConverter {
 	flags: FlagValues;
 
@@ -544,8 +575,8 @@ export class PenpaToSclConverter {
 			if (line.length < 2) return;
 			const target = isMaskedLine(puinfo, line) ? { target: 'overlay' } : {};
 			let points = PenpaTools.reduceWayPoints(line.map(point2RC));
-			let commonend = pu.find_common(pu.pu_q, i, line[line.length - 1], feature);
-			points = PenpaTools.shortenLine(points, 0.4, commonend ? 0.1 : 0);
+			let commonEnd = hasCommonEnd(pu.pu_q, i, line[line.length - 1], feature);
+			points = PenpaTools.shortenLine(points, 0.4, commonEnd ? 0.1 : 0);
 			let color = listCol[i] || '#a1a1a1';
 			this.puzzleAdd(
 				puzzle,
@@ -593,8 +624,8 @@ export class PenpaToSclConverter {
 			if (line.length < 2) return;
 			const target = isMaskedLine(puinfo, line) ? { target: 'overlay' } : {};
 			let points = line.map(point2RC);
-			let commonend = pu.find_common(pu.pu_q, i, line[line.length - 1], feature);
-			points = PenpaTools.shortenLine(points, 0, commonend ? 0.1 : 0);
+			let commonEnd = hasCommonEnd(pu.pu_q, i, line[line.length - 1], feature);
+			points = PenpaTools.shortenLine(points, 0, commonEnd ? 0.1 : 0);
 			let color = listCol[i] || '#a1a1a1';
 			this.puzzleAdd(
 				puzzle,

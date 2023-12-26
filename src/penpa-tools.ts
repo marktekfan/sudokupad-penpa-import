@@ -2,22 +2,22 @@ import tinycolor from 'tinycolor2';
 import { type PuInfo } from './penpa-analyzer';
 import { type PenpaPuzzle } from './penpa-loader/penpa-puzzle';
 
-export type WayPointLine = {
+export interface WayPointLine {
 	wayPoints: RC[];
 	keys: number[];
 	value: number;
 	cc?: string;
 	killercage?: number;
-};
+}
 
-type CombinedSurface = {
+interface CombinedSurface {
 	center: RC;
 	value: number;
 	key: number;
 	height: number;
 	width: number;
 	role?: string;
-};
+}
 
 //interface ReduceSurfacesDelegate { (s1: Surface, s2: Surface): boolean }
 export type ReduceSurfacesPredicate = (s1: CombinedSurface, s2: CombinedSurface) => boolean;

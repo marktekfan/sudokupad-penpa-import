@@ -110,8 +110,8 @@ type Pu_mode = {
 	sudoku: (string | number)[];
 };
 
-export class PenpaPuzzle {
-	constructor(gridtype: string);
+export interface PenpaPuzzle {
+	//constructor(document, gridtype: string);
 	gridtype: string;
 	canvasx: number;
 	canvasy: number;
@@ -158,51 +158,52 @@ export class PenpaPuzzle {
 	nx0: number;
 	width0: number;
 	width_c: number;
+	
 	_document: any;
 	_size: number;
 
-	reset(): void;
-	reset_frame(): void;
-	mode_grid(mode: string): void;
-	draw_panel(): void;
-	mode_set(v: any): void;
-	mode_qa(mode: string): void;
-	subcombimode(v: any): void;
-	redraw(): void;
-	make_frameline(): void;
-	submode_check(v: any): void;
-	canvas_size_setting(): void;
-	record(): void;
-	subsymbolmode(mode: string): void;
-	point_usecheck(): void;
-	canvasxy_update(): void;
-	point_move(x: number, y: number, theta: number): void;
-	search_center(): void;
-	find_common(pu: any, i: number, endpoint: number, symboltype: string): 0 | 1;
-	point_reflect_LR(): void;
-	point_reflect_UD(): void;
-	resize_top(sign: any, celltype?: string): void;
-	resize_bottom(sign: any, celltype?: string): void;
-	resize_left(sign: any, celltype?: string): void;
-	resize_right(sign: any, celltype?: string): void;
+	// reset(): void;
+	// reset_frame(): void;
+	// mode_grid(mode: string): void;
+	// draw_panel(): void;
+	// mode_set(v: any): void;
+	// mode_qa(mode: string): void;
+	// subcombimode(v: any): void;
+	// redraw(): void;
+	// make_frameline(): void;
+	// submode_check(v: any): void;
+	// canvas_size_setting(): void;
+	// record(): void;
+	// subsymbolmode(mode: string): void;
+	// point_usecheck(): void;
+	// canvasxy_update(): void;
+	// point_move(x: number, y: number, theta: number): void;
+	// search_center(): void;
+	// find_common(pu: any, i: number, endpoint: number, symboltype: string): 0 | 1;
+	// point_reflect_LR(): void;
+	// point_reflect_UD(): void;
+	// resize_top(sign: any, celltype?: string): void;
+	// resize_bottom(sign: any, celltype?: string): void;
+	// resize_left(sign: any, celltype?: string): void;
+	// resize_right(sign: any, celltype?: string): void;
 }
 
-export class Puzzle_square extends PenpaPuzzle {
-	constructor(nx: number, ny: number, size: number);
-	sudoku: number[];
-	canvasx: number;
-	canvasy: number;
-	size: number;
-	_size: number;
+// export class Puzzle_square extends PenpaPuzzle {
+// 	constructor(document, nx: number, ny: number, size: number);
+// 	sudoku: number[];
+// 	canvasx: number;
+// 	canvasy: number;
+// 	size: number;
+// 	_size: number;
 
-	create_point(): void;
-	draw_sudokugrid(rows: number, cols: number, start: number, end: number, linestyle: number): void;
-	draw_kakurogrid(): void;
-}
+// 	create_point(): void;
+// 	draw_sudokugrid(rows: number, cols: number, start: number, end: number, linestyle: number): void;
+// 	draw_kakurogrid(): void;
+// }
 
-export class Puzzle_sudoku extends Puzzle_square {
-	gridtype: string;
-	_size: number;
-}
+// export class Puzzle_sudoku extends Puzzle_square {
+// 	gridtype: string;
+// 	_size: number;
+// }
 
-export class Puzzle_kakuro extends Puzzle_square {}
+// export class Puzzle_kakuro extends Puzzle_square {}

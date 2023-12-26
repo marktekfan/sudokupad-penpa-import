@@ -6,7 +6,7 @@ import { Color } from './penpa-style';
 import tinycolor from 'tinycolor2';
 import type { PenpaPuzzle, Point, LineFeature, NumberFeature, SymbolFeature, SurfaceFeature, ColFeature, Pu_qa_col } from './penpa-loader/penpa-puzzle';
 
-export type PuInfo = {
+export interface PuInfo {
 	pu: PenpaPuzzle;
 	flags: FlagValues;
 	penpaTools: PenpaTools;
