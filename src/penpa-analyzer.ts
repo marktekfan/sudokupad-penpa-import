@@ -116,7 +116,7 @@ const addToCenterlist = function (pu: PenpaPuzzle, p: number) {
 	if (pu.centerlist.includes(p)) return;
 	const { makePointPair } = PenpaTools;
 	pu.centerlist.push(p);
-	pu.centerlist.sort();
+	pu.centerlist.sort((a, b) => a - b);
 	const { lineE } = pu.pu_q;
 	const { frame } = pu;
 	for (let i = 0; i < 4; i++) {
@@ -186,10 +186,14 @@ function expandGridForFillableOutsideFeatures(puinfo: PuInfo) {
 	let right = Math.max(...bounds.map(b => b[3]));
 
 	if (top < clBounds[0] || left < clBounds[1]) {
-		addToCenterlist(pu, penpaTools.matrix2point(top, left));
+		const p = penpaTools.matrix2point(top, left);
+		addToCenterlist(pu, p);
+		puinfo.maskedCells.push(p);
 	}
 	if (bottom > clBounds[2] || right > clBounds[3]) {
-		addToCenterlist(pu, penpaTools.matrix2point(bottom, right));
+		const p = penpaTools.matrix2point(bottom, right);
+		addToCenterlist(pu, p);
+		puinfo.maskedCells.push(p);
 	}
 }
 
@@ -221,10 +225,14 @@ function expandGridForWideOutsideClues(puinfo: PuInfo, margin = 0) {
 	let right = Math.max(...bounds.map(b => b[3]));
 
 	if (top < clBounds[0] - margin || left < clBounds[1] - margin) {
-		addToCenterlist(pu, matrix2point(top, left));
+		const p = matrix2point(top, left);
+		addToCenterlist(pu, p);
+		puinfo.maskedCells.push(p);
 	}
 	if (bottom > clBounds[2] + margin || right > clBounds[3] + margin) {
-		addToCenterlist(pu, matrix2point(bottom, right));
+		const p = matrix2point(bottom, right);
+		addToCenterlist(pu, p);
+		puinfo.maskedCells.push(p);
 	}
 }
 
@@ -637,7 +645,6 @@ function addSolutionCellsToCenterlist(pu: PenpaPuzzle) {
 			let [point, _val] = s.split(',');
 			addToCenterlist(pu, Number(point));
 		});
-		pu.centerlist.sort();
 	});
 	['loopline'].forEach(constraint => {
 		const solution = getPuSolution(pu, constraint) || [];
@@ -647,7 +654,6 @@ function addSolutionCellsToCenterlist(pu: PenpaPuzzle) {
 				addToCenterlist(pu, Number(point));
 			});
 		});
-		pu.centerlist.sort();
 	});
 }
 

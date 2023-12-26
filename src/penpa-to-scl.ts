@@ -101,7 +101,7 @@ function hideGridLines(puinfo: PuInfo, _puzzle: SclPuzzle) {
 	}
 
 	// Mask off non-grid grid lines
-	let maskedCells = [];
+	const { maskedCells } = puinfo;
 	for (let r = top; r <= bottom; r++) {
 		for (let c = left; c <= right; c++) {
 			let p = matrix2point(r, c);
@@ -355,9 +355,11 @@ export class PenpaToSclConverter {
 			ctx.lineWidth = 4;
 			ctx.lineCap = 'round';
 			let verticelist = [];
-			for (let i = 0; i < pu.centerlist.length; i++) {
-				for (let j = 0; j < pu.point[pu.centerlist[i]].surround.length; j++) {
-					verticelist.push(pu.point[pu.centerlist[i]].surround[j]);
+			for (let p of pu.centerlist) {
+				if (!puinfo.maskedCells.includes(p)) {
+					for (let j = 0; j < pu.point[p].surround.length; j++) {
+						verticelist.push(pu.point[p].surround[j]);
+					}
 				}
 			}
 			verticelist = Array.from(new Set(verticelist));
