@@ -315,6 +315,7 @@ function cleanupPu(pu: PenpaPuzzle) {
 		Object.keys(pu.pu_q[feature]).forEach(p => {
 			if (!pu.point[Number(p)]) {
 				delete pu.pu_q[feature][p];
+				delete pu.pu_q_col[feature][p];
 			}
 		});
 	});
@@ -326,13 +327,16 @@ function cleanupPu(pu: PenpaPuzzle) {
 				// X-mark on edge
 				if (!pu.point[p] || ![2, 3].includes(pu.point[p].type)) {
 					delete pu.pu_q[feature][p];
+					delete pu.pu_q_col[feature][p];
 				}
 			} else {
 				let [p1, p2] = key.split(',').map(Number);
 				if (!pu.point[p1] || pu.point[p1].type !== 1) {
 					delete pu.pu_q[feature][p];
+					delete pu.pu_q_col[feature][p];
 				} else if (!pu.point[p2] || pu.point[p2].type !== 1) {
 					delete pu.pu_q[feature][p];
+					delete pu.pu_q_col[feature][p];
 				}
 			}
 		});
@@ -354,9 +358,20 @@ function cleanupPu(pu: PenpaPuzzle) {
 				let [p1, p2] = key.split(',').map(Number);
 				if (!pu.point[p1] || ![0, 2, 3].includes(pu.point[p1].type)) {
 					delete pu.pu_q[feature][key];
+					delete pu.pu_q_col[feature][key];
 				} else if (!pu.point[p2] || ![0, 2, 3].includes(pu.point[p2].type)) {
 					delete pu.pu_q[feature][key];
+					delete pu.pu_q_col[feature][key];
 				}
+			}
+		});
+	});
+	['freeline'].forEach(f => {
+		const feature = f as LineFeature;
+		Object.keys(pu.pu_q[feature]).forEach(key => {
+			// Replace 'short line' (40) with normal gray line (5)
+			if (pu.pu_q[feature][key] == 40) {
+				pu.pu_q[feature][key] = 5;
 			}
 		});
 	});
@@ -366,6 +381,7 @@ function cleanupPu(pu: PenpaPuzzle) {
 			let [p1, p2] = p.split(',').map(Number);
 			if (!pu.point[p1] || !pu.point[p2]) {
 				delete pu.pu_q[feature][p];
+				delete pu.pu_q_col[feature][p];
 			}
 		});
 	});
@@ -673,7 +689,7 @@ export class PenpaAnalyzer {
 		};
 
 		// Inject puzzle/puinfo metrics into helper classes
-		const penpaTools = new PenpaTools(puinfo);		
+		const penpaTools = new PenpaTools(puinfo);
 		puinfo.penpaTools = penpaTools;
 
 		if (!pu.solution) {
