@@ -351,9 +351,11 @@ function cleanupPu(pu: PenpaPuzzle) {
 					// Move to lineE (because it's always on an edge) but don't overwrite
 					if (!pu.pu_q['lineE'][p]) {
 						pu.pu_q['lineE'][p] = pu.pu_q[feature][p];
+						pu.pu_q_col['lineE'][p] = pu.pu_q_col[feature][p];
 					}
 				}
 				delete pu.pu_q[feature][p];
+				delete pu.pu_q_col[feature][p];
 			} else {
 				let [p1, p2] = key.split(',').map(Number);
 				if (!pu.point[p1] || ![0, 2, 3].includes(pu.point[p1].type)) {
@@ -408,8 +410,8 @@ function moveBlackEdgelinesToFrame(puinfo: PuInfo) {
 	const frame = pu.frame;
 	const lineECol = pu.pu_q_col.lineE;
 	const deletelineE = pu.pu_q.deletelineE;
-	const styleMap: Record<number, number> = { 2: 2, 21: 21, 80: 1 };
-	const styleMapCol: Record<number, number> = { 2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21, 80: 1 };
+	const styleMap: Record<number, number> = { 2: 2, 21: 21 };
+	const styleMapCol: Record<number, number> = { 2: 2, 3: 2, 5: 2, 8: 2, 9: 2, 21: 21 };
 	Object.keys(lineE).forEach(key => {
 		const p = key.split(',').map(Number);
 		if (p.length < 2) return;
