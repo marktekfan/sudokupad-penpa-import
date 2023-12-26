@@ -485,7 +485,7 @@ export class PenpaRegions {
 				.sort((a, b) => a - b)
 				.reverse();
 			for (let regionSize of sortedSizes) {
-				if (regionSize >= 4 && sizes[regionSize] >= 4) {
+				if (regionSize >= 4 && regionSize <= 16 && sizes[regionSize] >= 4) {
 					let selectedRegions = Object.keys(regions)
 						.filter(reg => regions[reg].length === regionSize)
 						.map(reg => regions[reg]);
