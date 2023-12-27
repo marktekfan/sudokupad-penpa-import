@@ -18,6 +18,7 @@ export interface PuInfo {
 	ny0: number; // height + 4
 	originalSize: number; // Original cell size. Note: pu.size is always set to 1
 	originalPu: string;
+	originalCenterlist: number[];
 	width_c: number; // canvas width, default = nx + 1
 	height_c: number; // canvas height, default = ny + 1
 	center_n: number; // center point of canvas
@@ -39,7 +40,7 @@ export interface PuInfo {
 	rules: string;
 	custom_message: string;
 	sourcelink: string;
-};
+}
 
 const dashLineStyle = [10, 11, 12, 13, 14, 15, 17, 110, 115];
 
@@ -671,6 +672,7 @@ export class PenpaAnalyzer {
 			ny0: pu.ny0, // height + 4
 			originalSize: pu._size, // Original cell size. Note: pu.size is always set to 1
 			originalPu: JSON.stringify(pu),
+			originalCenterlist: [...pu.centerlist],
 			//theta: pu.theta, // rotation angle
 			//reflect: pu.reflect, // [0] = -1: reft LR; [1] = -1: reflect UD
 			//centerlist: pu.centerlist, // board cells list

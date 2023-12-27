@@ -371,12 +371,13 @@ export class PenpaToSclConverter {
 		const { pu, penpaTools } = puinfo;
 		const { point2RC } = penpaTools;
 		// Dotted grid lines
-		// if (pu.mode.grid[0] === '2') {
-		// 	puzzle.settings['dashedgrid'] = 1;
-		// }
+		//if (pu.mode.grid[0] === '2') {
+		// 	 Implemented in the converter as dashed lines
+		// 	 No special treatment here
+		//}
 		// No grid lines
 		if (pu.mode.grid[0] === '3') {
-			puzzle.settings!['nogrid'] = 1; // not (yet) implemented
+			puzzle.settings!['nogrid'] = 1; // not (yet) implemented in SudokuPad apps
 		}
 		// // Grid points
 		if (pu.mode.grid[1] === '1') {
@@ -386,19 +387,11 @@ export class PenpaToSclConverter {
 			ctx.lineWidth = 4;
 			ctx.lineCap = 'round';
 			let verticelist = [];
-			for (let p of pu.centerlist) {
-				if (!puinfo.maskedCells.includes(p)) {
-					for (let j = 0; j < pu.point[p].surround.length; j++) {
-						verticelist.push(pu.point[p].surround[j]);
-					}
+			for (let p of puinfo.originalCenterlist) {
+				for (let j = 0; j < pu.point[p].surround.length; j++) {
+					verticelist.push(pu.point[p].surround[j]);
 				}
 			}
-			for (let k in pu.frame) {
-				let [p1, p2] = k.split(',').map(Number);
-				verticelist.push(p1);
-				verticelist.push(p2);
-			}
-
 			verticelist = Array.from(new Set(verticelist));
 			if (verticelist.length > 0) {
 				for (let i = 0; i < verticelist.length; i++) {
