@@ -370,37 +370,40 @@ export class PenpaToSclConverter {
 	private drawBoardLattice = (puinfo: PuInfo, puzzle: SclPuzzle) => {
 		const { pu, penpaTools } = puinfo;
 		const { point2RC } = penpaTools;
-		// Dotted grid lines
-		//if (pu.mode.grid[0] === '2') {
-		// 	 Implemented in the converter as dashed lines
-		// 	 No special treatment here
-		//}
-		// No grid lines
-		if (pu.mode.grid[0] === '3') {
-			puzzle.settings!['nogrid'] = 1; // not (yet) implemented in SudokuPad apps
+
+		switch (pu.mode.grid[0]) {
+			// Dotted grid lines
+			case '2':
+				//  Implemented in the converter correctly as dashed lines
+				//  No special treatment here
+				break;
+
+			// No grid lines
+			case '3':
+				puzzle.settings!['nogrid'] = 1; // not (yet) implemented in SudokuPad apps
+				break;
 		}
-		// // Grid points
+
+		// Grid points
 		if (pu.mode.grid[1] === '1') {
 			let ctx = new DrawingContext();
 			ctx.target = puinfo.hasCellMask ? 'overlay' : 'cell-grids';
 			ctx.strokeStyle = Color.BLACK;
 			ctx.lineWidth = 4;
 			ctx.lineCap = 'round';
-			let verticelist = [];
+			let verticelist = new Set<number>();
+			// Always use original centerlist for grid points
 			for (let p of puinfo.originalCenterlist) {
 				for (let j = 0; j < pu.point[p].surround.length; j++) {
-					verticelist.push(pu.point[p].surround[j]);
+					verticelist.add(pu.point[p].surround[j]);
 				}
 			}
-			verticelist = Array.from(new Set(verticelist));
-			if (verticelist.length > 0) {
-				for (let i = 0; i < verticelist.length; i++) {
-					let [y, x] = point2RC(verticelist[i]);
-					ctx.moveTo(x, y);
-					ctx.lineTo(x, y);
-				}
-				this.puzzleAdd(puzzle, 'lines', ctx.toOpts(), 'lattice');
-			}
+			verticelist.forEach(p => {
+				let [y, x] = point2RC(p);
+				ctx.moveTo(x, y);
+				ctx.lineTo(x, y);
+			});
+			this.puzzleAdd(puzzle, 'lines', ctx.toOpts(), 'lattice');
 		}
 	};
 
