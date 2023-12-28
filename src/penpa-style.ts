@@ -319,18 +319,22 @@ export function set_font_style(ctx: Ctx, size: number, type: number, ccolor: str
 				ctx.fillStyle = Color.BLACK;
 			}
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 2:
 			ctx.fillStyle = Color.GREEN_LIGHT;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 3:
 			ctx.fillStyle = Color.GREY;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 4:
 			ctx.fillStyle = Color.WHITE;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 5:
 			ctx.fillStyle = Color.BLACK;
@@ -345,22 +349,27 @@ export function set_font_style(ctx: Ctx, size: number, type: number, ccolor: str
 		case 7:
 			ctx.fillStyle = Color.WHITE;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 8:
 			ctx.fillStyle = Color.BLUE_LIGHT;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 9:
 			ctx.fillStyle = Color.BLUE;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 10:
 			ctx.fillStyle = Color.RED;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 		case 11:
 			ctx.fillStyle = Color.WHITE;
 			ctx.strokeStyle = Color.TRANSPARENTWHITE;
+			ctx.lineWidth = 0; //ML
 			break;
 	}
 }

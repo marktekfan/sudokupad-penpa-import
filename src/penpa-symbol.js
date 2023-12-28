@@ -10,7 +10,7 @@ export const PenpaSymbol = (() => {
 		this.puzzle = puzzle;
 		this.size = size;
 		this.decoder = decoder;
-		this.isDoubleLayer = (ctx) => this.flags.doubleLayer && PenpaTools.ColorIsVisible(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
+		this.isDoubleLayer = ctx => this.flags.doubleLayer && PenpaTools.ColorIsVisible(ctx.fillStyle) && !PenpaTools.ColorIsOpaque(ctx.fillStyle);
 	}
 	const C = _constructor,
 		P = Object.assign(C.prototype, { constructor: C });
@@ -487,7 +487,6 @@ export const PenpaSymbol = (() => {
 				}
 				break;
 			case '4': //tapa
-				this.draw_numbercircle(ctx, number, p, p_x, p_y, 0.44);
 				const tapa_pos = {
 					1: { font: 0.7, offset: [[0, 0.06]] },
 					2: {
@@ -515,8 +514,37 @@ export const PenpaSymbol = (() => {
 						],
 					},
 				};
+				const quad_pos = {
+					1: { font: 0.28, offset: [[0, 0.01]] },
+					2: {
+						font: 0.28,
+						offset: [
+							[-0.08, 0.01],
+							[0.09, 0.01],
+						],
+					},
+					3: {
+						font: 0.28,
+						offset: [
+							[-0.08, -0.09],
+							[0.09, -0.09],
+							[0, 0.14],
+						],
+					},
+					4: {
+						font: 0.28,
+						offset: [
+							[-0.08, -0.1],
+							[0.09, -0.1],
+							[-0.08, 0.13],
+							[0.09, 0.13],
+						],
+					},
+				};
+				const quad = this.pu.point[p].type === 1; // Cell corner
+				this.draw_numbercircle(ctx, number, p, p_x, p_y, quad ? 0.30 : 0.44);
 				let values = [...number[0]]; // This is to handle unicode symbols.
-				let pos = tapa_pos[values.length];
+				let pos = quad ? quad_pos[values.length] : tapa_pos[values.length];
 				if (pos) {
 					set_font_style(ctx, pos.font * 0.9, number[1]);
 					for (let i = 0; i < pos.offset.length; i++) {
