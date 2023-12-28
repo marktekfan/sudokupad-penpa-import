@@ -261,6 +261,16 @@ export class PenpaToSclConverter {
 		if (this.flags.debug && note) {
 			part.penpa = note;
 		}
+
+		// Remove redundant use of target property
+		if (part.target === 'overlay' && feature === 'underlays') {
+			feature = 'overlays';
+			delete part.target;
+		} else if (part.target === 'underlay' && feature === 'overlays') {
+			feature = 'underlays';
+			delete part.target;
+		}
+
 		puzzle.addFeature(feature, part);
 	};
 
