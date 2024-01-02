@@ -1,5 +1,5 @@
-import { PuInfo } from './penpa-analyzer';
-import { PenpaPuzzle } from './penpa-loader/penpa-puzzle';
+import { type PuInfo } from './penpa-postprocess';
+import { type PenpaPuzzle } from './penpa-loader/penpa-puzzle';
 import { PenpaTools } from './penpa-tools';
 
 export function getSolutionInfo(puinfo: PuInfo) {

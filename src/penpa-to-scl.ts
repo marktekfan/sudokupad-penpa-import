@@ -1,4 +1,4 @@
-import { PenpaTools, ReduceSurfacesPredicate } from './penpa-tools.js';
+import { PenpaTools, type ReduceSurfacesPredicate } from './penpa-tools.js';
 import { PenpaSymbol } from './penpa-symbol.js';
 import { Color, set_surface_style, set_line_style } from './penpa-style.js';
 import { md5Digest } from './sudokupad/utilities.js';
@@ -7,9 +7,9 @@ import { PenpaRegions } from './penpa-regions.js';
 import { PenpaLoader } from './penpa-loader/penpa-loader.js';
 import tinycolor from 'tinycolor2';
 import { getPuSolution } from './penpa-solution.js';
-import { PenpaAnalyzer, PuInfo } from './penpa-analyzer.js';
-import { ConverterFlags, FlagValues } from './converter-flags.js';
-import { CellFeature, LineFeature, NumberFeature, PenpaPuzzle, Pu_qa } from './penpa-loader/penpa-puzzle.js';
+import { PenpaPostProcess,type PuInfo } from './penpa-postprocess.js';
+import { ConverterFlags, type FlagValues } from './converter-flags.js';
+import type { CellFeature, LineFeature, NumberFeature, PenpaPuzzle, Pu_qa } from './penpa-loader/penpa-puzzle.js';
 import { SclPuzzle } from './sclpuzzle.js';
 import type { SclCage, SclFeature } from './sclpuzzle.js';
 import type { WayPointLine } from './penpa-tools.js';
@@ -1176,7 +1176,7 @@ export class PenpaToSclConverter {
 		}
 		if (!pu) return;
 
-		const { puinfo } = PenpaAnalyzer.preparePenpaPuzzle(pu, this.flags);
+		const { puinfo } = PenpaPostProcess.postProcessPenpaPuzzle(pu, this.flags);
 
 		DrawingContext.ctcSize = 64;
 		DrawingContext.penpaSize = puinfo.originalSize;

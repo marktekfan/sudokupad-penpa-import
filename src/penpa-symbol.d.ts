@@ -1,4 +1,4 @@
-import { type PuInfo } from './penpa-analyzer';
+import { type PuInfo } from './penpa-postprocess';
 import { type SclPuzzle } from './sclpuzzle';
 import { type Ctx } from './penpa-drawingcontext';
 

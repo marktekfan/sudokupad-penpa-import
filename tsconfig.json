@@ -1,32 +1,40 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    /* Base options: */
+    "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["vite/client"],
+    "target": "ES2020",
+    "verbatimModuleSyntax": true,
     "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+
+    "types": ["vite/client"],
     "checkJs": false,
-    //"verbatimModuleSyntax": false,
+    "useDefineForClassFields": true,
+    
+    /* Strictness and Linting */
+    "strict": true,
+    //"noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "noEmit": true,
+
+    /* DOM */
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
 
     // "typeRoots": [
     //   "src/types",
     //   "node_modules/@types"
     // ],
     
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
   },
   "include": ["src", "tests"],
   // "exclude": ["src/types/**", "node_modules"],

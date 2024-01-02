@@ -1,5 +1,5 @@
 import tinycolor from 'tinycolor2';
-import { type PuInfo } from './penpa-analyzer';
+import { type PuInfo } from './penpa-postprocess';
 import { type PenpaPuzzle } from './penpa-loader/penpa-puzzle';
 
 export interface WayPointLine {

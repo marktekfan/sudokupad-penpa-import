@@ -6,7 +6,7 @@ import { addHandler, addDownEventHandler, removeDownEventHandler, loadFromFile }
 import { convertPuzzleAsync } from './puzzle-link-converter';
 import { Testing } from './testing';
 import { AppVersion } from './appversion';
-import { ConverterFlags, FlagName, FlagValues } from './converter-flags';
+import { ConverterFlags, type FlagName, type FlagValues } from './converter-flags';
 import { ConverterError } from './converter-error';
 
 setAppVersion();

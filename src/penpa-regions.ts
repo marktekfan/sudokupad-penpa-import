@@ -1,4 +1,4 @@
-import { PuInfo } from './penpa-analyzer';
+import { type PuInfo } from './penpa-postprocess';
 import { PenpaTools } from './penpa-tools';
 
 type Regions = Record<string, RC[]>;
