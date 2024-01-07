@@ -10,6 +10,7 @@ export interface PuInfo {
 	pu: PenpaPuzzle;
 	flags: FlagValues;
 	penpaTools: PenpaTools;
+
 	// From PenpaPuzzle:
 	point: Point[]; // point coordinate map
 	nx: number; // width
@@ -469,7 +470,7 @@ function moveBlackEdgelinesToFrame(puinfo: PuInfo) {
 // - Remove single-cell cages on board edge
 //   Because they were only used to define the grid outline
 // - Detect foglight cages
-function prepareKillercages(puinfo: PuInfo) {
+function prepareKillercages(puinfo: PuInfo, width: number, height: number) {
 	const { pu, penpaTools } = puinfo;
 	const { point2cell, point2centerPoint, penpaLines2WaypointLines } = penpaTools;
 
@@ -535,7 +536,6 @@ function prepareKillercages(puinfo: PuInfo) {
 
 	// Remove any single cell cages on grid corners
 	// Because they were only used to define the grid outline
-	const { height, width } = puinfo;
 	killercages.forEach(killer => {
 		if (!killer) return;
 		if (killer.length !== 1 || (killer as any)['value'] !== undefined) return;
@@ -664,6 +664,7 @@ export class PenpaPostProcess {
 			pu: pu,
 			flags: flags,
 			penpaTools: undefined!,
+
 			// Copied from pu:
 			point: pu.point, // point coordinate map
 			nx: pu.nx, // width
@@ -679,14 +680,15 @@ export class PenpaPostProcess {
 			width_c: pu.width_c, // canvas width, default = nx + 1
 			height_c: pu.height_c, // canvas height, default = ny + 1
 			center_n: pu.center_n, // center point of canvas
+
 			// Calculated parameters:
 			col0: 0, // offset of puzzle cell(0,0)
 			row0: 0, //  offset of puzzle cell(0,0)
 			width: 0, // number of columns in puzzle (=after translation)
 			height: 0, // number of rows in puzzle (=after translation)
 			maskedCells: [],
-			squares: [],
-			regions: [],
+			squares: undefined!,
+			regions: undefined!,
 			uniqueRowsCols: false,
 			hasCellMask: false,
 			foglight: false,
@@ -735,8 +737,6 @@ export class PenpaPostProcess {
 			expandGridForWideOutsideClues(puinfo);
 		}
 
-		prepareKillercages(puinfo);
-
 		// Determine visual cell grid bounding box
 		let { top, left, height, width } = PenpaTools.getBoundsRC(pu.centerlist, puinfo.penpaTools.point2cell);
 
@@ -755,6 +755,8 @@ export class PenpaPostProcess {
 		puinfo.rules = pu._document.saveinforules || '';
 		puinfo.custom_message = pu._document.custom_message || '';
 		puinfo.sourcelink = pu._document.sourcelink || '';
+
+		prepareKillercages(puinfo, width, height);
 
 		return { puinfo };
 	}

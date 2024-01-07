@@ -1,4 +1,4 @@
-const version = '0.34.2';
+const version = '0.34.3';
 
 export class AppVersion {
 	static version = version;
