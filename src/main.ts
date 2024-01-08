@@ -176,7 +176,7 @@ function doInitialize() {
 			dropArea.addEventListener(eventName, unhighlight, false);
 		});
 
-		let dropdelaytimer: number = null!;
+		let dropdelaytimer: ReturnType<typeof setTimeout> | undefined = undefined;
 		function highlight(_e: any) {
 			dropArea.classList.add('drophover');
 			if (dropdelaytimer) clearTimeout(dropdelaytimer);

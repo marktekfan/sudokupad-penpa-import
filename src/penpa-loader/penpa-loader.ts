@@ -1,4 +1,5 @@
 import { FakeDoc } from './fakedoc';
+import UserSettings from './usersettings';
 import { PenpaGeneral } from './penpa-general';
 import { ConverterError } from '../converter-error';
 
@@ -215,8 +216,8 @@ const puzzlinkNames: Dictionary<string> = {
 };
 
 const parsePuzzLink = (url: string) => {
-	let fakedoc = new FakeDoc();
-	let penpaGeneral = PenpaGeneral(fakedoc);
+	let doc = new FakeDoc();
+	let penpaGeneral = PenpaGeneral(doc, UserSettings);
 
 	let pu = penpaGeneral.decode_puzzlink(url);
 	if (!pu || (pu.user_tags.length === 0 && pu.mode.qa !== 'pu_a')) return null;
@@ -237,6 +238,7 @@ const parsePuzzLink = (url: string) => {
 		rules.push('This puzzle uses variant rules.');
 	}
 
+	pu._userSettings = UserSettings;
 	pu._document = {
 		saveinfotitle: title,
 		saveinforules: rules.join('\n'),
@@ -294,10 +296,11 @@ const parsePenpaPuzzle = (urlstring: string) => {
 		'sol_or_mine',
 	].forEach(id => doc.getElementById(id).classList.add('solcheck_or'));
 
-	let penpaGeneral = PenpaGeneral(doc);
+	let penpaGeneral = PenpaGeneral(doc, UserSettings);
 
 	try {
 		let pu = penpaGeneral.load(urlParam, 'local');
+		pu._userSettings = UserSettings;
 		pu._document = doc.getValues();
 		return pu;
 	} catch (err: any) {

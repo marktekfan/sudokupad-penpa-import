@@ -7,7 +7,7 @@ import { PenpaRegions } from './penpa-regions.js';
 import { PenpaLoader } from './penpa-loader/penpa-loader.js';
 import tinycolor from 'tinycolor2';
 import { getPuSolution } from './penpa-solution.js';
-import { PenpaPostProcess,type PuInfo } from './penpa-postprocess.js';
+import { PenpaPostProcess, type PuInfo } from './penpa-postprocess.js';
 import { ConverterFlags, type FlagValues } from './converter-flags.js';
 import type { CellFeature, LineFeature, NumberFeature, PenpaPuzzle, Pu_qa } from './penpa-loader/penpa-puzzle.js';
 import { SclPuzzle } from './sclpuzzle.js';

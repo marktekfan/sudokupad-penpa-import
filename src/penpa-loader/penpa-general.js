@@ -4,7 +4,7 @@ import { Puzzle_square as _Puzzle_square, Puzzle_sudoku as _Puzzle_sudoku, Puzzl
 import { Swal } from '../Swal';
 import { Color } from '../penpa-style';
 
-export const PenpaGeneral = function (document) {
+export const PenpaGeneral = function (document, UserSettings) {
 
 	// Inject document into Puzzle constructors
 	const Puzzle_square = new Proxy(_Puzzle_square, {
@@ -43,28 +43,6 @@ export const PenpaGeneral = function (document) {
 	const DOMPurify = {
 		sanitize: t => t
 	};
-
-	class _UserSettings {
-		static loadFromCookies() {};
-		static tab_settings = [];
-        static gridtype = '';
-        static displaysize = 38;
-	}
-
-	const UserSettings = new Proxy(_UserSettings, {
-		get(target, prop, receiver) {
-			if (!Object.hasOwn(target, prop)) {
-                console.warn('UserSettings: Unknown property get', prop);
-            };
-            return Reflect.get(...arguments);
-		},
-		set(obj, prop, value) {
-            if (!Object.hasOwn(obj, prop)) {
-                console.warn('UserSettings: Unknown property set', prop);
-            }
-            return Reflect.set(...arguments);
-		},
-	});
 
 	class Panel {
 		draw_panel() {}
@@ -2251,7 +2229,8 @@ function load(urlParam, type = 'url', origurl = null) {
                     pu.mode[i][j] = mode[i][j];
                 }
             }
-        }        pu.pu_q = JSON.parse(rtext[3]);
+        }
+        pu.pu_q = JSON.parse(rtext[3]);
         pu.pu_a = JSON.parse(rtext[4]);
         if (!pu.pu_q.polygon) {
             pu.pu_q.polygon = [];

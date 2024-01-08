@@ -1,3 +1,5 @@
+import UserSettings from './usersettings';
+
 export class Point {
 	constructor(
 		x: number,
@@ -158,8 +160,9 @@ export interface PenpaPuzzle {
 	nx0: number;
 	width0: number;
 	width_c: number;
-	
-	_document: any;
+
+	_document: Record<string, any>;
+	_userSettings: typeof UserSettings;
 	_size: number;
 
 	// reset(): void;

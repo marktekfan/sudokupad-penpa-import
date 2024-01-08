@@ -265,7 +265,7 @@ function cleanupPu(pu: PenpaPuzzle) {
 		pu_qa.nobulbthermo = pu_qa.nobulbthermo || [];
 	});
 
-	if (!pu.pu_q_col || pu._document['custom_color_opt'] !== '2') {
+	if (!pu.pu_q_col || pu._userSettings.custom_colors_on !== 2) {
 		pu.pu_q_col = {} as Pu_qa_col;
 		pu.pu_q_col.surface = {};
 		pu.pu_q_col.number = {};
@@ -660,6 +660,7 @@ function addSolutionCellsToCenterlist(pu: PenpaPuzzle) {
 
 export class PenpaPostProcess {
 	static postProcessPenpaPuzzle(pu: PenpaPuzzle, flags: FlagValues) {
+
 		const puinfo: PuInfo = {
 			pu: pu,
 			flags: flags,

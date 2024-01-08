@@ -2010,7 +2010,7 @@ export class Puzzle_sudoku extends Puzzle_square {
 			parseInt(this.document.getElementById("nb_space4").value)
 		];
 		this.size = 1;
-		this._size = size;
+		this._size = Math.max(size, 38);
 		this.reset();
 	}
 }
