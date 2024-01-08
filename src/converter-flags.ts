@@ -54,7 +54,7 @@ export class ConverterFlags {
 	getFlagValues() {
 		return this.flagValues as FlagValues;
 	}
-	
+
 	getFlagValuesUnsafe() {
 		return this.flagValues as FlagsRecord;
 	}

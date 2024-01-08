@@ -105,7 +105,6 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 			}
 
 			throw new ConverterError('Not a SudokuPad or f-puzzles JSON puzzle format');
-
 		} catch (ex: any) {
 			throw new ConverterError(ex.message);
 		}

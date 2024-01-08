@@ -662,7 +662,7 @@ export class PenpaRegions {
 				// Revisit failed squares, but now with selectively erased lines.
 				for (let sq of failedSquares) {
 					let validRegionOutlines: Array<string[]> = [];
-					//let resolved = 
+					//let resolved =
 					[noFrameEdges, noRegionEdges].some(noEdges => {
 						// try again with erased lines
 						let edges = Object.assign({}, noEdges);
