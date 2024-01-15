@@ -185,7 +185,6 @@ function isMaskedLine(puinfo: PuInfo, line: number[]) {
 			x += stepx;
 			y += stepy;
 			pnext = matrix2point(y, x);
-			if (puinfo.maskedCells.includes(pnext)) return true;
 			let masked = isMaskedCell(puinfo, pnext);
 			if (masked && prevMasked) return true;
 			if (masked !== prevMasked) {
