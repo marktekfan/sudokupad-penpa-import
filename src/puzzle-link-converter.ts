@@ -88,8 +88,8 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 				.join('&');
 
 			// scl content
-			if (puzzle.id && puzzle.cells) {
-				var puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
+			if (puzzle.cells) {
+				var puzzleId = encodeSCLPuz(puzzle);
 				return puzzleId + (settings ? '?' + settings : '');
 			}
 

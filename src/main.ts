@@ -253,7 +253,7 @@ function OnClearInputURL() {
 }
 
 function OnSelectActionChange(e: any) {
-	const value = (e.target?.value as string) ?? '';
+	const value = (e.target?.value as string) ?? e ?? '';
 	let showUrl = value.startsWith('create');
 	generatedUrlSectionElem.classList.toggle('visible', showUrl);
 	if (!value.includes('json')) {
@@ -360,6 +360,7 @@ async function OnConvert(redirect = false) {
 
 					generatedUrlElem.value = '';
 					const { isRemotePuzzleId, parsePuzzleData, fetchPuzzle } = PuzzleLoader;
+					puzzleId = puzzleId.split('?')[0]; // Strip off parameters (settings)
 					puzzleId = puzzleId.split('&')[0]; // Strip off parameters (settings)
 					if (isRemotePuzzleId(puzzleId)) {
 						try {
