@@ -13,18 +13,8 @@ const reSudokuPadUrl = /^sudokupad:\/\/puzzle\/(.+)/;
 const reCtc = /(?:app.crackingthecryptic.com|sudokupad.app)(?:\/sudoku(?:\.html)?)?\/?(?:\?puzzleid=)?(?<puzzleid>.+)/;
 
 export function encodeSCLPuz(puzzle: SclPuzzle | string) {
-	const { zip, propMap } = PuzzleZipper;
-	// new mapping
-	propMap.duration = 'dur';
-	delete (propMap as any).d;
-	(propMap as any).d2 = 'd';
-
+	const { zip } = PuzzleZipper;
 	let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(zip(puzzle));
-
-	// Restore mapping
-	propMap.duration = 'duration';
-	delete (propMap as any).d2;
-	propMap.d = 'd2';
 	return puzzleId;
 }
 
