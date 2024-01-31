@@ -189,7 +189,8 @@ export function makeSolutionFromSolutionModeDigits(pu: PenpaPuzzle) {
 
 	// A significant number of solution digits should be present
 	// Note: It is not possible to reliably detect a complete solution
-	if (sol[4].length > pu.centerlist.length / 2) {
+	const minimumSolRatio = 0.3;
+	if (sol[4].length > pu.centerlist.length * minimumSolRatio) {
 		pu.solution = JSON.stringify(sol);
 	}
 }
