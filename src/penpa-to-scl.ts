@@ -447,8 +447,8 @@ export class PenpaToSclConverter {
 		let centers = keys.map(k => ({ center: point2RC(k), value: list[k], key: Number(k), height: 1, width: 1 }));
 		const predicate: ReduceSurfacesPredicate = (s1, s2) => {
 			return (
-				true &&
-				((listCol[s1.key] && listCol[s1.key] === listCol[s2.key]) || (!listCol[s1.key] && s1.value === s2.value)) &&
+				listCol[s1.key] === listCol[s2.key] &&
+				(listCol[s1.key] ? true : s1.value === s2.value) &&
 				pu.centerlist.includes(s1.key) === pu.centerlist.includes(s2.key) &&
 				isBoardCell(s1.center) === isBoardCell(s2.center)
 			);
