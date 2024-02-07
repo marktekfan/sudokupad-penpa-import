@@ -261,7 +261,7 @@ function OnSelectActionChange(e: any) {
 	}
 }
 
-const destinations = ['https://sudokupad.app/', 'https://beta.sudokupad.app/', 'https://alpha.sudokupad.app/'];
+const destinations = ['https://sudokupad.app/', 'https://beta.sudokupad.app/', 'https://alpha.sudokupad.app/', 'https://app.crackingthecryptic.com/'];
 
 function addDestination(urlPrefix: string) {
 	let option = document.createElement('option');
