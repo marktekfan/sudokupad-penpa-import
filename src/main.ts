@@ -302,7 +302,9 @@ function getPenpaDecoderOptions() {
 
 async function OnConvert(redirect = false) {
 	let destination = selectDestinationElem.value;
-	localStorage.destination = destination;
+	if (!destination.includes('crackingthecryptic')) {
+		localStorage.destination = destination;
+	}
 
 	convertButtonElem.disabled = true;
 	convertButtonElem.innerHTML = 'Converting...';
