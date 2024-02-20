@@ -121,7 +121,7 @@ export const PuzzleLoader = (() => {
 					if(url.includes('firebasestorage')) puzzle = PuzzleZipper.zip(puzzle);
 					puzzle = isRemotePuzzleId(puzzle) ? `scl${loadFPuzzle.compressPuzzle(puzzle)}` : puzzle;
 					puzzle = updateCache(puzzleId, puzzle);
-					if(puzzle.id === undefined) puzzle.id = puzzleId;
+					if(typeof puzzle === 'object' && puzzle.id === undefined) puzzle.id = puzzleId;
 					console.timeEnd('fetchPuzzle');
 					return puzzle;
 				}
