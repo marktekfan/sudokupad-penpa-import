@@ -16,9 +16,14 @@
     "bump-patch": "node scripts/bumpversion.js -patch=1"
   },
   "dependencies": {
+    "@vueuse/core": "^10.7.2",
     "json-stringify-pretty-compact": "^4.0.0",
+    "pinia": "^2.1.7",
+    "primeflex": "^3.3.1",
+    "primeicons": "^6.0.1",
+    "primevue": "^3.48.1",
     "tinycolor2": "^1.6.0",
-    "vue": "^3.4.5",
+    "vue": "^3.4.18",
     "vue-router": "^4.2.5",
     "zlibjs": "^0.3.1"
   },

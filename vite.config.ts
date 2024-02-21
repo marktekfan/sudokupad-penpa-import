@@ -12,5 +12,5 @@ export default defineConfig({
 		},
 	},
 	// hosted at: https://marktekfan.github.io/sudokupad-penpa-import/
-	base: '/sudokupad-penpa-import/',
+	// base: '/sudokupad-penpa-import/',
 });
