@@ -1,9 +1,7 @@
-const version = '0.34.4';
+const version = '0.99.0';
+const name = 'SudokuPad Penpa Converter';
 
 export class AppVersion {
 	static version = version;
-	static name = 'SudokuPad Penpa+ Importer';
-	static getAppTitle() {
-		return `${AppVersion.name} v${AppVersion.version}`;
-	}
+	static name = name;
 }

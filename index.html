@@ -4,7 +4,18 @@
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
     <!-- <link id="theme-link" rel="stylesheet" href="/themes/aura-light-amber/theme.css"> -->
-    <link id="theme-link" rel="stylesheet" href="/themes/aura-dark-amber/theme.css">
+    <script>
+      const query = '(prefers-color-scheme: dark)';
+      let preferDark = window.matchMedia(query).matches;
+      let appearance = localStorage.getItem('appearance');
+      if (!['dark', 'light'].includes(appearance)) appearance = preferDark ? 'dark' : 'light';
+      const link = document.createElement('link');
+      link.id = 'theme-link';
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = `/sudokupad-penpa-import/themes/aura-${appearance}-amber/theme.css`;
+      document.head.insertBefore(link, document.head.firstChild);
+    </script>
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
     <title>Vite App</title>
   </head>

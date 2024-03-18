@@ -13,25 +13,14 @@ const reSudokuPadUrl = /^sudokupad:\/\/puzzle\/(.+)/;
 const reCtc = /(?:app.crackingthecryptic.com|sudokupad.app)(?:\/sudoku(?:\.html)?)?\/?(?:\?puzzleid=)?(?<puzzleid>.+)/;
 
 export function encodeSCLPuz(puzzle: SclPuzzle | string) {
-	const { zip, propMap } = PuzzleZipper;
-	// new mapping
-	propMap.duration = 'dur';
-	delete (propMap as any).d;
-	(propMap as any).d2 = 'd';
-
-	let puzzleId = 'scl' + loadFPuzzle.compressPuzzle(zip(puzzle));
-
-	// Restore mapping
-	propMap.duration = 'duration';
-	delete (propMap as any).d2;
-	propMap.d = 'd2';
-	return puzzleId;
+	const { zip } = PuzzleZipper;
+	return 'scl' + loadFPuzzle.compressPuzzle(zip(puzzle));
 }
 
 export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	const { unzip } = PuzzleZipper;
 	let url = await expandTinyUrlAsync(input);
-	if (!url) return;
+	if (!url) throw new ConverterError('empty puzzle id');
 
 	// Penpa+ url format
 	if (PenpaLoader.isPenpaUrl(url)) {
@@ -55,13 +44,13 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	}
 
 	// sudokupad link format
-	if (url.match(reSudokuPadUrl)) {
+	if (reSudokuPadUrl.test(url)) {
 		let match = url.match(reSudokuPadUrl);
 		return match![1];
 	}
 
 	// sudokupad.app url format
-	if (url.match(reCtc)) {
+	if (reCtc.test(url)) {
 		let match = url.match(reCtc);
 		return match![1];
 	}
@@ -71,30 +60,36 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 		return url;
 	}
 
+	function isSclFormat(puzzle: any): puzzle is SclPuzzle {
+		return puzzle.id && puzzle.cells ? true : false;
+	}
+	function isFPuzzlesFormat(puzzle: any): puzzle is SclPuzzle {
+		return puzzle.size && puzzle.grid ? true : false;
+	}
 	// JSON format, should be scl or f-puzzles content
-	if (/^[\s'"]*\{/.test(url)) {
+	if (url.includes('{')) {
 		let json = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
 
 		try {
-			let puzzle = {} as any;
+			let puzzle = {} as unknown;
 			try {
 				puzzle = JSON.parse(json);
 			} catch {
 				puzzle = JSON.parse(unzip(json));
 			}
 
-			let settings = Object.entries(puzzle.settings || {})
+			let settings = Object.entries((puzzle as any).settings || {})
 				.map(([k, v]) => `setting-${k}=${v}`)
 				.join('&');
 
 			// scl content
-			if (puzzle.id && puzzle.cells) {
+			if (isSclFormat(puzzle)) {
 				var puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
 				return puzzleId + (settings ? '?' + settings : '');
 			}
 
 			// f-puzzles content
-			if (puzzle.size && puzzle.grid) {
+			if (isFPuzzlesFormat(puzzle)) {
 				if (flags.fpuzzles2scl) {
 					let sclPuzzle = loadFPuzzle.parseFPuzzle(puzzle) as SclPuzzle;
 					return encodeSCLPuz(sclPuzzle) + (settings ? '?' + settings : '');
@@ -110,7 +105,7 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 		}
 	}
 
-	// not a URL, probably a short ID
+	// not a URL, probably a naked short ID
 	if (!/[:]/.test(url) && url.length < 50) {
 		return url;
 	}

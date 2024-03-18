@@ -5,13 +5,15 @@ import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
 
-//import { router } from "./router";
-import PrimeVue from 'primevue/config';
+//import { createRouter, createWebHistory } from 'vue-router';
+//import { routes } from '@/router';
+
+// import PrimeVue, { usePrimeVue } from 'primevue/config';
 //import 'primevue/resources/themes/aura-light-amber/theme.css'
 import 'primeicons/primeicons.css';
 import 'primeflex/primeflex.css';
 
-if (true) {
+{
 	// import AutoComplete from 'primevue/autocomplete';
 	// import Accordion from 'primevue/accordion';
 	// import AccordionTab from 'primevue/accordiontab';
@@ -57,7 +59,6 @@ if (true) {
 	// import Knob from 'primevue/knob';
 	// import Listbox from 'primevue/listbox';
 	// import MegaMenu from 'primevue/megamenu';
-	// import Menu from 'primevue/menu';
 	// import Menubar from 'primevue/menubar';
 	// import MultiSelect from 'primevue/multiselect';
 	// import OrderList from 'primevue/orderlist';
@@ -150,7 +151,6 @@ if (true) {
 	// app.component('Knob', Knob);
 	// app.component('Listbox', Listbox);
 	// app.component('MegaMenu', MegaMenu);
-	// app.component('Menu', Menu);
 	// app.component('Menubar', Menubar);
 	// app.component('MultiSelect', MultiSelect);
 	// app.component('OrderList', OrderList);
@@ -203,17 +203,30 @@ import Dropdown from 'primevue/dropdown';
 import Fieldset from 'primevue/fieldset';
 import InputSwitch from 'primevue/inputswitch';
 import InputText from 'primevue/inputtext';
-import Message from 'primevue/message';
+//import Message from 'primevue/message';
+import Menu from 'primevue/menu';
 import Sidebar from 'primevue/sidebar';
 import SplitButton from 'primevue/splitbutton';
 import Textarea from 'primevue/textarea';
 import Toolbar from 'primevue/toolbar';
-import Toast from 'primevue/toast';
+//import Toast from 'primevue/toast';
+import Toast from '@/components/ToastML.vue';
 import Tooltip from 'primevue/tooltip';
 import ToastService from 'primevue/toastservice';
+import PrimeVue from 'primevue/config';
+// import AppInstance from '@/composables/useAppInstance';
 
 app.use(PrimeVue, { unstyled: false });
 app.use(ToastService);
+// app.use(AppInstance);
+// const router = createRouter({
+// 	routes,
+// 	//history: createWebHashHistory('/sudokupad-penpa-import/'),
+// 	history: createWebHistory('/sudokupad-penpa-import/'),
+// });
+
+// app.use(router);
+
 app.directive('tooltip', Tooltip);
 app.component('Button', Button);
 app.component('Checkbox', Checkbox);
@@ -221,7 +234,8 @@ app.component('Dropdown', Dropdown);
 app.component('Fieldset', Fieldset);
 app.component('InputSwitch', InputSwitch);
 app.component('InputText', InputText);
-app.component('Message', Message);
+app.component('Menu', Menu);
+// app.component('Message', Message);
 app.component('Sidebar', Sidebar);
 app.component('SplitButton', SplitButton);
 app.component('Textarea', Textarea);
