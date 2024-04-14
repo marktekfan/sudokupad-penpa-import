@@ -34,7 +34,11 @@ export class ConverterFlags {
 	}
 
 	static FlagDescriptions() {
-		return flagDescriptions as Record<FlagName, FlagDescription>;
+		//return flagDescriptions as Record<FlagName, FlagDescription>;
+		return Object.keys(flagDescriptions).map(key => {
+			const flag = ConverterFlags.getDescription(key);
+			return { key, ...flag, hidden: !!flag.hidden };
+		});
 	}
 
 	static getDescription(flag: string): FlagDescription {
@@ -45,16 +49,26 @@ export class ConverterFlags {
 		return ConverterFlags.getDescription(flag);
 	}
 
-	setFlagValues(flags: FlagValues) {
-		for (let name in flags) {
-			this.setValue(name, flags[name as FlagName]);
+	setFlagValues(flags: FlagValues | FlagName[]) {
+		if (Array.isArray(flags)) {
+			for (let flagName in flagDescriptions) {
+				const description = ConverterFlags.getDescription(flagName);
+				if (!description.hidden) {
+					this.setValue(flagName, flags.includes(flagName as FlagName));	
+				}
+			};
+		} 
+		else {
+			for (let name in flags) {
+				this.setValue(name, flags[name as FlagName]);
+			}
 		}
 	}
 
 	getFlagValues() {
 		return this.flagValues as FlagValues;
 	}
-	
+
 	getFlagValuesUnsafe() {
 		return this.flagValues as FlagsRecord;
 	}

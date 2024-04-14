@@ -1,0 +1,33 @@
+{
+	"extends": "@vue/tsconfig/tsconfig.dom.json",
+	"include": ["env.d.ts", "src/**/*", "src/**/*.vue", "src/theme-init.js"],
+	"exclude": ["src/**/__tests__/*"],
+	"compilerOptions": {
+		"composite": true,
+		"noEmit": true,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+
+		/* Project specific options: */
+		"allowJs": true,
+		"checkJs": false,
+
+		"strict": true,
+		"useDefineForClassFields": true,
+		"verbatimModuleSyntax": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true,
+		"moduleDetection": "force",
+		"allowImportingTsExtensions": true,
+		"isolatedModules": true
+
+		// "esModuleInterop": true,
+		// "skipLibCheck": true,
+		// "target": "ES2020",
+		// "resolveJsonModule": true,
+		// "types": ["vite/client"],
+	}
+}

@@ -1,0 +1,46 @@
+* {
+	box-sizing: border-box;
+}
+
+html {
+	-moz-text-size-adjust: none;
+	-webkit-text-size-adjust: none;
+	text-size-adjust: none;
+}
+
+html * {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+html input,
+html textarea,
+html .btn,
+.selectable,
+.selectable * {
+	-webkit-touch-callout: text;
+	-webkit-user-select: text;
+	user-select: text;
+}
+
+/* customize Toast message */
+.xp-toast-message {
+	border: 0;
+	border-left: 6px;
+	border-style: solid;
+}
+
+/* missing PrimeFlex classes */
+.min-h-1rem {
+	min-height: 1rem;
+}
+.min-h-2rem {
+	min-height: 2rem;
+}
+.min-h-3rem {
+	min-height: 3rem;
+}
+.min-h-4rem {
+	min-height: 4rem;
+}

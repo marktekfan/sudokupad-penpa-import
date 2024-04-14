@@ -1,41 +1,14 @@
 {
-  "compilerOptions": {
-    /* Base options: */
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "target": "ES2020",
-    "verbatimModuleSyntax": true,
-    "allowJs": true,
-    "resolveJsonModule": true,
-    "moduleDetection": "force",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-
-    "types": ["vite/client"],
-    "checkJs": false,
-    "useDefineForClassFields": true,
-    
-    /* Strictness and Linting */
-    "strict": true,
-    //"noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "module": "ESNext",
-    "noEmit": true,
-
-    /* DOM */
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-
-    // "typeRoots": [
-    //   "src/types",
-    //   "node_modules/@types"
-    // ],
-    
-  },
-  "include": ["src", "tests"],
-  // "exclude": ["src/types/**", "node_modules"],
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.vitest.json"
+    }
+  ]
 }
