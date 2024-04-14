@@ -2026,7 +2026,7 @@ function load(urlParam, type = 'url', origurl = null) {
         }
     }
     if (rtext_para[17] && rtext_para[17] !== "") {
-        psource = DOMPurify.sanitize(rtext_para[17]);
+        let psource = DOMPurify.sanitize(rtext_para[17]);
         document.getElementById("puzzlesourcelink").href = psource;
         document.getElementById("puzzlesource").innerHTML = "Source";
         document.getElementById("saveinfosource").value = psource;
