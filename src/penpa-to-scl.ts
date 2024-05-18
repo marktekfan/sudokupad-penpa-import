@@ -489,6 +489,9 @@ export class PenpaToSclConverter {
 			const number = list[key];
 			if ((number as any).role !== undefined) return;
 			let ctx = new DrawingContext();
+			// Push back the number and its circle when the cell also has a symbol which is 'in front of lines'.
+			// Eg.: https://tinyurl.com/27ge6nz4
+			if (pu.pu_q['symbol'][key]?.[2] === 2) ctx.target = 'arrows';
 			draw.draw_number(ctx, number, key);
 		});
 	};
@@ -1216,10 +1219,10 @@ export class PenpaToSclConverter {
 		this.render_line(puinfo, puzzle);
 		this.render_lineE(puinfo, puzzle);
 		this.render_direction(puinfo, puzzle);
+		this.render_number(puinfo, puzzle);
 		this.render_symbol(puinfo, puzzle, 2);
 		this.render_cage(puinfo, puzzle);
 		this.render_killercages(puinfo, puzzle);
-		this.render_number(puinfo, puzzle);
 		this.render_numberS(puinfo, puzzle);
 
 		this.drawBoardLattice(puinfo, puzzle);
