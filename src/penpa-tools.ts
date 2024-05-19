@@ -540,9 +540,22 @@ export class PenpaTools {
 		return { top, left, bottom, right, height, width };
 	}
 
-	static toHexColor(rgba: tinycolor.ColorInput): string {
+	static toHexColor(rgba: tinycolor.ColorInput, defaultAlpha: number = 0): string {
+		if (!rgba) return rgba;
 		let color = tinycolor(rgba);
 		if ((color as any)._a < 1) {
+			return color.toHex8String().toUpperCase();
+		}
+		
+		if (defaultAlpha) {
+			if (defaultAlpha === 1) {
+				const opaqueColor = color.toHexString().toUpperCase();
+				// Color is already opaque
+				if (PenpaTools.ColorIsOpaque(opaqueColor)) {
+					return opaqueColor;
+				}
+			}	
+			color.setAlpha(defaultAlpha);
 			return color.toHex8String().toUpperCase();
 		}
 		return color.toHexString().toUpperCase();

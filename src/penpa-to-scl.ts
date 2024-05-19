@@ -453,27 +453,28 @@ export class PenpaToSclConverter {
 				isBoardCell(s1.center) === isBoardCell(s2.center)
 			);
 		};
-		PenpaTools.reduceSurfaces(centers, predicate).forEach(surface => {
+		PenpaTools.reduceSurfaces(centers, predicate)
+		.forEach(surface => {
 			let ctx = new DrawingContext();
 			set_surface_style(ctx, surface.value);
 			if (listCol[surface.key]) {
 				ctx.fillStyle = listCol[surface.key];
 			}
 			ctx.lineWidth = 0; // surface should not have a border
-			// ctx.fillStyle = '#ff000040'
-			//if (!pu.centerlist.includes(surface.key)) {
-			//	ctx.target = 'overlay';
-			//}
 			ctx.role = surface.role;
+			if (this.isDoubleLayer(ctx)) {
+				// Make less transparent
+				ctx.fillStyle = PenpaTools.toHexColor(ctx.fillStyle, 0.75);
+			}
 			const opts = Object.assign(ctx.toOpts(), {
 				center: surface.center,
 				width: surface.width || 1,
 				height: surface.height || 1,
 				//backgroundColor: Color[Object.keys(Color)[Math.floor(_rnd = ((_rnd|0) + 1) % 24)]],
 			});
-			if (this.isDoubleLayer(ctx)) {
-				this.puzzleAdd(puzzle, 'underlays', opts, 'surface');
-			}
+			// if (this.isDoubleLayer(ctx)) {
+			// 	this.puzzleAdd(puzzle, 'underlays', opts, 'surface');
+			// }
 			this.puzzleAdd(puzzle, 'underlays', opts, 'surface');
 		});
 	};
@@ -984,7 +985,6 @@ export class PenpaToSclConverter {
 						const color2 = tinycolor(fillStyle2);
 						const newcolor = tinycolor.mix(color1, color2);
 						list[k] = PenpaTools.ColorApplyAlpha(PenpaTools.toHexColor(newcolor), doubleLayer);
-						//list[l] = -1; // =>line.value = -1
 					} else {
 						// Pre-calculate line color to make it visually identical to the surface color which has 0.5 alpha in SudokuPad.
 						list[k] = PenpaTools.ColorApplyAlpha(fillStyle1, doubleLayer);

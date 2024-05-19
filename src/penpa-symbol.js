@@ -672,15 +672,19 @@ export const PenpaSymbol = (() => {
 
 	P.draw_numbercircle_elem = function (ctx, x, y, r) {
 		const { round3 } = PenpaTools;
+		// Make opaque
+		ctx.fillStyle = PenpaTools.toHexColor(ctx.fillStyle, 1);
+		ctx.strokeStyle = PenpaTools.toHexColor(ctx.strokeStyle, 1);
+
 		let opts = Object.assign(ctx.toOpts(), {
 			rounded: true,
 			center: [y, x],
 			width: round3(2 * r),
 			height: round3(2 * r),
 		});
-		if (this.isDoubleLayer(ctx)) {
-			this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number circle');
-		}
+		// if (this.isDoubleLayer(ctx)) {
+		// 	this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number circle');
+		// }
 		this.decoder.puzzleAdd(this.puzzle, 'overlays', opts, 'number circle');
 	};
 
@@ -704,28 +708,36 @@ export const PenpaSymbol = (() => {
 
 	P.draw_rect_elem = function (ctx, x, y, w, h, note) {
 		const { round3 } = PenpaTools;
+		// Make opaque
+		ctx.fillStyle = PenpaTools.toHexColor(ctx.fillStyle, 1);
+		ctx.strokeStyle = PenpaTools.toHexColor(ctx.strokeStyle, 1);
+
 		let opts = Object.assign(ctx.toOpts('surface'), {
 			center: [y, x],
 			width: round3(w + ctx.lineWidth / ctx.penpaSize),
 			height: round3(h + ctx.lineWidth / ctx.penpaSize),
 		});
-		if (this.isDoubleLayer(ctx)) {
-			this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, note);
-		}
+		// if (this.isDoubleLayer(ctx)) {
+		// 	this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, note);
+		// }
 		this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, note);
 	};
 
 	P.draw_circle_elem = function (ctx, x, y, r, note) {
 		const { round3 } = PenpaTools;
+		// Make opaque
+		ctx.fillStyle = PenpaTools.toHexColor(ctx.fillStyle, 1);
+		ctx.strokeStyle = PenpaTools.toHexColor(ctx.strokeStyle, 1);
+		
 		let opts = Object.assign(ctx.toOpts('surface'), {
 			rounded: 1,
 			center: [y, x],
 			width: round3(r * 2 + ctx.lineWidth / ctx.penpaSize),
 			height: round3(r * 2 + ctx.lineWidth / ctx.penpaSize),
 		});
-		if (this.isDoubleLayer(ctx)) {
-			this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, note);
-		}
+		// if (this.isDoubleLayer(ctx)) {
+		// 	this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, note);
+		// }
 		this.decoder.puzzleAdd(this.puzzle, 'underlays', opts, note);
 	};
 
