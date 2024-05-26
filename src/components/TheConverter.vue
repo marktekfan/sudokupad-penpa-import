@@ -9,6 +9,7 @@ import { usePuzzleConverter } from '@/composables/usePuzzleConverter';
 import { useToast } from 'primevue/usetoast';
 import { useUniqueToast } from '@/composables/useUniqueToast';
 import { onMounted, ref, watch } from 'vue';
+import type Textarea from 'primevue/textarea';
 
 const appState = useAppState();
 const { converterTargets } = appState;
@@ -64,11 +65,13 @@ selectedTarget.value = converterTargets[0].value;
 const flagDescriptions = ConverterFlags.FlagDescriptions();
 const converterFlags = new ConverterFlags();
 
-const output = ref<HTMLTextAreaElement>(null!);
+const btnConvert = ref<HTMLButtonElement>(null!);
+const inputTextArea = ref<HTMLTextAreaElement>(null!);
+const outputTextArea = ref<HTMLTextAreaElement>(null!);
 watch(outputUrl, () => {
 	//console.log(unrefElement(output.value));
 	if (appState.outputUrl) {
-		unrefElement(output)?.focus();
+		unrefElement(outputTextArea)?.focus();
 	}
 });
 
@@ -108,6 +111,22 @@ async function CopyUrlToClipboard() {
 	await clipboard.copy(appState.outputUrl);
 	toast.add({ severity: 'info', summary: 'Generated URL copied to clipboard', life: 5000 });
 }
+
+function ClearInput() {
+	appState.inputUrl = '';
+	unrefElement(inputTextArea)?.focus();
+}
+
+function PasteDetected(e: any) {
+	// Set focus to 'Convert' button when new content is pasted.
+	// This allows the user to immediately press the 'enter' key to convert.
+	const textarea = e.target as HTMLTextAreaElement;
+	if (textarea.selectionStart == 0 && textarea.selectionEnd == textarea.value.length) {
+		window.setTimeout(function () {
+			unrefElement(btnConvert)?.focus();
+		}, 1);
+	}
+}
 </script>
 
 <!-- ====================================================================== -->
@@ -117,8 +136,18 @@ async function CopyUrlToClipboard() {
 		<div class="flex flex-column relative">
 			<span> <b>Penpa+</b>, <b>f-puzzles</b>, <b>SudokuPad</b> or <b>tinyurl.com</b> URL or JSON </span>
 			<div class="relative">
-				<Button outlined id="clearbutton" icon="pi pi-times" class="p-1 w-0" v-show="inputUrl" @click="inputUrl = ''"></Button>
-				<Textarea class="text-sm p-1 mt-1 shadow-2" spellcheck="false" v-model="inputUrl" rows="10" cols="120" placeholder="https://"> </Textarea>
+				<Button outlined id="clearbutton" icon="pi pi-times" class="p-1 w-0" v-show="inputUrl" @click="ClearInput"></Button>
+				<Textarea
+					ref="inputTextArea"
+					class="text-sm p-1 mt-1 shadow-2"
+					spellcheck="false"
+					v-model="inputUrl"
+					rows="10"
+					cols="120"
+					placeholder="https://"
+					@paste="PasteDetected"
+				>
+				</Textarea>
 			</div>
 		</div>
 		<div class="flex justify-content-start flex-wrap align-items-center">
@@ -143,7 +172,7 @@ async function CopyUrlToClipboard() {
 				checkmark
 				placeholder="Select an Action"
 			/>
-			<Button class="ml-3" :loading="converting" @click="() => convertPuzzle()" :disabled="!inputUrl">
+			<Button ref="btnConvert" class="ml-3" :loading="converting" @click="() => convertPuzzle()" :disabled="!inputUrl">
 				<div v-if="converting" class="flex align-items-center mx-0">
 					Converting... &nbsp;
 					<SvgSpinners90RingWithBg class="pi-spin" />
@@ -154,7 +183,7 @@ async function CopyUrlToClipboard() {
 
 		<div v-show="selectedAction == 'create-url' || outputUrl" class="flex flex-column gap-1">
 			<span> Generated URL </span>
-			<Textarea ref="output" class="text-sm p-1 shadow-2" spellcheck="false" readonly v-model="outputUrl" rows="4" cols="120" placeholder=""></Textarea>
+			<Textarea ref="outputTextArea" class="text-sm p-1 shadow-2" spellcheck="false" readonly v-model="outputUrl" rows="4" cols="120" placeholder=""></Textarea>
 			<div class="flex h-4rem">
 				<div>
 					<Button
