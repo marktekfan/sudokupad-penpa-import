@@ -536,25 +536,27 @@ function prepareKillercages(puinfo: PuInfo, width: number, height: number) {
 
 	// Remove any single cell cages on grid corners
 	// Because they were only used to define the grid outline
-	killercages.forEach(killer => {
-		if (!killer) return;
-		if (killer.length !== 1 || (killer as any)['value'] !== undefined) return;
-		const cageOutsideRegions = killer
-			.map(point2cell)
-			.some(([r, c]) => (r === 0 && (c === 0 || c === width - 1)) || (r === height - 1 && (c === 0 || c === width - 1)));
-		if (cageOutsideRegions) {
-			//Remove cage lines
-			const { cage } = pu.pu_q;
-			const p = killer[0];
-			for (let k in cage) {
-				let [p1, p2] = k.split(',');
-				if (point2centerPoint(p1) === p || point2centerPoint(p2) === p) {
-					delete cage[k];
+	if (killercages.every (killerCage => killerCage.length == 1)) {
+		killercages.forEach(killerCage => {
+			if (!killerCage) return;
+			if (killerCage.length !== 1 || (killerCage as any)['value'] !== undefined) return;
+			const cageOutsideRegions = killerCage
+				.map(point2cell)
+				.some(([r, c]) => (r === 0 && (c === 0 || c === width - 1)) || (r === height - 1 && (c === 0 || c === width - 1)));
+			if (cageOutsideRegions) {
+				//Remove cage lines for cage
+				const cageLines = pu.pu_q.cage;
+				const p = killerCage[0];
+				for (let line in cageLines) {
+					let [p1, p2] = line.split(',');
+					if (point2centerPoint(p1) === p || point2centerPoint(p2) === p) {
+						delete cageLines[line];
+					}
 				}
+				killerCage.length = 0;
 			}
-			killer.length = 0;
-		}
-	});
+		});
+	}
 
 	puinfo.foglight = killercages.some(killer => /^foglight/i.test((killer as any)['value'] || ''));
 }
