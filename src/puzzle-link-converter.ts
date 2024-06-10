@@ -8,9 +8,9 @@ import { expandTinyUrlAsync } from './tinyurl';
 import { ConverterError } from './converter-error';
 import { type FlagValues } from './converter-flags';
 
-const reFpuzzlesUrl = /[\.\/]+f-puzzles.com\/.*\?load=([^&]+)/;
-const reSudokuPadUrl = /^sudokupad:\/\/puzzle\/(.+)/;
-const reCtc = /(?:app.crackingthecryptic.com|sudokupad.app)(?:\/sudoku(?:\.html)?)?\/?(?:\?puzzleid=)?(?<puzzleid>.+)/;
+const reFpuzzlesUrl = /^\s*(http[s]?:\/\/)?([a-z]+\.)?f-puzzles.com\/.*\?load=(?<puzzleid>[^&]+)/;
+const reSudokuPadUrl = /^\s*(?<puzzleid>sudokupad:\/\/puzzle\/(.+))/;
+const reCtc = /(?:^\s*(http[s]?:\/\/)?(app.crackingthecryptic.com|([a-z]+\.)?sudokupad.app))(?:\/sudoku(?:\.html)?)?\/?(?:\?puzzleid=)?(?<puzzleid>.+)/;
 
 export function encodeSCLPuz(puzzle: SclPuzzle | string) {
 	const { zip } = PuzzleZipper;
@@ -39,20 +39,20 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 			let puzzle = loadFPuzzle.parseFPuzzle(match![1]) as SclPuzzle;
 			return encodeSCLPuz(puzzle);
 		} else {
-			return 'fpuzzles' + match![1];
+			return 'fpuzzles' + match!.groups!.puzzleid;
 		}
 	}
 
 	// sudokupad link format
 	if (reSudokuPadUrl.test(url)) {
 		let match = url.match(reSudokuPadUrl);
-		return match![1];
+		return match!.groups!.puzzleid;
 	}
 
 	// sudokupad.app url format
 	if (reCtc.test(url)) {
 		let match = url.match(reCtc);
-		return match![1];
+		return match!.groups!.puzzleid;
 	}
 
 	// raw puzzle id
