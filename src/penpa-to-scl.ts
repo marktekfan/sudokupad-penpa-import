@@ -756,7 +756,7 @@ export class PenpaToSclConverter {
 		const { pu, penpaTools } = puinfo;
 		const frame = {...(pu.frame || [])};
 		// Remove framelines which are deletelineE
-		Object.keys(pu.pu_q.deletelineE).forEach(p => delete frame[p]);
+		Object.keys(pu.pu_q.deletelineE).forEach(p => { if (pu.pu_q.deletelineE[p] !== 3) delete frame[p] });
 		let wpList = penpaTools.reducePenpaLines2WaypointLines(frame);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
