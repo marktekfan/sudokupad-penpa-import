@@ -754,8 +754,10 @@ export class PenpaToSclConverter {
 
 	private render_frame = (puinfo: PuInfo, puzzle: SclPuzzle) => {
 		const { pu, penpaTools } = puinfo;
-		const list = pu.frame || [];
-		let wpList = penpaTools.reducePenpaLines2WaypointLines(list);
+		const frame = {...(pu.frame || [])};
+		// Remove framelines which are deletelineE
+		Object.keys(pu.pu_q.deletelineE).forEach(p => delete frame[p]);
+		let wpList = penpaTools.reducePenpaLines2WaypointLines(frame);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
 			let ctx = new DrawingContext();
@@ -941,7 +943,7 @@ export class PenpaToSclConverter {
 	private render_deletelineE = (puinfo: PuInfo, puzzle: SclPuzzle) => {
 		const { pu, penpaTools } = puinfo;
 		const feature = 'deletelineE';
-		const list: Dictionary<any> = pu.pu_q[feature] || [];
+		const list: Dictionary<any> = {...pu.pu_q[feature] || []};
 		const surface = pu.pu_q.surface;
 		const surfaceCol = pu.pu_q_col.surface || [];
 		const { point2RC, getAdjacentCellsOfEdgeLine, reducePenpaLines2WaypointLines } = penpaTools;
