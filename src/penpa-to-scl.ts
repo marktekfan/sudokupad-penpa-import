@@ -509,13 +509,15 @@ export class PenpaToSclConverter {
 				return;
 			}
 			draw.draw_numberS(ctx, number, key);
-			const p = Number(key);
-			if (pu.point[p].type === 4 && p % 4 === 0) {
-				// top-left cell corner
-				if (pu.centerlist.includes(point2centerPoint(key))) {
-					let rc = point2cell(key);
-					let cell = puzzle.cells[rc[0]][rc[1]];
-					cell.pencilMarks = [' '];
+			if (!puinfo.foglight) { // Don't create blank pencilmarks in fog puzzles, because this can spoil
+				const p = Number(key);
+				if (pu.point[p].type === 4 && p % 4 === 0) {
+					// top-left cell corner
+					if (pu.centerlist.includes(point2centerPoint(key))) {
+						let rc = point2cell(key);
+						let cell = puzzle.cells[rc[0]][rc[1]];
+						cell.pencilMarks = [' '];
+					}
 				}
 			}
 		});
