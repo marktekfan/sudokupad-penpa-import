@@ -77,9 +77,7 @@ export function usePuzzleConverter() {
 					//history.pushState({url: appState.inputUrl}, '');
 					appState.inputUrl = await ConvertPuzzleIdToJson(puzzleId);
 					appState.outputUrl = '';
-					if (_lastActionSelection) {
-						appState.selectedAction = _lastActionSelection;
-					}
+					appState.selectedAction = _lastActionSelection ?? "open";
 					break;
 
 				default: {
