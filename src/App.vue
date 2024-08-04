@@ -37,5 +37,4 @@ textarea {
 .p-toast.p-toast-top-right {
 	right: max(20px, 100% - 80rem) !important;
 }
-
 </style>

@@ -14,6 +14,28 @@ html * {
 	user-select: none;
 }
 
+:root {
+	xfont-family: 'Inter var', sans-serif;
+	font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+	font-variation-settings: normal;
+}
+
+html,
+body,
+textarea {
+	font-family: Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+	xfont-family: 'Inter var', sans-serif;
+	font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', normal;
+	font-variation-settings: normal;
+
+	font-size: 1rem;
+	font-weight: normal;
+}
+
+.xp-component {
+	font-size: 1rem;
+}
+
 html input,
 html textarea,
 html .btn,

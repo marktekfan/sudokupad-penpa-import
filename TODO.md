@@ -4,7 +4,7 @@
 
 ## BUGFIX
 
- - Detect foglight cages for rotated boards
+-   Detect foglight cages for rotated boards
 
 ## FEATURES
 

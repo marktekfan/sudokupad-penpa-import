@@ -1,5 +1,6 @@
 import './style.css';
-// import "./flags.css";
+import './flex-ml.css';
+import 'primeicons/primeicons.css';
 
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
@@ -7,11 +8,6 @@ import App from './App.vue';
 
 //import { createRouter, createWebHistory } from 'vue-router';
 //import { routes } from '@/router';
-
-// import PrimeVue, { usePrimeVue } from 'primevue/config';
-//import 'primevue/resources/themes/aura-light-amber/theme.css'
-import 'primeicons/primeicons.css';
-import 'primeflex/primeflex.css';
 
 {
 	// import AutoComplete from 'primevue/autocomplete';
@@ -199,24 +195,43 @@ app.use(pinia);
 // PrimeVue
 import Button from 'primevue/button';
 import Checkbox from 'primevue/checkbox';
-import Dropdown from 'primevue/dropdown';
+import Select from 'primevue/select';
 import Fieldset from 'primevue/fieldset';
-import InputSwitch from 'primevue/inputswitch';
+import ToggleSwitch from 'primevue/toggleswitch';
 import InputText from 'primevue/inputtext';
-//import Message from 'primevue/message';
 import Menu from 'primevue/menu';
-import Sidebar from 'primevue/sidebar';
+import Drawer from 'primevue/drawer';
 import SplitButton from 'primevue/splitbutton';
 import Textarea from 'primevue/textarea';
 import Toolbar from 'primevue/toolbar';
 import Toast from 'primevue/toast';
 import Tooltip from 'primevue/tooltip';
+
 import ToastService from 'primevue/toastservice';
 import PrimeVue from 'primevue/config';
-// import AppInstance from '@/composables/useAppInstance';
+import Aura from '@primevue/themes/aura';
 
-app.use(PrimeVue, { unstyled: false });
+import { updatePrimaryPalette } from '@primevue/themes';
+import { palette } from '@primevue/themes';
+
+console.log(Aura);
+
+app.use(PrimeVue, {
+	// Default theme configuration
+	theme: {
+		preset: Aura,
+		options: {
+			prefix: 'p',
+			darkModeSelector: '.my-app-dark',
+			cssLayer: false,
+		},
+	},
+});
+
+updatePrimaryPalette(palette('{amber}'));
+
 app.use(ToastService);
+
 // app.use(AppInstance);
 // const router = createRouter({
 // 	routes,
@@ -229,13 +244,12 @@ app.use(ToastService);
 app.directive('tooltip', Tooltip);
 app.component('Button', Button);
 app.component('Checkbox', Checkbox);
-app.component('Dropdown', Dropdown);
+app.component('Select', Select);
 app.component('Fieldset', Fieldset);
-app.component('InputSwitch', InputSwitch);
+app.component('ToggleSwitch', ToggleSwitch);
 app.component('InputText', InputText);
 app.component('Menu', Menu);
-// app.component('Message', Message);
-app.component('Sidebar', Sidebar);
+app.component('Drawer', Drawer);
 app.component('SplitButton', SplitButton);
 app.component('Textarea', Textarea);
 app.component('Toast', Toast);

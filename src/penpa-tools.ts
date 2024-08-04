@@ -546,7 +546,7 @@ export class PenpaTools {
 		if ((color as any)._a < 1) {
 			return color.toHex8String().toUpperCase();
 		}
-		
+
 		if (defaultAlpha) {
 			if (defaultAlpha === 1) {
 				const opaqueColor = color.toHexString().toUpperCase();
@@ -554,7 +554,7 @@ export class PenpaTools {
 				if (PenpaTools.ColorIsOpaque(opaqueColor)) {
 					return opaqueColor;
 				}
-			}	
+			}
 			color.setAlpha(defaultAlpha);
 			return color.toHex8String().toUpperCase();
 		}

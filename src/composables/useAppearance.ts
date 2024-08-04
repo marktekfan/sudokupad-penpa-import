@@ -3,9 +3,11 @@ import SvgThemeDark from '@/assets/theme-dark.svg?raw';
 import SvgThemeDefault from '@/assets/theme-default.svg?raw';
 
 import { usePreferredDark, useStorage } from '@vueuse/core';
-import { usePrimeVue } from 'primevue/config';
 import { ref, watch } from 'vue';
 import type { BasicColorSchema } from '@vueuse/core/index.cjs';
+
+import { updatePrimaryPalette } from '@primevue/themes';
+import { palette } from '@primevue/themes';
 
 export const appearenceIcon = ref('');
 
@@ -15,21 +17,18 @@ export const icons: Record<BasicColorSchema, string> = {
 	auto: SvgThemeDefault,
 };
 
-export function useAppearance(storageName = 'appearance') {
+export function useAppearance() {
 	const preferredDark = usePreferredDark();
-	const appearance = useStorage<BasicColorSchema>(storageName, 'auto');
-	const primeVue = usePrimeVue();
-	watch(appearance, (newVal, oldVal) => {
-		//console.log(newVal, oldVal);
-		if (oldVal === 'auto') oldVal = preferredDark ? 'dark' : 'light';
+	const appearance = useStorage<BasicColorSchema>('appearance', 'auto');
+	const themePalette = useStorage<string>('palette', 'amber');
+	watch(appearance, newVal => {
 		if (newVal === 'auto') newVal = preferredDark ? 'dark' : 'light';
-		if (newVal !== oldVal) {
-			if (newVal === 'light') {
-				primeVue.changeTheme('dark', 'light', 'theme-link');
-			} else if (newVal === 'dark') {
-				primeVue.changeTheme('light', 'dark', 'theme-link');
-			}
-		}
+		const element = document.querySelector('html');
+		element?.classList.toggle('my-app-dark', newVal === 'dark');
+	});
+
+	watch(themePalette, newVal => {
+		updatePrimaryPalette(palette(`{${newVal}}`));
 	});
 
 	watch(

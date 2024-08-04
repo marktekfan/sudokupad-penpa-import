@@ -55,9 +55,9 @@ function changeTheme(event: MenuItemCommandEvent) {
 
 <template>
 	<div class="flex flex-column gap-4">
-		<div class="m-10"></div>
+		<!-- <div class="m-10"></div> -->
 		<label class="flex align-items-center gap-2">
-			<InputSwitch v-model="appState.settingsVisible" />
+			<ToggleSwitch v-model="appState.settingsVisible" />
 			<div>Show Converter Options</div>
 		</label>
 		<div>
