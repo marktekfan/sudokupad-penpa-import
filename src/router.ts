@@ -1,4 +1,4 @@
-import TheConverter from "./components/TheConverter.vue";
+import TheConverter from './components/TheConverter.vue';
 
 export const routes = [
 	{

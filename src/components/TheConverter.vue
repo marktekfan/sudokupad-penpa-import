@@ -152,7 +152,7 @@ function PasteDetected(e: any) {
 		</div>
 		<div class="flex justify-content-start flex-wrap align-items-center">
 			<label class="mr-2">Open in</label>
-			<Dropdown
+			<Select
 				v-model="selectedTarget"
 				:options="converterTargets"
 				optionLabel="name"
@@ -163,7 +163,7 @@ function PasteDetected(e: any) {
 			/>
 
 			<label class="ml-3 mr-2">Action</label>
-			<Dropdown
+			<Select
 				v-model="selectedAction"
 				:options="converterActions"
 				optionLabel="name"
@@ -183,7 +183,16 @@ function PasteDetected(e: any) {
 
 		<div v-show="selectedAction == 'create-url' || outputUrl" class="flex flex-column gap-1">
 			<span> Generated URL </span>
-			<Textarea ref="outputTextArea" class="text-sm p-1 shadow-2" spellcheck="false" readonly v-model="outputUrl" rows="4" cols="120" placeholder=""></Textarea>
+			<Textarea
+				ref="outputTextArea"
+				class="text-sm p-1 shadow-2"
+				spellcheck="false"
+				readonly
+				v-model="outputUrl"
+				rows="4"
+				cols="120"
+				placeholder=""
+			></Textarea>
 			<div class="flex h-4rem">
 				<div>
 					<Button

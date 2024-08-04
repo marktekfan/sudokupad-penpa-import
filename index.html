@@ -1,34 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <!-- <link id="theme-link" rel="stylesheet" href="/themes/aura-light-amber/theme.css"> -->
-    <script>
-      const query = '(prefers-color-scheme: dark)';
-      let preferDark = window.matchMedia(query).matches;
-      let appearance = localStorage.getItem('appearance');
-      if (!['dark', 'light'].includes(appearance)) appearance = preferDark ? 'dark' : 'light';
-      const link = document.createElement('link');
-      link.id = 'theme-link';
-      link.rel = 'stylesheet';
-      link.type = 'text/css';
-      link.href = `/sudokupad-penpa-import/themes/aura-${appearance}-amber/theme.css`;
-      document.head.insertBefore(link, document.head.firstChild);
-    </script>
-    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
-    <!-- Google tag (gtag.js) -->
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" href="/favicon.ico" />
+		<script>
+			const query = '(prefers-color-scheme: dark)';
+			let preferDark = window.matchMedia(query).matches;
+			let appearance = localStorage.getItem('appearance');
+			if (!['dark', 'light'].includes(appearance)) appearance = preferDark ? 'dark' : 'light';
+			const element = document.querySelector('html');
+			element?.classList.toggle('my-app-dark', appearance === 'dark');
+		</script>
+		<!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-KNP4FWPNGW"></script>
 		<script>
 			window.dataLayer = window.dataLayer || [];
-			function gtag(){dataLayer.push(arguments);}
-			gtag('js', new Date());
-			gtag('config', 'G-KNP4FWPNGW');
+			function gtag() {
+				dataLayer.push(arguments);
+			}
+			if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+				gtag('js', new Date());
+				gtag('config', 'G-KNP4FWPNGW');
+			}
 		</script>
-    <title>SudokuPad Penpa Converter</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+		<title>SudokuPad Penpa Converter</title>
+	</head>
+	<body>
+		<div id="app"></div>
+		<script type="module" src="/src/main.ts"></script>
+	</body>
 </html>

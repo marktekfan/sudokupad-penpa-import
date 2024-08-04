@@ -16,12 +16,13 @@
     "bump-patch": "node scripts/bumpversion.js -patch=1"
   },
   "dependencies": {
+    "@primevue/themes": "^4.0.4",
     "@vueuse/core": "^10.7.2",
     "json-stringify-pretty-compact": "^4.0.0",
     "pinia": "^2.1.7",
     "primeflex": "^3.3.1",
-    "primeicons": "^6.0.1",
-    "primevue": "^3.52.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.0.4",
     "tinycolor2": "^1.6.0",
     "vue": "^3.4.18",
     "zlibjs": "^0.3.1"
@@ -36,13 +37,13 @@
     "@vitejs/plugin-vue": "^5.0.2",
     "@vue/test-utils": "^2.4.3",
     "@vue/tsconfig": "^0.5.1",
-    "eslint": "^8.56.0",
-    "jsdom": "^23.2.0",
+    "eslint": "^9.8.0",
+    "jsdom": "^24.1.1",
     "npm-run-all2": "^6.1.1",
     "typescript": "^5.3.3",
     "vite": "^5.0.8",
-    "vitest": "^1.1.0",
-    "vue-tsc": "^1.8.27"
+    "vitest": "^2.0.5",
+    "vue-tsc": "^2.0.29"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "^4.9.1"

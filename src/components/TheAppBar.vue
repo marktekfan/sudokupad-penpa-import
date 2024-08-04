@@ -7,12 +7,12 @@ const sidebarVisible = ref(false);
 </script>
 
 <template>
-	<Sidebar v-model:visible="sidebarVisible" header="App Settings">
+	<Drawer v-model:visible="sidebarVisible" header="App Settings">
 		<template #header>
-			<div class="p-sidebar-header-content"  @click="$emit('hide')">App Settings</div>
+			<div class="p-drawer-header-content" @click="$emit('hide')">App Settings</div>
 		</template>
 		<TheAppMenu />
-	</Sidebar>
+	</Drawer>
 	<Toolbar class="border-noround border-none bg-primary p-1">
 		<template #start>
 			<Button
@@ -21,9 +21,9 @@ const sidebarVisible = ref(false);
 				class="mx-1"
 				v-tooltip="{ value: 'App Settings', showDelay: 600, hideDelay: 300 }"
 			></Button>
-			<img src="/appicon.png" style="height: 40px;" />
-			<div class="text-2xl font-bold pl-3">{{AppVersion.name}}</div>
-			<div class="text-basefont-bold pl-3 pr-1 pt-1">v{{AppVersion.version}}</div>
+			<img src="/appicon.png" style="height: 40px" />
+			<div class="text-2xl font-bold pl-3">{{ AppVersion.name }}</div>
+			<div class="text-base font-bold pl-3 pr-1 pt-1">v{{ AppVersion.version }}</div>
 		</template>
 	</Toolbar>
 </template>

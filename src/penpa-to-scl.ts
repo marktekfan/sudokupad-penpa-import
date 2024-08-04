@@ -453,8 +453,7 @@ export class PenpaToSclConverter {
 				isBoardCell(s1.center) === isBoardCell(s2.center)
 			);
 		};
-		PenpaTools.reduceSurfaces(centers, predicate)
-		.forEach(surface => {
+		PenpaTools.reduceSurfaces(centers, predicate).forEach(surface => {
 			let ctx = new DrawingContext();
 			set_surface_style(ctx, surface.value);
 			if (listCol[surface.key]) {
@@ -509,7 +508,8 @@ export class PenpaToSclConverter {
 				return;
 			}
 			draw.draw_numberS(ctx, number, key);
-			if (!puinfo.foglight) { // Don't create blank pencilmarks in fog puzzles, because this can spoil
+			if (!puinfo.foglight) {
+				// Don't create blank pencilmarks in fog puzzles, because this can spoil
 				const p = Number(key);
 				if (pu.point[p].type === 4 && p % 4 === 0) {
 					// top-left cell corner
@@ -756,9 +756,11 @@ export class PenpaToSclConverter {
 
 	private render_frame = (puinfo: PuInfo, puzzle: SclPuzzle) => {
 		const { pu, penpaTools } = puinfo;
-		const frame = {...(pu.frame || [])};
+		const frame = { ...(pu.frame || []) };
 		// Remove framelines which are deletelineE
-		Object.keys(pu.pu_q.deletelineE).forEach(p => { if (pu.pu_q.deletelineE[p] !== 3) delete frame[p] });
+		Object.keys(pu.pu_q.deletelineE).forEach(p => {
+			if (pu.pu_q.deletelineE[p] !== 3) delete frame[p];
+		});
 		let wpList = penpaTools.reducePenpaLines2WaypointLines(frame);
 		wpList.forEach(line => {
 			if (line.wayPoints.length < 2) return;
@@ -945,7 +947,7 @@ export class PenpaToSclConverter {
 	private render_deletelineE = (puinfo: PuInfo, puzzle: SclPuzzle) => {
 		const { pu, penpaTools } = puinfo;
 		const feature = 'deletelineE';
-		const list: Dictionary<any> = {...pu.pu_q[feature] || []};
+		const list: Dictionary<any> = { ...(pu.pu_q[feature] || []) };
 		const surface = pu.pu_q.surface;
 		const surfaceCol = pu.pu_q_col.surface || [];
 		const { point2RC, getAdjacentCellsOfEdgeLine, reducePenpaLines2WaypointLines } = penpaTools;

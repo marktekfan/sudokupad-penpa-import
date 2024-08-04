@@ -54,11 +54,10 @@ export class ConverterFlags {
 			for (let flagName in flagDescriptions) {
 				const description = ConverterFlags.getDescription(flagName);
 				if (!description.hidden) {
-					this.setValue(flagName, flags.includes(flagName as FlagName));	
+					this.setValue(flagName, flags.includes(flagName as FlagName));
 				}
-			};
-		} 
-		else {
+			}
+		} else {
 			for (let name in flags) {
 				this.setValue(name, flags[name as FlagName]);
 			}

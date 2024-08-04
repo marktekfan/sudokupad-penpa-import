@@ -20,7 +20,7 @@ export function usePuzzleConverter() {
 
 			if (appState.testMode) {
 				localStorage.setItem('testurl', appState.inputUrl);
-			}	
+			}
 
 			if (!destination.includes('crackingthecryptic')) {
 				localStorage.destination = destination;
@@ -77,7 +77,7 @@ export function usePuzzleConverter() {
 					//history.pushState({url: appState.inputUrl}, '');
 					appState.inputUrl = await ConvertPuzzleIdToJson(puzzleId);
 					appState.outputUrl = '';
-					appState.selectedAction = _lastActionSelection ?? "open";
+					appState.selectedAction = _lastActionSelection ?? 'open';
 					break;
 
 				default: {
