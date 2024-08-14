@@ -211,10 +211,7 @@ import ToastService from 'primevue/toastservice';
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 
-import { updatePrimaryPalette } from '@primevue/themes';
-import { palette } from '@primevue/themes';
-
-console.log(Aura);
+import { updatePrimaryPalette, palette } from '@primevue/themes';
 
 app.use(PrimeVue, {
 	// Default theme configuration

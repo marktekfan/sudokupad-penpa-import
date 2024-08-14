@@ -9,6 +9,7 @@ export interface SclCage {
 	unique?: boolean;
 	cells?: RC[];
 	borderColor?: string;
+	textColor?: string;
 }
 
 export type SclFeature = 'regions' | 'lines' | 'underlays' | 'overlays' | 'arrows' | 'cages';

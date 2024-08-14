@@ -508,8 +508,11 @@ function prepareKillercages(puinfo: PuInfo, width: number, height: number) {
 			if (labelCell === point2centerPoint(k)) {
 				const num = numberS[k];
 				if (pu.point[k].type === 4 && k % 4 === 0) {
+					// Not when it has a background circle
+					if ([6, 7, 11].includes(num[1])) break;
 					// Top-left corner in cell
 					(killer as any)['value'] = num[0].trim();
+					// if ([5].includes(num[1])) break;
 					(num as any).role = 'killer'; // Exclude from rendering
 					break;
 				}
