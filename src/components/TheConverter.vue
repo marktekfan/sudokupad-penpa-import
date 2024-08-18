@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import TheAppFooter from '@/components/TheAppFooter.vue';
+import TextareaSyntax from '@/components/TextareaSyntax.vue';
 import SvgSpinners90RingWithBg from '@/components/SvgSpinners90RingWithBg.vue';
 import { useAppState, type AppAction } from '@/stores/appState';
 import { useClipboard, unrefElement } from '@vueuse/core';
@@ -91,7 +92,11 @@ async function convertPuzzle(redirect = false) {
 		await puzzleConverter.ConvertPuzzle(redirect);
 	} catch (err: unknown) {
 		if (err instanceof Error) {
-			toast.add({ severity: 'error', summary: 'Something went wrong', detail: err.message, life: 6000 });
+			if (err.message.includes("JSON")) {
+				toast.add({ severity: 'error', summary: 'JSON Syntax Error', detail: err.message, life: 6000 });
+			} else {
+				toast.add({ severity: 'error', summary: 'Something went wrong', detail: err.message, life: 6000 });
+			}
 		} else {
 			const error = err as object;
 			toast.add({ severity: 'error', summary: 'Unrecognized error', detail: error, life: 6000 });
@@ -112,20 +117,12 @@ async function CopyUrlToClipboard() {
 	toast.add({ severity: 'info', summary: 'Generated URL copied to clipboard', life: 5000 });
 }
 
-function ClearInput() {
-	appState.inputUrl = '';
-	unrefElement(inputTextArea)?.focus();
-}
-
-function PasteDetected(e: any) {
-	// Set focus to 'Convert' button when new content is pasted.
-	// This allows the user to immediately press the 'enter' key to convert.
-	const textarea = e.target as HTMLTextAreaElement;
-	if (textarea.selectionStart == 0 && textarea.selectionEnd == textarea.value.length) {
-		window.setTimeout(function () {
-			unrefElement(btnConvert)?.focus();
-		}, 1);
-	}
+// Set focus to 'Convert' button when new content is pasted.
+// This allows the user to immediately press the 'enter' key to convert.
+function PasteNew(_: any) {
+	window.setTimeout(function () {
+		unrefElement(btnConvert)?.focus();
+	}, 1);
 }
 </script>
 
@@ -135,20 +132,7 @@ function PasteDetected(e: any) {
 	<div id="appmain" class="flex flex-column gap-2 m-3 text-lg">
 		<div class="flex flex-column relative">
 			<span> <b>Penpa+</b>, <b>f-puzzles</b>, <b>SudokuPad</b> or <b>tinyurl.com</b> URL or JSON </span>
-			<div class="relative">
-				<Button outlined id="clearbutton" icon="pi pi-times" class="p-1 w-0" v-show="inputUrl" @click="ClearInput"></Button>
-				<Textarea
-					ref="inputTextArea"
-					class="text-sm p-1 mt-1 shadow-2"
-					spellcheck="false"
-					v-model="inputUrl"
-					rows="10"
-					cols="120"
-					placeholder="https://"
-					@paste="PasteDetected"
-				>
-				</Textarea>
-			</div>
+			<TextareaSyntax v-model="inputUrl" @paste-new="PasteNew"></TextareaSyntax>
 		</div>
 		<div class="flex justify-content-start flex-wrap align-items-center">
 			<label class="mr-2">Open in</label>
@@ -230,18 +214,6 @@ function PasteDetected(e: any) {
 <style scoped>
 #appmain {
 	max-width: min(55rem, 100%);
-}
-
-textarea {
-	resize: vertical;
-	width: min(55rem, 100%);
-}
-
-#clearbutton {
-	position: absolute;
-	top: 0.5rem;
-	left: min(55rem, 100%);
-	translate: -3rem;
 }
 
 .p-checkbox {

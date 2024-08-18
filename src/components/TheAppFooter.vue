@@ -1,6 +1,6 @@
 <template>
 	<div id="donate-button"></div>
-	<div class="contact-list">
+	<div class="contact-list selectable">
 		<div>
 			<p>For any issues, questions or suggestions about this converter contact me:</p>
 			<div>
@@ -34,13 +34,14 @@
 			</div>
 		</div>
 	</div>
-	<div class="">
+	<div class="selectable">
 		<span>Created by <a href="https://discordapp.com/users/MarkTekfan" target="_blank">Mark Langezaal</a>. </span>
 		<span>SudokuPad is created by <a href="https://svencodes.com" target="_blank">Sven Neumann</a></span>
 	</div>
 
-	<div class="mt-3">
-		<div class="my-1">If you like what I do, you can buy me a coffee!</div>
+	<div class="mt-3 selectable" >
+		<div class="my-1">If you like what I do, you can buy me a coffee or some bits!</div>
+		<div class="my-1"><span>BTC: </span>&nbsp;<span>bc1qrjgr9caqkwgyxpf4hq2vcpte7kms8ezkwpxu5a</span></div>
 		<a id="kofi-donate-button" class="kofi-donate-button" style="background-color: #00b9fe" href="https://ko-fi.com/marktekfan" target="_blank">
 			<img src="https://storage.ko-fi.com/cdn/cup-border.png" class="kofi-logo kofi-logo-animation" />
 			<span style="margin-left: 8px; color: #fff">Buy Me a Coffee</span>
