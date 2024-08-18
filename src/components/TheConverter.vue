@@ -67,7 +67,7 @@ const flagDescriptions = ConverterFlags.FlagDescriptions();
 const converterFlags = new ConverterFlags();
 
 const btnConvert = ref<HTMLButtonElement>(null!);
-const inputTextArea = ref<HTMLTextAreaElement>(null!);
+// const inputTextArea = ref<HTMLTextAreaElement>(null!);
 const outputTextArea = ref<HTMLTextAreaElement>(null!);
 watch(outputUrl, () => {
 	//console.log(unrefElement(output.value));

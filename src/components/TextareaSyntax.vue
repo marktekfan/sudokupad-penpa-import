@@ -126,7 +126,7 @@ function update(text: string) {
 	Prism.highlightElement(result_element);
 }
 
-function sync_scroll(e?: Event) {
+function sync_scroll(_?: Event) {
 	//const element = e.target as HTMLTextAreaElement;
 	const element = document.querySelector('#editing') as HTMLTextAreaElement;
 	/* Scroll result to scroll coords of event - sync with textarea */
