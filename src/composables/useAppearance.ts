@@ -27,6 +27,20 @@ export function useAppearance() {
 		element?.classList.toggle('my-app-dark', newVal === 'dark');
 	});
 
+	function setPrismTheme(newVal: BasicColorSchema) {
+		var light = `themes/prism-coy.css`;
+		var dark = `themes/prism-okaidia.css`;
+		// if the media query isn't supported, the light theme will be used
+		var theme = newVal === 'dark' ? dark : light;
+
+		let link = document.querySelector('link#prismjs-theme') as HTMLLinkElement || document.createElement('link');
+		link.rel = 'stylesheet';
+		link.type = 'text/css';
+		link.href = theme;
+		link.id = 'prismjs-theme';
+		document.head.appendChild(link);
+	}
+
 	watch(themePalette, newVal => {
 		updatePrimaryPalette(palette(`{${newVal}}`));
 	});
@@ -35,6 +49,7 @@ export function useAppearance() {
 		appearance,
 		() => {
 			appearenceIcon.value = icons[appearance.value];
+			setPrismTheme(appearance.value);
 		},
 		{ immediate: true }
 	);

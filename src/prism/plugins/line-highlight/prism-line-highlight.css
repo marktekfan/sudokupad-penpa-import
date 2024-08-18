@@ -1,0 +1,108 @@
+/* PrismJS 1.29.0
+https://prismjs.com/download.html#themes=prism-twilight&plugins=line-highlight */
+
+/* Plugin styles: Line Numbers */
+/* pre[class*="language-"].line-numbers.line-numbers {
+	padding-left: 0;
+}
+
+pre[class*="language-"].line-numbers.line-numbers code {
+	padding-left: 3.8em;
+}
+
+pre[class*="language-"].line-numbers.line-numbers .line-numbers-rows {
+	left: 0;
+} */
+
+/* Plugin styles: Line Highlight */
+pre[class*="language-"][data-line] {
+	padding-top: 0;
+	padding-bottom: 0;
+	padding-left: 0;
+}
+pre[data-line] code {
+	position: relative;
+	/* padding-left: 4em; */
+}
+pre .line-highlight {
+	margin-top: 0;
+}
+
+
+/* pre[data-line] {
+	position: relative;
+	padding: 1em 0 1em 3em;
+} */
+
+.line-highlight {
+	position: absolute;
+	left: 0;
+	right: 0;
+	padding: inherit 0;
+	margin-top: 1em; /* Same as .prism’s padding-top */
+
+	/* box-shadow: 0px 0px 0px 2px  #c00000; */
+	background: hsla(0, 100%, 50%, 0.10);
+	/* background: linear-gradient(to right, hsla(0, 100%, 50%, 0.15) 70%, hsla(24, 20%, 50%,0)); */
+
+	pointer-events: none;
+
+	line-height: inherit;
+	white-space: pre;
+}
+
+.my-app-dark .line-highlight {
+	background: hsla(0, 100%, 50%, 0.2);
+}
+
+/* @media print {
+	.line-highlight { */
+		/*
+		 * This will prevent browsers from replacing the background color with white.
+		 * It's necessary because the element is layered on top of the displayed code.
+		 */
+		/* -webkit-print-color-adjust: exact;
+		color-adjust: exact;
+	}
+} */
+
+	/* .line-highlight:before,
+	.line-highlight[data-end]:after {
+		xcontent: attr(data-start);
+		content: '!';
+		position: absolute;
+		top: .4em;
+		left: .6em;
+		min-width: 1em;
+		padding: 0 .5em;
+		background-color: hsla(0, 100%, 50%, 0.4);
+		color: hsl(24, 20%, 95%);
+		font: bold 65%/1.5 sans-serif;
+		text-align: center;
+		vertical-align: .3em;
+		border-radius: 999px;
+		text-shadow: none;
+		box-shadow: 0 1px white;
+	} */
+
+	/* .line-highlight[data-end]:after {
+		content: attr(data-end);
+		top: auto;
+		bottom: .4em;
+	} */
+
+/* .line-numbers .line-highlight:before,
+.line-numbers .line-highlight:after {
+	content: none;
+} */
+
+/* pre[id].linkable-line-numbers span.line-numbers-rows {
+	pointer-events: all;
+}
+pre[id].linkable-line-numbers span.line-numbers-rows > span:before {
+	cursor: pointer;
+}
+pre[id].linkable-line-numbers span.line-numbers-rows > span:hover:before {
+	background-color: rgba(128, 128, 128, .2);
+}
+ */
