@@ -166,7 +166,6 @@
 				var line = pre.querySelector('.line-highlight[data-range="' + currentRange + '"]') || document.createElement('div');
 
 				mutateActions.push(function () {
-					//line.setAttribute('inert', 'true');
 					line.setAttribute('aria-hidden', 'true');
 					line.setAttribute('data-range', currentRange);
 					line.className = (classes || '') + ' line-highlight';
