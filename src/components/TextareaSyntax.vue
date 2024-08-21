@@ -4,10 +4,15 @@ import { useAppState } from '@/stores/appState';
 import { computed, onMounted, ref, watch } from 'vue';
 import { unrefElement } from '@vueuse/core';
 import Prism from 'prismjs';
-//import '@/prism/theme/prism-coy.css';
-//import '@/prism/theme/prism-okaidia.css';
-import '@/prism/plugins/line-highlight/prism-line-highlight';
-import '@/prism/plugins/line-highlight/prism-line-highlight.css';
+import 'prismjs/components/prism-uri';
+import 'prismjs/components/prism-json';
+
+import '@/prismjs/plugins/line-highlight/prism-line-highlight';
+import '@/prismjs/plugins/line-highlight/prism-line-highlight.css';
+import { text } from 'stream/consumers';
+
+//import '@/prismjs/themes/prism-coy.css';
+//import '@/prismjs/themes/prism-okaidia.css';
 
 const emit = defineEmits(['pasteNew']);
 const model = defineModel({ default: '' });
@@ -16,13 +21,11 @@ const appState = useAppState();
 const { inputUrl } = storeToRefs(appState);
 
 const errorMessage = ref('');
-const isJson = computed(() => {
-	const is = /^\s*\{|}\s*$/.test(inputUrl.value);
-	// console.log('computed.isJson:', is);
-	return is;
-});
+const wraptext = ref(true);
 
-const isUrl = computed(() => false); //!isJson.value);
+const inputType = computed(() => {
+	return /^\s*\{|}\s*$/.test(inputUrl.value) ? 'json' : true ? 'url' : 'none';
+});
 
 const inputTextArea = ref<HTMLTextAreaElement>(null!);
 
@@ -39,8 +42,13 @@ onMounted(() => {
 			const bbs = entry.borderBoxSize[0];
 			hi.style.height = bbs.blockSize + 'px';
 		}
+		sync_scroll();
 	});
 	resizeObserver.observe(document.querySelector('#editing')!);
+
+	// Set primary focus
+	const textarea = document.querySelector('#editing') as HTMLTextAreaElement;
+	textarea.focus();
 
 	watch(
 		inputUrl,
@@ -51,28 +59,38 @@ onMounted(() => {
 		{ immediate: true }
 	);
 
-	watch(isJson, newValue => {
-		// Toggle json syntax editor
-		const highlighting = document.querySelector('#highlighting') as HTMLElement;
-		const highlightingContent = document.querySelector('#highlighting-content') as HTMLElement;
-		highlighting.classList.toggle('language-none', !newValue);
-		highlighting.classList.toggle('language-json', newValue);
-		highlightingContent.classList.toggle('language-none', !newValue);
-		highlightingContent.classList.toggle('language-json', newValue);
+	watch(
+		inputType,
+		newInputType => {
+			// Toggle json syntax editor
+			const pre = document.querySelector('#highlighting') as HTMLElement;
+			const code = document.querySelector('#highlighting-content') as HTMLElement;
+			pre.classList.toggle('language-none', newInputType === 'none');
+			code.classList.toggle('language-none', newInputType === 'none');
 
-		const textarea = document.querySelector('#editing') as HTMLTextAreaElement;
-		textarea.style['minHeight'] = isJson.value ? '30rem' : '5rem';
+			pre.classList.toggle('language-json', newInputType === 'json');
+			code.classList.toggle('language-json', newInputType === 'json');
 
-		// clear syntax editor related UI
-		if (!newValue) {
-			let result_element = document.querySelector('#highlighting-content');
-			if (result_element) {
+			pre.classList.toggle('language-url', newInputType === 'url');
+			code.classList.toggle('language-url', newInputType === 'url');
+
+			wraptext.value = newInputType !== 'json';
+
+			const textarea = document.querySelector('#editing') as HTMLTextAreaElement;
+			textarea.style['minHeight'] = newInputType == 'json' ? '30rem' : '5rem';
+
+			// clear syntax editor related UI
+			if (newInputType !== 'json') {
 				errorMessage.value = '';
-				result_element.innerHTML = '';
-				Prism.highlightElement(result_element);
 			}
-		}
-	});
+			if (newInputType === 'none') {
+				code.innerHTML = '';
+			}
+
+			Prism.highlightElement(code);
+		},
+		{ immediate: true }
+	);
 });
 
 function PasteDetected(e: any) {
@@ -91,39 +109,42 @@ function PasteDetected(e: any) {
 function update(text: string) {
 	// console.log('update(text: string)');
 
-	let result_element = document.querySelector('#highlighting-content');
-	if (!result_element) return;
+	let code = document.querySelector('#highlighting-content');
+	if (!code) return;
 
-	if (!isJson.value) return;
+	//if (!isJson.value && !isUrl.value) return;
 
 	// Handle final newlines (see article)
 	if (text[text.length - 1] == '\n') {
 		text += ' ';
 	}
 	// Update code
-	result_element.innerHTML = text.replace(new RegExp('&', 'g'), '&amp;').replace(new RegExp('<', 'g'), '&lt;'); /* Global RegExp */
-	let highlighting_element = document.querySelector('#highlighting') as HTMLTextAreaElement;
+	code.innerHTML = text.replace(new RegExp('&', 'g'), '&amp;').replace(new RegExp('<', 'g'), '&lt;'); /* Global RegExp */
+	let pre = document.querySelector('#highlighting') as HTMLTextAreaElement;
 	try {
 		errorMessage.value = '';
-		JSON.parse(text);
-		highlighting_element.removeAttribute('data-line');
+		pre.removeAttribute('data-line');
+		if (inputType.value === 'json') {
+			JSON.parse(text);
+		}
 	} catch (ex: any) {
 		if (ex.name == 'SyntaxError') {
 			//console.log(ex);
 			const message = ex.message;
 			errorMessage.value = message;
+			// Get line number from error message
 			const match = message.match(/at position (?<position>\d+) \(line (?<line>\d+) column (?<column>\d+)/);
 			if (match) {
 				// console.log(match);
 				const line = match.groups.line;
-				highlighting_element.setAttribute('data-line', line);
+				pre.setAttribute('data-line', line);
 			} else {
-				highlighting_element.removeAttribute('data-line');
+				pre.removeAttribute('data-line');
 			}
 		}
 	}
 
-	Prism.highlightElement(result_element);
+	Prism.highlightElement(code);
 }
 
 function sync_scroll(_?: Event) {
@@ -156,137 +177,20 @@ function check_tab(event: KeyboardEvent) {
 		update(element.value); // Update text to include indent
 	}
 }
-
-Prism.languages.json = {
-	property: {
-		pattern: /(^|[^\\])"(?:\\.|[^\\"\r\n])*"(?=\s*:)/,
-		lookbehind: true,
-		greedy: true,
-	},
-	string: {
-		pattern: /(^|[^\\])"(?:\\.|[^\\"\r\n])*"(?!\s*:)/,
-		lookbehind: true,
-		greedy: true,
-	},
-	comment: {
-		pattern: /\/\/.*|\/\*[\s\S]*?(?:\*\/|$)/,
-		greedy: true,
-	},
-	number: /-?\b\d+(?:\.\d+)?(?:e[+-]?\d+)?\b/i,
-	punctuation: /[{}[\],]/,
-	operator: /:/,
-	boolean: /\b(?:false|true)\b/,
-	null: {
-		pattern: /\bnull\b/,
-		alias: 'keyword',
-	},
-};
-Prism.languages.uri = {
-	scheme: {
-		pattern: /^[a-z][a-z0-9+.-]*:/im,
-		greedy: true,
-		inside: {
-			'scheme-delimiter': /:$/,
-		},
-	},
-	fragment: {
-		pattern: /#[\w\-.~!$&'()*+,;=%:@/?]*/,
-		inside: {
-			'fragment-delimiter': /^#/,
-		},
-	},
-	query: {
-		pattern: /\?[\w\-.~!$&'()*+,;=%:@/?]*/,
-		inside: {
-			'query-delimiter': {
-				pattern: /^\?/,
-				greedy: true,
-			},
-			'pair-delimiter': /[&;]/,
-			pair: {
-				pattern: /^[^=][\s\S]*/,
-				inside: {
-					key: /^[^=]+/,
-					value: {
-						pattern: /(^=)[\s\S]+/,
-						lookbehind: true,
-					},
-				},
-			},
-		},
-	},
-	authority: {
-		pattern: RegExp(
-			/^\/\//.source +
-				// [ userinfo "@" ]
-				/(?:[\w\-.~!$&'()*+,;=%:]*@)?/.source +
-				// host
-				('(?:' +
-					// IP-literal
-					/\[(?:[0-9a-fA-F:.]{2,48}|v[0-9a-fA-F]+\.[\w\-.~!$&'()*+,;=]+)\]/.source +
-					'|' +
-					// IPv4address or registered name
-					/[\w\-.~!$&'()*+,;=%]*/.source +
-					')') +
-				// [ ":" port ]
-				/(?::\d*)?/.source,
-			'm'
-		),
-		inside: {
-			'authority-delimiter': /^\/\//,
-			'user-info-segment': {
-				pattern: /^[\w\-.~!$&'()*+,;=%:]*@/,
-				inside: {
-					'user-info-delimiter': /@$/,
-					'user-info': /^[\w\-.~!$&'()*+,;=%:]+/,
-				},
-			},
-			'port-segment': {
-				pattern: /:\d*$/,
-				inside: {
-					'port-delimiter': /^:/,
-					port: /^\d+/,
-				},
-			},
-			host: {
-				pattern: /[\s\S]+/,
-				inside: {
-					'ip-literal': {
-						pattern: /^\[[\s\S]+\]$/,
-						inside: {
-							'ip-literal-delimiter': /^\[|\]$/,
-							'ipv-future': /^v[\s\S]+/,
-							'ipv6-address': /^[\s\S]+/,
-						},
-					},
-					'ipv4-address': /^(?:(?:[03-9]\d?|[12]\d{0,2})\.){3}(?:[03-9]\d?|[12]\d{0,2})$/,
-				},
-			},
-		},
-	},
-	path: {
-		pattern: /^[\w\-.~!$&'()*+,;=%:@/]+/m,
-		inside: {
-			'path-separator': /\//,
-		},
-	},
-};
-Prism.languages.url = Prism.languages.uri;
 </script>
 
 <!-- ====================================================================== -->
 
 <template>
 	<div class="relative">
-		<Button outlined id="clearbutton" icon="pi pi-times" class="p-1 w-0" v-show="inputUrl" @click="ClearInput"></Button>
-		<div>
+		<Button outlined id="clearbutton" icon="pi pi-times" title="Clear input" v-show="inputUrl" @click="ClearInput"></Button>
+		<div id="textsyntax" :class="{ wraptext: wraptext }">
 			<div v-if="errorMessage" inert class="error-message">
 				<span>{{ errorMessage }}</span>
 			</div>
 			<Textarea
-				class="shadow-2"
-				:class="{ 'language-json': isJson, 'language-url': isUrl }"
 				id="editing"
+				class="shadow-2"
 				ref="inputTextArea"
 				spellcheck="false"
 				v-model="model"
@@ -298,9 +202,9 @@ Prism.languages.url = Prism.languages.uri;
 				@paste="PasteDetected"
 			>
 			</Textarea>
-			<pre id="highlighting" inert>
-				<code id="highlighting-content"></code>
-			</pre>
+			<!-- :class="{ 'language-json': inputUrl === 'json', 'language-url': inputUrl === 'url' }" -->
+
+			<pre id="highlighting" inert><code id="highlighting-content"></code></pre>
 		</div>
 	</div>
 </template>
@@ -321,8 +225,12 @@ textarea {
 	left: min(55rem, 100%);
 	translate: -3rem;
 	z-index: 2;
+	background-color:#fff2;
+	padding: .25rem;
 }
-
+#clearbutton:hover {
+	background-color:#fff6;
+}
 .error-message {
 	position: absolute;
 	top: 0;
@@ -380,27 +288,43 @@ textarea {
 	/* background-color: red; */
 }
 
-#editing[class*='language-'] + #highlighting {
+#highlighting[class*='language-'] {
 	visibility: visible;
 }
 
 /* Make textarea almost completely transparent */
 
-#editing[class*='language-'] {
+#editing {
 	color: #0001;
 	background: transparent;
 	caret-color: black; /* Or choose your favourite color */
 }
 
-.my-app-dark #editing[class*='language-'] {
+.my-app-dark #editing {
 	color: #fff1;
 	caret-color: white; /* Or choose your favourite color */
 }
 
 /* Can be scrolled */
-#editing[class*='language-'],
-#highlighting {
-	white-space: nowrap; /*ML TEMP*/ /* Allows textarea to scroll horizontally */
+#editing {
+	white-space: nowrap; /* Allows textarea to scroll horizontally */
+}
+
+.wraptext #editing,
+.wraptext #highlighting {
+	white-space: pre-wrap; /* Disallows textarea to scroll horizontally */
+}
+.wraptext pre {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	word-break: break-all;
+}
+.wraptext pre[class*="language-"] > code {
+	background-image: inherit;
+}
+
+pre {
+	border: 1px solid transparent; /* same border as textarea */
 }
 
 /* No resize on textarea */
