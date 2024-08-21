@@ -478,8 +478,9 @@ export class PenpaToSclConverter {
 		});
 	};
 
-	private render_number = (puinfo: PuInfo, puzzle: SclPuzzle, feature: NumberFeature = 'number') => {
+	private render_number = (puinfo: PuInfo, puzzle: SclPuzzle, overSymbol = false) => {
 		const { pu } = puinfo;
+		const feature = 'number';
 		const draw = new PenpaSymbol(puinfo, puzzle, 64, { puzzleAdd: this.puzzleAdd });
 		const list = pu.pu_q[feature] || [];
 		Object.keys(list).forEach(key => {
@@ -488,11 +489,24 @@ export class PenpaToSclConverter {
 			}
 			const number = list[key];
 			if ((number as any).role !== undefined) return;
-			let ctx = new DrawingContext();
-			// Push back the number and its circle when the cell also has a symbol which is 'in front of lines'.
-			// Eg.: https://tinyurl.com/27ge6nz4
-			if (pu.pu_q['symbol'][key]?.[2] === 2) ctx.target = 'arrows';
-			draw.draw_number(ctx, number, key);
+
+			const isOverSymbol = 
+				(pu.pu_q['symbol'][key]?.[2] === 2) && // Symbol above lines
+				(![5, 6, 7, 11].includes(number[1])); // Number circle
+
+			// Should number be drawn in this pass?
+			if (isOverSymbol === overSymbol) {
+				let ctx = new DrawingContext();
+				// Push back the number and its circle when the cell also has a symbol which is 'in front of lines'.
+				// Eg.: https://tinyurl.com/27ge6nz4
+				if (pu.pu_q['symbol'][key]?.[2] === 2) {
+					// Symbol above lines
+					if ([5, 6, 7, 11].includes(number[1])) { // Number circle
+						ctx.target = 'arrows';
+					}
+				}
+				draw.draw_number(ctx, number, key);
+			}
 		});
 	};
 
@@ -1225,8 +1239,9 @@ export class PenpaToSclConverter {
 		this.render_line(puinfo, puzzle);
 		this.render_lineE(puinfo, puzzle);
 		this.render_direction(puinfo, puzzle);
-		this.render_number(puinfo, puzzle);
+		this.render_number(puinfo, puzzle, false);
 		this.render_symbol(puinfo, puzzle, 2);
+		this.render_number(puinfo, puzzle, true);
 		this.render_cage(puinfo, puzzle);
 		this.render_killercages(puinfo, puzzle);
 		this.render_numberS(puinfo, puzzle);
