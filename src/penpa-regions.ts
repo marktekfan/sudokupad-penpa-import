@@ -1,6 +1,8 @@
 import { type PuInfo } from './penpa-postprocess';
 import { PenpaTools } from './penpa-tools';
 
+const GRID_SIZE_LIMIT = 25;
+
 type Regions = Record<string, RC[]>;
 type Squares = Array<Square>;
 type Square = {
@@ -163,7 +165,7 @@ function extractRegionData(
 		return {};
 	}
 
-	if (width * height > 20*20) {
+	if (width * height > GRID_SIZE_LIMIT * GRID_SIZE_LIMIT) {
 		return {};
 	}
 	
@@ -332,7 +334,7 @@ function findLargestFixedSquareAtRC(puinfo: PuInfo, squares: Squares, centerlist
 function findNextSquare(puinfo: PuInfo, squares: Squares, centerlist: Array<number>, height: number, width: number) {
 	const { matrix2point } = puinfo.penpaTools;
 	const maxSize = Math.min(width, height);
-	if (maxSize > 20) return null;
+	if (maxSize > GRID_SIZE_LIMIT) return null;
 
 	for (let r0 = 0; r0 < maxSize; r0++) {
 		for (let c0 = 0; c0 < maxSize; c0++) {
