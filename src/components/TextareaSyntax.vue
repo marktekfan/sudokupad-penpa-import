@@ -32,6 +32,16 @@ function ClearInput() {
 }
 
 onMounted(() => {
+	addEventListener("load", () => {
+		// Restore syntax hilighting/
+		// Update reactive inputUrl with pre-filled browser data.
+		// E.g. after page duplication or reactivation from sleep.
+		const inputTextArea = document.querySelector('textarea#editing') as HTMLTextAreaElement;
+		//console.warn('load:textarea.value', inputTextArea?.value ?? '');
+		inputUrl.value = inputTextArea?.value ?? '';
+		// Todo: Any other fields to update here?
+	});
+	
 	// Attach resizer
 	const resizeObserver = new ResizeObserver(entries => {
 		for (const entry of entries) {
@@ -89,7 +99,7 @@ function PasteDetected(e: any) {
 // https://css-tricks.com/creating-an-editable-textarea-that-supports-syntax-highlighted-code/
 
 function update(text: string) {
-	// console.log('update(text: string)');
+	//console.log('update(text):', text);
 
 	let result_element = document.querySelector('#highlighting-content');
 	if (!result_element) return;
