@@ -75,6 +75,65 @@ function extractRegionData(
 		return count;
 	}
 
+	function _findRegions() {
+		var region_id = 0;
+		// Define regions using numbers
+		// Loop through each cell
+		for (var i = 0; i < height; i++) {
+			for (var j = 0; j < width; j++) {
+				// first row doesnt have up
+				if (i === 0) {
+					// 0,0 is starting reference
+					if (j > 0) {
+						if (right_matrix[i][j] === 0) {
+							cell_matrix[i][j] = cell_matrix[i][j - 1];
+						} else {
+							region_id++;
+							cell_matrix[i][j] = region_id;
+						}
+					}
+				} else {
+					// UP
+					if (up_matrix[i][j] === 0) {
+						if (j > 0) {
+							// Change all connected cells to this new value
+							for (var region = 0; region <= i; region++) {
+								for (var m = 0; m < width; m++) {
+									if (cell_matrix[region][m] === cell_matrix[i][j]) {
+										cell_matrix[region][m] = cell_matrix[i - 1][j];
+									}
+								}
+							}
+						}
+						cell_matrix[i][j] = cell_matrix[i - 1][j];
+					} else {
+						region_id++;
+						if (j > 0) {
+							// Change all connected cells to this new value
+							for (var region = 0; region <= i; region++) {
+								for (var m = 0; m < width; m++) {
+									if (cell_matrix[region][m] === cell_matrix[i][j]) {
+										cell_matrix[region][m] = region_id;
+									}
+								}
+							}
+						}
+						cell_matrix[i][j] = region_id;
+					}
+					// RIGHT
+					if (j < width - 1) {
+						if (right_matrix[i][j + 1] === 0) {
+							cell_matrix[i][j + 1] = cell_matrix[i][j];
+						} else {
+							region_id++;
+							cell_matrix[i][j + 1] = region_id;
+						}
+					}
+				}
+			}
+		}
+	}
+
 	const minimumLineCount: Record<number, number> = {
 		1: 0,
 		2: 0,
@@ -104,62 +163,11 @@ function extractRegionData(
 		return {};
 	}
 
-	var counter = 0;
-	// Define regions using numbers
-	// Loop through each cell
-	for (var i = 0; i < height; i++) {
-		for (var j = 0; j < width; j++) {
-			// first row doesnt have up
-			if (i === 0) {
-				// 0,0 is starting reference
-				if (j > 0) {
-					if (right_matrix[i][j] === 0) {
-						cell_matrix[i][j] = cell_matrix[i][j - 1];
-					} else {
-						counter++;
-						cell_matrix[i][j] = counter;
-					}
-				}
-			} else {
-				// UP
-				if (up_matrix[i][j] === 0) {
-					if (j > 0) {
-						// Change all connected cells to this new value
-						for (var region = 0; region <= i; region++) {
-							for (var m = 0; m < width; m++) {
-								if (cell_matrix[region][m] === cell_matrix[i][j]) {
-									cell_matrix[region][m] = cell_matrix[i - 1][j];
-								}
-							}
-						}
-					}
-					cell_matrix[i][j] = cell_matrix[i - 1][j];
-				} else {
-					counter++;
-					if (j > 0) {
-						// Change all connected cells to this new value
-						for (var region = 0; region <= i; region++) {
-							for (var m = 0; m < width; m++) {
-								if (cell_matrix[region][m] === cell_matrix[i][j]) {
-									cell_matrix[region][m] = counter;
-								}
-							}
-						}
-					}
-					cell_matrix[i][j] = counter;
-				}
-				// RIGHT
-				if (j < width - 1) {
-					if (right_matrix[i][j + 1] === 0) {
-						cell_matrix[i][j + 1] = cell_matrix[i][j];
-					} else {
-						counter++;
-						cell_matrix[i][j + 1] = counter;
-					}
-				}
-			}
-		}
+	if (width * height > 20*20) {
+		return {};
 	}
+	
+	_findRegions();
 
 	// Find unique numbers
 	var unique_nums = [];
@@ -324,6 +332,8 @@ function findLargestFixedSquareAtRC(puinfo: PuInfo, squares: Squares, centerlist
 function findNextSquare(puinfo: PuInfo, squares: Squares, centerlist: Array<number>, height: number, width: number) {
 	const { matrix2point } = puinfo.penpaTools;
 	const maxSize = Math.min(width, height);
+	if (maxSize > 20) return null;
+
 	for (let r0 = 0; r0 < maxSize; r0++) {
 		for (let c0 = 0; c0 < maxSize; c0++) {
 			if (!centerlist.includes(matrix2point(r0, c0))) continue;
