@@ -1,13 +1,12 @@
-const flagDescriptions = {
-	thickLines: { defaultValue: true, title: 'Thicker Penpa lines to match SudokuPad feature lines' },
-	fadeLines: { defaultValue: true, title: 'Fade colors on Penpa feature lines' },
-	removeFrame: { defaultValue: true, title: 'Remove extra Penpa Frame lines on regions' },
-	doubleLayer: { defaultValue: true, title: 'Doubling of Penpa Surface colors to make them less transparent' },
-	answerGen: { defaultValue: true, title: 'Generate answer check from Penpa Solution mode digits' },
-	expandGrid: { defaultValue: false, title: 'Always expand Penpa grid to force editable outside clues' },
-	useClipPath: { defaultValue: false, title: 'Use clip-path for Penpa shapes', hidden: true },
+import { penpaFlagDescriptions } from '@sudokupad/penpa-to-scl';
+
+const localFlagDescriptions = {
 	fpuzzles2scl: { defaultValue: false, title: 'Convert f-puzzles to SCL format' },
-	debug: { defaultValue: false, title: 'Add Penpa debug info to puzzle' },
+} as const;
+
+const flagDescriptions = {
+	...localFlagDescriptions,
+	...penpaFlagDescriptions
 } as const;
 
 export type FlagName = keyof typeof flagDescriptions;

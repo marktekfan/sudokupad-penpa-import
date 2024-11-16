@@ -11,6 +11,9 @@ export default defineConfig({
 			'@': fileURLToPath(new URL('./src', import.meta.url)),
 		},
 	},
+    optimizeDeps: {
+        exclude: ['@sudokupad/penpa-to-scl'] // to allow link to override package reference
+    },
 	build: {
         rollupOptions: {
             output:{

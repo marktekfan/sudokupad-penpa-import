@@ -6,6 +6,8 @@
   "scripts": {
     "start": "dev",
     "dev": "vite --port 5173",
+    "link": "npm link @sudokupad/penpa-to-scl",
+    "unlink": "npm unlink @sudokupad/penpa-to-scl --no-save",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview --port 4173",
     "test": "vitest",
@@ -17,6 +19,7 @@
   },
   "dependencies": {
     "@primevue/themes": "^4.0.4",
+    "@sudokupad/penpa-to-scl": "^0.0.1-preview.2",
     "@vueuse/core": "^10.11.1",
     "json-stringify-pretty-compact": "^4.0.0",
     "pinia": "^2.2.1",

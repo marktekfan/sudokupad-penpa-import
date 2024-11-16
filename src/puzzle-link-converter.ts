@@ -1,12 +1,16 @@
 import { loadFPuzzle } from './sudokupad/fpuzzlesdecoder';
 import { PuzzleZipper } from './sudokupad/puzzlezipper';
 import { PuzzleLoader } from './sudokupad/puzzleloader';
-import { PenpaToSclConverter } from './penpa-to-scl';
-import { PenpaLoader } from './penpa-loader/penpa-loader';
+import { PenpaToSclConverter } from '@sudokupad/penpa-to-scl';
+//import { PenpaLoader } from './penpa-loader/penpa-loader';
 import { SclPuzzle } from './sclpuzzle';
 import { expandTinyUrlAsync } from './tinyurl';
 import { ConverterError } from './converter-error';
 import { type FlagValues } from './converter-flags';
+
+const rePenpaUrl = /\/penpa-edit\//i;
+const rePuzzlinkUrl = /\/puzz\.link\/p\?|pzprxs\.vercel\.app\/p\?|\/pzv\.jp\/p(\.html)?\?/;
+const isPenpaUrl = (url: string) => url.match(rePenpaUrl) || url.match(rePuzzlinkUrl);
 
 const reFpuzzlesUrl = /^\s*(http[s]?:\/\/)?([a-z]+\.)?f-puzzles.com\/.*\?load=(?<puzzleid>[^&]+)/;
 const reSudokuPadUrl = /^\s*(?<puzzleid>sudokupad:\/\/puzzle\/(.+))/;
@@ -23,7 +27,7 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	if (!url) throw new ConverterError('empty puzzle id');
 
 	// Penpa+ url format
-	if (PenpaLoader.isPenpaUrl(url)) {
+	if (isPenpaUrl(url)) {
 		let puzzle = new PenpaToSclConverter(flags).convertPenpaToScl(url);
 		if (!puzzle) throw new ConverterError('Unexpected error occured during Penpa conversion. Please contact MarkTekfan');
 		let settings = Object.entries(puzzle.settings || {})
