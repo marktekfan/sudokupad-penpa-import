@@ -6,8 +6,9 @@ const flagDescriptions = {
 	answerGen: { defaultValue: true, title: 'Generate answer check from Penpa Solution mode digits' },
 	expandGrid: { defaultValue: false, title: 'Always expand Penpa grid to force editable outside clues' },
 	useClipPath: { defaultValue: false, title: 'Use clip-path for Penpa shapes', hidden: true },
-	fpuzzles2scl: { defaultValue: false, title: 'Convert f-puzzles to SCL format' },
 	debug: { defaultValue: false, title: 'Add Penpa debug info to puzzle' },
+	fpuzzles2scl: { defaultValue: false, title: 'Convert f-puzzles to SCL format' },
+	remotefog: { defaultValue: true, title: 'Detect remote-fog' },
 } as const;
 
 export type FlagName = keyof typeof flagDescriptions;

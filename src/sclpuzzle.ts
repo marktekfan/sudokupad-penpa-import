@@ -21,6 +21,8 @@ export class SclPuzzle {
 	settings?: Dictionary;
 	metadata?: Dictionary<unknown>;
 	global?: Array<string>;
+	foglight?: RC[];
+	foglink?: object[];
 
 	regions?: RC[][];
 	lines?: object[];
