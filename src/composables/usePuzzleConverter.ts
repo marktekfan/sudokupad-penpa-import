@@ -86,6 +86,7 @@ export function usePuzzleConverter() {
 				}
 			}
 		} catch (err) {
+			console.error(err);
 			if (err instanceof ConverterError) {
 				throw new ConverterError(err.message);
 			} else {

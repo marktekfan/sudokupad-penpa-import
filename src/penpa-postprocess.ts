@@ -397,6 +397,13 @@ function cleanupPu(pu: PenpaPuzzle) {
 			}
 		});
 	});
+	// Remove empty killercages
+	for (let index = pu.pu_q.killercages.length - 1; index >= 0; index--) {
+		const killercage = pu.pu_q.killercages[index];
+		if (!killercage || killercage.length === 0) {
+			pu.pu_q.killercages.splice(index, 1);
+		}		
+	}
 	// remove leading spaces in numberS
 	['numberS'].forEach(f => {
 		const feature = f as NumberFeature;
