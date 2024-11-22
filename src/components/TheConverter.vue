@@ -79,6 +79,7 @@ watch(outputUrl, () => {
 InitConverterOptions();
 
 function InitConverterOptions() {
+	converterFlags.obtain();
 	const flagValues = converterFlags.getFlagValues();
 	selectedFlags.value = (Object.keys(flagValues) as FlagName[]).filter(key => flagValues[key]);
 }

@@ -8,7 +8,7 @@ const flagDescriptions = {
 	useClipPath: { defaultValue: false, title: 'Use clip-path for Penpa shapes', hidden: true },
 	debug: { defaultValue: false, title: 'Add Penpa debug info to puzzle' },
 	fpuzzles2scl: { defaultValue: false, title: 'Convert f-puzzles to SCL format' },
-	remotefog: { defaultValue: true, title: 'Detect remote-fog' },
+	remotefog: { defaultValue: false, title: 'Convert Remote-Fog cages', persist: true },
 } as const;
 
 export type FlagName = keyof typeof flagDescriptions;
@@ -21,6 +21,7 @@ export interface FlagDescription {
 	readonly defaultValue: boolean;
 	readonly title: string;
 	readonly hidden?: boolean;
+	readonly persist?: boolean;
 }
 
 export class ConverterFlags {
@@ -80,4 +81,24 @@ export class ConverterFlags {
 	setValue(flag: string, value: boolean | string) {
 		this.flagValues[flag as FlagName] = !!value;
 	}
+
+	persist() {
+		let state = {
+			remotefog: this.getValue('remotefog')
+		}
+		localStorage.setItem('flags', JSON.stringify(state));	
+	}
+
+	obtain() {
+		try {
+			let state = JSON.parse(localStorage.getItem('flags') || '') || {};
+			if (state.remotefog) {
+				this.setValue('remotefog', true);
+			}
+		}
+		catch (err) {
+			console.log(err);
+		}		
+	}
+
 }

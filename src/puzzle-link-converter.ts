@@ -27,7 +27,9 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	if (PenpaLoader.isPenpaUrl(url)) {
 		let puzzle = new PenpaToSclConverter(flags).convertPenpaToScl(url);
 		if (!puzzle) throw new ConverterError('Unexpected error occured during Penpa conversion. Please contact MarkTekfan');
-		convertRemoteFog(puzzle);
+		if (flags.remotefog) {
+			convertRemoteFog(puzzle);
+		}
 		let settings = Object.entries(puzzle.settings || {})
 			.map(([k, v]) => `setting-${k}=${v}`)
 			.join('&');
@@ -37,9 +39,11 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	// f-puzzles url format
 	if (reFpuzzlesUrl.test(url)) {
 		let {fpuzzleid} = url.match(reFpuzzlesUrl)!.groups!;
-		if (flags.fpuzzles2scl || fpuzHasRemoteFog(fpuzzleid)) {
+		if (flags.fpuzzles2scl || (flags.remotefog && fpuzHasRemoteFog(fpuzzleid))) {
 			let puzzle = loadFPuzzle.parseFPuzzle(fpuzzleid) as SclPuzzle;			
-			convertRemoteFog(puzzle);
+			if (flags.remotefog) {
+				convertRemoteFog(puzzle);
+			}
 			return encodeSCLPuz(puzzle);
 		} else {
 			return 'fpuzzles' + fpuzzleid;
@@ -49,14 +53,18 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	// sudokupad link format
 	if (reSudokuPadUrl.test(url)) {
 		let {puzzleid} = url.match(reSudokuPadUrl)!.groups!;
-		puzzleid = await convertRemoteFogPuzzleId(puzzleid);
+		if (flags.remotefog) {
+			puzzleid = await convertRemoteFogPuzzleId(puzzleid);
+		}
 		return puzzleid;
 	}
 
 	// sudokupad.app url format
 	if (reCtc.test(url)) {
 		let {puzzleid} = url.match(reCtc)!.groups!;
-		puzzleid = await convertRemoteFogPuzzleId(puzzleid);
+		if (flags.remotefog) {
+			puzzleid = await convertRemoteFogPuzzleId(puzzleid);
+		}
 		return puzzleid;
 	}
 
