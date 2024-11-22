@@ -440,7 +440,7 @@ export const loadFPuzzle = (() => {
 		}
 		Object.keys(regions).forEach(region => puzzleAdd(puzzle, 'regions', regions[region]));
 	};
-	const reMetaTags = /^([^: ]+):\s*(.+)/m;
+	const reMetaTags = /^([^: ]+):\s*([\s\S]+)/m;
 	const reTransparentColor = /#([0-9a-f]{3}0|[0-9a-f]{6}00)/i;
 	const reAllBlankSolution = /^([.]*|0*)$/;
 	const isIntStrict = str => Number.isInteger(Number(str)) && String(Number(str)) === String(str);
@@ -997,6 +997,9 @@ export const loadFPuzzle = (() => {
 			puzzleAdd(puzzle, 'global', 'anti' + negConstraint);
 		}
 	};
+	parse.triggereffect = (fpuzzle, puzzle) => {
+		fpuzzle.triggereffect.forEach(part => puzzleAdd(puzzle, 'triggereffect', part));
+	};
 	const reFPuzPrefix = /^(fpuz(?:zles)?)(.*)/;
 	const stripPrefix = fpuzzle => fpuzzle.replace(reFPuzPrefix, '$2');
 	const fixFPuzzleSlashes = (data, maxTime = 1000, maxChecks = 400) => {
@@ -1099,6 +1102,18 @@ export const loadFPuzzle = (() => {
 	const decodeFPuzzleData = fpuzzleData => JSON.parse(base64Codec.decompress(fixFPuzzleSlashes(saveDecodeURIComponent(fpuzzleData))));
 	const encodeFPuzzleData = fpuzzle => base64Codec.compress(JSON.stringify(fpuzzle));
 	const addSolution = (fpuzzleData, s81) => encodeFPuzzleData(Object.assign(decodeFPuzzleData(fpuzzleData), {solution: s81.split('')}));
+	const saveDecompress = data => {
+		let res;
+		try {
+			res = loadPuzzle.decompressPuzzle(data);
+			if(res === null || res.length < 0.5 * data.length) res = data; // Not valid compressed data
+		}
+		catch (err) {
+			console.warn('loadFPuzzle.saveDecompress:', err);
+			res = data;
+		}
+		return res;
+	};
 
 	loadPuzzle.reFPuzPrefix = reFPuzPrefix;
 	loadPuzzle.stripPrefix = stripPrefix;
@@ -1118,6 +1133,7 @@ export const loadFPuzzle = (() => {
 	loadPuzzle.decodeFPuzzleData = decodeFPuzzleData;
 	loadPuzzle.encodeFPuzzleData = encodeFPuzzleData;
 	loadPuzzle.addSolution = addSolution;
+	loadPuzzle.saveDecompress = saveDecompress;
 	return loadPuzzle;
 })();
 

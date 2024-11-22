@@ -28,6 +28,7 @@ export function usePuzzleConverter() {
 
 			const converterFlags = new ConverterFlags();
 			converterFlags.setFlagValues(appState.selectedFlags as FlagName[]);
+			converterFlags.persist();
 
 			let puzzleId = await convertPuzzleAsync(appState.inputUrl, converterFlags.getFlagValues());
 
