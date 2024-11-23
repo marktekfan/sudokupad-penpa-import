@@ -89,29 +89,31 @@ export function extractTriggerEffects(json) {
 	//	throw new Error(`Unable to find triggereffect markers: ${Object.keys(json)}`);
 	//}
 	const editLog = [], triggereffect = json.triggereffect = [];
-	for(const {remove, insertTE} of edits) {
-		for(const [prop, items] of Object.entries(remove)) {
-			for(const item of items) {
-				editLog.push(`Remove "${prop}" item: ${JSON.stringify(item)}`);
-				json[prop].splice(json[prop].indexOf(item), 1);
+	if (edits.length > 0) {
+		for(const {remove, insertTE} of edits) {
+			for(const [prop, items] of Object.entries(remove)) {
+				for(const item of items) {
+					editLog.push(`Remove "${prop}" item: ${JSON.stringify(item)}`);
+					json[prop].splice(json[prop].indexOf(item), 1);
+				}
 			}
+			triggereffect.push(insertTE);
+			editLog.push(`Insert triggereffect: ${JSON.stringify(insertTE)}`);
 		}
-		triggereffect.push(insertTE);
-		editLog.push(`Insert triggereffect: ${JSON.stringify(insertTE)}`);
-	}
-	if(json.foglight === undefined) {
-		let cells = json.cells || json.grid;
-		//let inverted = invertRc(cells, edits.flatMap(({insertTE: {effect: {cells}}}) => cells).join(''));
-		json.foglight = invertRc(cells, edits.flatMap(({insertTE: {effect: {cells}}}) => cells).join('')).join('');
-		switch(format) {
-			case 'scl':
-				json.foglight = (json.foglight.match(/r\d+c\d+/g) || [])
-					.map(rc => rc.match(/r(\d+)c(\d+)/)
-					.slice(1).map(n => parseInt(n) - 1));
-				break;
-			case 'fpuz':
-				json.foglight = (json.foglight.toUpperCase().match(/R\d+C\d+/g) || []);
-				break;
+		if(json.foglight === undefined) {
+			let cells = json.cells || json.grid;
+			//let inverted = invertRc(cells, edits.flatMap(({insertTE: {effect: {cells}}}) => cells).join(''));
+			json.foglight = invertRc(cells, edits.flatMap(({insertTE: {effect: {cells}}}) => cells).join('')).join('');
+			switch(format) {
+				case 'scl':
+					json.foglight = (json.foglight.match(/r\d+c\d+/g) || [])
+						.map(rc => rc.match(/r(\d+)c(\d+)/)
+						.slice(1).map(n => parseInt(n) - 1));
+					break;
+				case 'fpuz':
+					json.foglight = (json.foglight.toUpperCase().match(/R\d+C\d+/g) || []);
+					break;
+			}
 		}
 	}
 	return editLog;
