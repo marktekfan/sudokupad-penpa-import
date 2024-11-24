@@ -42,9 +42,9 @@ export function extractTriggerEffects(json) {
 	const reTriggerLabel = /^[A-Z]{1,2}$/;
 	const {underlays = [], overlays = [], cages = [], text = [], cage = []} = json;
 	//if(underlays[2]) underlays[2].text = 'C';
-	let edits;
+	let edits = [];
 	if(text.length > 0 && cage.length > 0) {
-		edits = text
+		edits.push(...text
 			.filter(({value}) => reTriggerLabel.test(value))
 			.map(text => ({text, cages: cage.filter(c => text.value === c.value)}))
 			.filter(({text, cages}) => cages.length > 0)
@@ -54,11 +54,11 @@ export function extractTriggerEffects(json) {
 					trigger: {type: 'cellvalue', cell: text.cells.join('').toLowerCase()},
 					effect: {type: 'foglight', cells: cages.flatMap(c => c.cells).join('').toLowerCase()}
 				}
-			}));
+			})));
 	}
 	else {
 		if(underlays.length > 0 && cages.length > 0) {
-			edits = underlays
+			edits.push(...underlays
 				.filter(({text}) => reTriggerLabel.test(text))
 				.map(underlay => ({underlay, cages: cages.filter(c => underlay.text === c.value)}))
 				.filter(({underlay, cages}) => cages.length > 0)
@@ -68,10 +68,10 @@ export function extractTriggerEffects(json) {
 						trigger: {type: 'cellvalue', cell: arrToRc(underlay.center)},
 						effect: {type: 'foglight', cells: cages.flatMap(c => c.cells.map(arrToRc)).join('')}
 					}
-				}));
+				})));
 		}
 		if(overlays.length > 0 && cages.length > 0) {
-			edits = overlays
+			edits.push(...overlays
 				.filter(({text}) => reTriggerLabel.test(text))
 				.map(overlay => ({overlay, cages: cages.filter(c => overlay.text === c.value)}))
 				.filter(({overlay, cages}) => cages.length > 0)
@@ -81,7 +81,7 @@ export function extractTriggerEffects(json) {
 						trigger: {type: 'cellvalue', cell: arrToRc(overlay.center)},
 						effect: {type: 'foglight', cells: cages.flatMap(c => c.cells.map(arrToRc)).join('')}
 					}
-				}));
+				})));
 		}
 		
 	}
