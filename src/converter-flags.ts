@@ -8,7 +8,7 @@ const flagDescriptions = {
 	useClipPath: { defaultValue: false, title: 'Use clip-path for Penpa shapes', hidden: true },
 	debug: { defaultValue: false, title: 'Add Penpa debug info to puzzle' },
 	fpuzzles2scl: { defaultValue: false, title: 'Convert f-puzzles to SCL format' },
-	remotefog: { defaultValue: false, title: 'Convert Remote-Fog cages', persist: true },
+	foglink: { defaultValue: true, title: 'Convert Remote-Fog cages', persist: true },
 } as const;
 
 export type FlagName = keyof typeof flagDescriptions;
@@ -31,37 +31,37 @@ export class ConverterFlags {
 		this.flagValues = {} as FlagsRecord; // Will be initalized with PenpaConverter.settings values
 		for (let name in flagDescriptions) {
 			let setting = flagDescriptions[name as FlagName];
-			this.setValue(name, setting.defaultValue);
+			this.setValue(name as FlagName, setting.defaultValue);
 		}
 	}
 
 	static FlagDescriptions() {
 		//return flagDescriptions as Record<FlagName, FlagDescription>;
 		return Object.keys(flagDescriptions).map(key => {
-			const flag = ConverterFlags.getDescription(key);
+			const flag = ConverterFlags.getDescription(key as FlagName);
 			return { key, ...flag, hidden: !!flag.hidden };
 		});
 	}
 
-	static getDescription(flag: string): FlagDescription {
-		return flagDescriptions[flag as FlagName];
+	static getDescription(flag: FlagName): FlagDescription {
+		return flagDescriptions[flag];
 	}
 
-	getDescription(flag: string): FlagDescription {
+	getDescription(flag: FlagName): FlagDescription {
 		return ConverterFlags.getDescription(flag);
 	}
 
 	setFlagValues(flags: FlagValues | FlagName[]) {
 		if (Array.isArray(flags)) {
 			for (let flagName in flagDescriptions) {
-				const description = ConverterFlags.getDescription(flagName);
+				const description = ConverterFlags.getDescription(flagName as FlagName);
 				if (!description.hidden) {
-					this.setValue(flagName, flags.includes(flagName as FlagName));
+					this.setValue(flagName as FlagName, flags.includes(flagName as FlagName));
 				}
 			}
 		} else {
 			for (let name in flags) {
-				this.setValue(name, flags[name as FlagName]);
+				this.setValue(name as FlagName, flags[name as FlagName]);
 			}
 		}
 	}
@@ -74,17 +74,21 @@ export class ConverterFlags {
 		return this.flagValues as FlagsRecord;
 	}
 
-	getValue(flag: string): boolean {
+	getValue(flag: FlagName): boolean {
 		return this.flagValues[flag as FlagName] ?? false;
 	}
 
-	setValue(flag: string, value: boolean | string) {
-		this.flagValues[flag as FlagName] = !!value;
+	setValue(flag: FlagName, value: boolean | string) {
+		this.flagValues[flag] = !!value;
 	}
 
 	persist() {
-		let state = {
-			remotefog: this.getValue('remotefog')
+		let state = {} as any;
+		for (let name in flagDescriptions) {
+			let flagdef = flagDescriptions[name as FlagName] as FlagDescription;
+			if (flagdef.persist) {
+				state[name] = this.getValue(name as FlagName);
+			}
 		}
 		localStorage.setItem('flags', JSON.stringify(state));	
 	}
@@ -92,8 +96,11 @@ export class ConverterFlags {
 	obtain() {
 		try {
 			let state = JSON.parse(localStorage.getItem('flags') || '') || {};
-			if (state.remotefog) {
-				this.setValue('remotefog', true);
+			for (let name in flagDescriptions) {
+				let flagdef = flagDescriptions[name as FlagName] as FlagDescription;
+				if (flagdef.persist && state[name] !== undefined) {
+					this.setValue(name as FlagName, !!state[name]);
+				}
 			}
 		}
 		catch (err) {
