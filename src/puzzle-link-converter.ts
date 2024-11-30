@@ -30,9 +30,8 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 		if (flags.foglink) {
 			convertRemoteFog(puzzle);
 		}
-		let settings = Object.entries(puzzle.settings || {})
-			.map(([k, v]) => `setting-${k}=${v}`)
-			.join('&');
+		let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
+		delete puzzle.settings;
 		return encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 	}
 
@@ -44,7 +43,9 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 			if (flags.foglink) {
 				convertRemoteFog(puzzle);
 			}
-			return encodeSCLPuz(puzzle);
+			let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
+			delete puzzle.settings;
+			return encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 		} else {
 			return 'fpuzzles' + fpuzzleid;
 		}
@@ -95,9 +96,8 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 				convertRemoteFog(puzzle as any);
 			}
 
-			let settings = Object.entries((puzzle as any).settings || {})
-				.map(([k, v]) => `setting-${k}=${v}`)
-				.join('&');
+			let settings = Object.entries((puzzle as SclPuzzle).settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
+			delete (puzzle as SclPuzzle).settings; 
 
 			// scl content
 			if (isSclFormat(puzzle)) {

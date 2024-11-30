@@ -46,8 +46,10 @@ export async function convertRemoteFogPuzzleId(puzzleId: string) : Promise<strin
 	puzzle.settings ??= {};
 	puzzle.settings['foganim'] = 1;
 
-	// TODO: preserve URL parameters
-	puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
+	let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
+	delete puzzle.settings;
+
+	puzzleId = encodeSCLPuz(JSON.stringify(puzzle)) + (settings ? '?' + settings : '');
     return puzzleId;
 }
 

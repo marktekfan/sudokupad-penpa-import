@@ -15,10 +15,10 @@ export interface SclCage {
 export type SclFeature = 'regions' | 'lines' | 'underlays' | 'overlays' | 'arrows' | 'cages';
 
 export class SclPuzzle {
+	settings?: Dictionary; // For passing url settings parameters
 	id?: string;
 	cellSize?: number;
 	cells: SclCell[][];
-	settings?: Dictionary;
 	metadata?: Dictionary<unknown>;
 	global?: Array<string>;
 	foglight?: RC[];
