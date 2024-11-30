@@ -15,17 +15,12 @@ export function usePuzzleConverter() {
 	async function ConvertPuzzle(redirect = false) {
 		try {
 			const appState = useAppState();
-			const destination = appState.selectedTarget;
 			const selectedAction = appState.selectedAction;
 
 			if (appState.testMode) {
 				localStorage.setItem('testurl', appState.inputUrl);
 			}
-
-			if (!destination.includes('crackingthecryptic')) {
-				localStorage.destination = destination;
-			}
-
+			
 			const converterFlags = new ConverterFlags();
 			converterFlags.setFlagValues(appState.selectedFlags as FlagName[]);
 			converterFlags.persist();
@@ -35,6 +30,12 @@ export function usePuzzleConverter() {
 			if (puzzleId === undefined) {
 				throw new ConverterError('Not a recognized puzzle URL');
 			}
+
+			const destination = appState.selectedTarget;
+			if (!destination.includes('crackingthecryptic')) {
+				localStorage.destination = destination;
+			}
+
 			if (destination.includes('?')) {
 				puzzleId = puzzleId.replace('?', '&'); // Replace 2nd '?' with '&'
 			}
