@@ -33,7 +33,7 @@
 export function extractTriggerEffects(format, json) {
 	//console.log('extractTriggerEffects:', format, json);
 	const invertRc = (cells, rcs) => {
-		rcs = rcs.match(/r(\d+)c(\d+)/g);
+		rcs = (rcs.match(/r(\d+)c(\d+)/g)) ?? [];
 		let cellRc = cells.flatMap((row, r) => row.map((_, c) => `r${r + 1}c${c+ 1}`));
 		return cellRc.filter(rc => !rcs.includes(rc));
 	};
@@ -87,7 +87,7 @@ export function extractTriggerEffects(format, json) {
 		triggereffect.push(insertTE);
 		editLog.push({msg: `Insert triggereffect`, json: insertTE});
 	}
-	if(json.foglight === undefined) {
+	if(edits.length > 0 && json.foglight === undefined) {
 		let cells = json.cells || json.grid;
 		json.foglight = invertRc(cells, edits.flatMap(({insertTE: {effect: {cells}}}) => cells).join('')).join('');
 		switch(format) {

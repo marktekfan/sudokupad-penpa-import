@@ -68,7 +68,8 @@ function convertFogLink(json: any) : any[] {
 				}
 			}
 		} catch(err) {
-			if (!(err as Error).message.includes("Unable to find triggereffect markers")) {			
+			const error = err as Error;
+			if (error.message && !error.message.includes("Unable to find triggereffect markers")) {
 				console.error(err);
 				throw err;
 			}
