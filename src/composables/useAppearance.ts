@@ -2,7 +2,7 @@ import SvgThemeLight from '@/assets/theme-light.svg?raw';
 import SvgThemeDark from '@/assets/theme-dark.svg?raw';
 import SvgThemeDefault from '@/assets/theme-default.svg?raw';
 
-import { usePreferredDark, useStorage } from '@vueuse/core';
+import { useStorage } from '@vueuse/core';
 import { ref, watch } from 'vue';
 import type { BasicColorSchema } from '@vueuse/core/index.cjs';
 
@@ -18,7 +18,9 @@ export const icons: Record<BasicColorSchema, string> = {
 };
 
 export function useAppearance() {
-	const preferredDark = usePreferredDark();
+	//const preferredDark = usePreferredDark(); // ML This doe sometimes return true when OS is in light mode
+	const preferredDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
 	const appearance = useStorage<BasicColorSchema>('appearance', 'auto');
 	const themePalette = useStorage<string>('palette', 'amber');
 

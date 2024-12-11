@@ -4,8 +4,7 @@
 		<meta charset="UTF-8" />
 		<link rel="icon" href="/favicon.ico" />
 		<script>
-			const query = '(prefers-color-scheme: dark)';
-			let preferDark = window.matchMedia(query).matches;
+			let preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 			let appearance = localStorage.getItem('appearance');
 			if (!['dark', 'light'].includes(appearance)) appearance = preferDark ? 'dark' : 'light';
 			const element = document.querySelector('html');
