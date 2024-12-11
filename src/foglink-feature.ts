@@ -3,7 +3,7 @@ import { loadFPuzzle } from './sudokupad/fpuzzlesdecoder';
 import { PuzzleLoader } from './sudokupad/puzzleloader';
 import { encodeSCLPuz }from './puzzle-link-converter'
 import { extractTriggerEffects } from './convertfoglink'
-import { useAppState } from './stores/appState';
+// import { useAppState } from './stores/appState';
 
 export function fpuzHasRemoteFog(fpuzzleId: string) : boolean {
     console.log(fpuzzleId);
@@ -61,11 +61,11 @@ function convertFogLink(json: any) : any[] {
 			let format = (json.cells) ? 'scl': 'fpuz';
 			edits = extractTriggerEffects(format, json);
 			if (edits.length > 0) {
-				const appState = useAppState();
-				const destination = appState.selectedTarget;
-				if (destination.includes('sudokupad.app') && !destination.includes('beta')) {
-					appState.selectedTarget = 'https://beta.sudokupad.app/';
-				}
+				// const appState = useAppState();
+				// const destination = appState.selectedTarget;
+				// if (destination.includes('sudokupad.app') && !destination.includes('beta')) {
+				// 	appState.selectedTarget = 'https://beta.sudokupad.app/';
+				// }
 			}
 		} catch(err) {
 			const error = err as Error;
