@@ -27,7 +27,14 @@ const isUrl = computed(() => false); //!isJson.value);
 const inputTextArea = ref<HTMLTextAreaElement>(null!);
 
 function ClearInput() {
-	appState.inputUrl = '';
+	// Try to clear and preserve undo buffer
+	document.execCommand('selectAll', false);
+	document.execCommand('delete', false);
+
+	// When above commands failed then fallback to old behaviour, which also clears the undo buffer
+	if (appState.inputUrl !== '') {
+		appState.inputUrl = '';
+	}
 	unrefElement(inputTextArea)?.focus();
 }
 
@@ -329,7 +336,7 @@ textarea {
 	position: absolute;
 	top: 0.5rem;
 	left: min(55rem, 100%);
-	translate: -3rem;
+	translate: -4rem;
 	z-index: 2;
 }
 
