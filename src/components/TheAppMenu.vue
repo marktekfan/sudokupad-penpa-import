@@ -38,7 +38,7 @@ const appearanceMenuItems = [
 			},
 			{
 				key: 'auto',
-				label: 'Device default',
+				label: 'Device theme',
 				html: icons.auto,
 				command: changeTheme,
 			},
@@ -49,6 +49,7 @@ const appearanceMenuItems = [
 function changeTheme(event: MenuItemCommandEvent) {
 	if (event.item.key) {
 		appearance.value = event.item.key as BasicColorSchema;
+		//appearanceMenuItems[0].items.findIndex(item => item.key === appearance.value)
 	}
 }
 </script>
@@ -64,7 +65,7 @@ function changeTheme(event: MenuItemCommandEvent) {
 			<Button @click="toggleAppearanceMenu">
 				<div class="flex align-items-center gap-2">
 					<span class="flex align-items-center" v-html="appearenceIcon"></span>
-					<span>Appearence</span>
+					<span>{{ appearanceMenuItems[0].items.find(item => item.key === appearance)?.label }}</span>
 				</div>
 			</Button>
 			<Menu ref="menu" id="overlay_menu" :model="appearanceMenuItems" :popup="true">

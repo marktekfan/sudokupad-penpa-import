@@ -3,13 +3,6 @@
 	<head>
 		<meta charset="UTF-8" />
 		<link rel="icon" href="/favicon.ico" />
-		<script>
-			let preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-			let appearance = localStorage.getItem('appearance');
-			if (!['dark', 'light'].includes(appearance)) appearance = preferDark ? 'dark' : 'light';
-			const element = document.querySelector('html');
-			element?.classList.toggle('my-app-dark', appearance === 'dark');
-		</script>
 		<!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
 		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-KNP4FWPNGW"></script>
