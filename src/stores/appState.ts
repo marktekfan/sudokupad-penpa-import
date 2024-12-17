@@ -21,6 +21,7 @@ export const useAppState = defineStore('AppState', () => {
 		{ name: 'sudokupad.app', value: 'https://sudokupad.app/' },
 		{ name: 'beta.sudokupad.app', value: 'https://beta.sudokupad.app/' },
 		{ name: 'alpha.sudokupad.app', value: 'https://alpha.sudokupad.app/' },
+		{ name: "Don't create ShortID", value: 'https://sudokupad.app/scf?puzzleid=' },
 	];
 
 	function addConverterTarget(domain: string, name: string = '') {

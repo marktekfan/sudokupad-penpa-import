@@ -92,7 +92,7 @@ function hideGridLines(puinfo: PuInfo, _puzzle: SclPuzzle) {
 	const { pu, penpaTools } = puinfo;
 	const { getBoundsRC, makePointPair } = PenpaTools;
 	const { point2matrix, matrix2point } = penpaTools;
-	const { centerlist } = pu;
+	const { centerlist, frame } = pu;
 
 	const { top, left, bottom, right, height, width } = getBoundsRC(centerlist, point2matrix);
 	// Create 'outside cell mask' only when cells are removed
@@ -122,19 +122,27 @@ function hideGridLines(puinfo: PuInfo, _puzzle: SclPuzzle) {
 
 		if (hastop) {
 			const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y - 1, x, 1));
-			deletelineE[key] = 9;
+			if (!deletelineE[key] && !frame[key]) {
+				deletelineE[key] = 9;
+			}
 		}
 		if (hasleft) {
 			const key = makePointPair(matrix2point(y - 1, x - 1, 1), matrix2point(y, x - 1, 1));
-			deletelineE[key] = 9;
+			if (!deletelineE[key] && !frame[key]) {
+				deletelineE[key] = 9;
+			}
 		}
 		if (hasright) {
 			const key = makePointPair(matrix2point(y - 1, x, 1), matrix2point(y, x, 1));
-			deletelineE[key] = 9;
+			if (!deletelineE[key] && !frame[key]) {
+				deletelineE[key] = 9;
+			}
 		}
 		if (hasbottom) {
 			const key = makePointPair(matrix2point(y, x - 1, 1), matrix2point(y, x, 1));
-			deletelineE[key] = 9;
+			if (!deletelineE[key] && !frame[key]) {
+				deletelineE[key] = 9;
+			}
 		}
 	}
 
