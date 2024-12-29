@@ -500,7 +500,7 @@ export class PenpaToSclConverter {
 
 			const isOverSymbol = 
 				(pu.pu_q['symbol'][key]?.[2] === 2) && // Symbol above lines
-				(![5, 6, 7, 11].includes(number[1])); // Number circle
+				(![6, 7, 11].includes(number[1])); // Number circle, but not 'White BG' [5]. Eg.: https://tinyurl.com/29dsr7rt
 
 			// Should number be drawn in this pass?
 			if (isOverSymbol === overSymbol) {
@@ -509,7 +509,7 @@ export class PenpaToSclConverter {
 				// Eg.: https://tinyurl.com/27ge6nz4
 				if (pu.pu_q['symbol'][key]?.[2] === 2) {
 					// Symbol above lines
-					if ([5, 6, 7, 11].includes(number[1])) { // Number circle
+					if ([6, 7, 11].includes(number[1])) { // Number circle
 						ctx.target = 'arrows';
 					}
 				}
