@@ -69,7 +69,7 @@ export const PuzzleZipper = (() => {
 		clearEmptyArrays(zipped);
 		mapProps(zipped, propMap);
 		mapValues(zipped, v => {
-			if(typeof v === 'string' && String(parseInt(v)) === v) v = parseInt(v);
+			if(typeof v === 'string' && String(parseInt(v)) === v && v !== "NaN") v = parseInt(v);
 			return v;
 		});
 		zipped = JSON.stringify(zipped)
