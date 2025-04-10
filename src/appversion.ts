@@ -1,4 +1,4 @@
-const version = '0.57.1';
+const version = '0.58.0';
 const name = 'SudokuPad Penpa Converter';
 
 export class AppVersion {

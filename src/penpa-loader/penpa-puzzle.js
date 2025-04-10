@@ -80,38 +80,6 @@ export class PenpaPuzzle {
 		this.centerlist = [];
 		this.solution = "";
 		this.rules = "";
-		this.replace = [
-			["\"qa\"", "z9"],
-			["\"pu_q\"", "zQ"],
-			["\"pu_a\"", "zA"],
-			["\"grid\"", "zG"],
-			["\"edit_mode\"", "zM"],
-			["\"surface\"", "zS"],
-			["\"line\"", "zL"],
-			["\"lineE\"", "zE"],
-			["\"wall\"", "zW"],
-			["\"cage\"", "zC"],
-			["\"number\"", "zN"],
-			["\"symbol\"", "zY"],
-			["\"special\"", "zP"],
-			["\"board\"", "zB"],
-			["\"command_redo\"", "zR"],
-			["\"command_undo\"", "zU"],
-			["\"command_replay\"", "z8"],
-			["\"numberS\"", "z1"],
-			["\"freeline\"", "zF"],
-			["\"freelineE\"", "z2"],
-			["\"thermo\"", "zT"],
-			["\"arrows\"", "z3"],
-			["\"direction\"", "zD"],
-			["\"squareframe\"", "z0"],
-			["\"polygon\"", "z5"],
-			["\"deletelineE\"", "z4"],
-			["\"killercages\"", "z6"],
-			["\"nobulbthermo\"", "z7"],
-			["\"__a\"", "z_"],
-			["null", "zO"],
-		];
 		this.version = [3, 0, 7]; // Also defined in HTML Script Loading in header tag to avoid Browser Cache Problems
 		this.multisolution = false;
 		this.borderwarning = true;
@@ -119,6 +87,48 @@ export class PenpaPuzzle {
 		this.url = "";
 	}
 
+	// zwegner:
+	// List of substitutions to make in the puzzle JSON data structure to compress/decompress
+	// it. Strings like "grid" get substituted with a string like zG (no quotes). The
+	// first entry is to escape every 'z' character in the puzzle data structure, so that
+	// e.g. a puzzle with zG written in a cell doesn't have that text replaced with "grid",
+	// which completely breaks the decompression by adding quotes and making the JSON invalid.
+	// Instead zG gets replaced by zZG when compressing, so any text entered into a puzzle
+	// can't spuriously trigger one of the other substitutions.
+	static COMPRESS_SUB = [
+		["z", "zZ"],
+		["\"qa\"", "z9"],
+		["\"pu_q\"", "zQ"],
+		["\"pu_a\"", "zA"],
+		["\"grid\"", "zG"],
+		["\"edit_mode\"", "zM"],
+		["\"surface\"", "zS"],
+		["\"line\"", "zL"],
+		["\"lineE\"", "zE"],
+		["\"wall\"", "zW"],
+		["\"cage\"", "zC"],
+		["\"number\"", "zN"],
+		["\"symbol\"", "zY"],
+		["\"special\"", "zP"],
+		["\"board\"", "zB"],
+		["\"command_redo\"", "zR"],
+		["\"command_undo\"", "zU"],
+		["\"command_replay\"", "z8"],
+		["\"numberS\"", "z1"],
+		["\"freeline\"", "zF"],
+		["\"freelineE\"", "z2"],
+		["\"thermo\"", "zT"],
+		["\"arrows\"", "z3"],
+		["\"direction\"", "zD"],
+		["\"squareframe\"", "z0"],
+		["\"polygon\"", "z5"],
+		["\"deletelineE\"", "z4"],
+		["\"killercages\"", "z6"],
+		["\"nobulbthermo\"", "z7"],
+		["\"__a\"", "z_"],
+		["null", "zO"],
+	];
+		
 	reset() {
 		let pu_qa = ["pu_q", "pu_a"],
 			pu_qa_col = ["pu_q_col", "pu_a_col"];

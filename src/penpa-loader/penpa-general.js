@@ -3,6 +3,7 @@ import { Zlib } from './zlib-raw';
 import { Puzzle_square as _Puzzle_square, Puzzle_sudoku as _Puzzle_sudoku, Puzzle_kakuro as _Puzzle_kakuro, Stack } from './penpa-puzzle';
 import { Swal } from '../Swal';
 import { Color } from '../penpa-style';
+import { PenpaPuzzle } from './penpa-puzzle';
 
 export const PenpaGeneral = function (document, UserSettings) {
 
@@ -1982,9 +1983,12 @@ function load(urlParam, type = 'url', origurl = null) {
 
     // Decrypt P
     var rtext = decrypt_data(paramArray.p);
+    // zwegner:
+    // Do all the compression substitutions in reverse to decompress. This is because the first entry escapes strings
+    // that contain possibly-valid substitutions, and so we do all the normal substitutions before we unescape.
+    for (var i = PenpaPuzzle.COMPRESS_SUB.length - 1; i >= 0; i--)
+        rtext = rtext.split(PenpaPuzzle.COMPRESS_SUB[i][1]).join(PenpaPuzzle.COMPRESS_SUB[i][0]);
     rtext = rtext.split("\n");
-    rtext[0] = rtext[0].split("zO").join("null");
-    rtext[1] = rtext[1].split("zO").join("null");
     if (!isNaN(rtext[0][0])) {
         loadver1(paramArray, rtext)
         return;
@@ -2090,28 +2094,6 @@ function load(urlParam, type = 'url', origurl = null) {
     pu.center_n = parseInt(rtext_para[9]);
     pu.center_n0 = parseInt(rtext_para[10]);
 
-    for (var i = 0; i < pu.replace.length; i++) {
-        rtext[2] = rtext[2].split(pu.replace[i][1]).join(pu.replace[i][0]);
-        rtext[3] = rtext[3].split(pu.replace[i][1]).join(pu.replace[i][0]);
-        rtext[4] = rtext[4].split(pu.replace[i][1]).join(pu.replace[i][0]);
-        rtext[5] = rtext[5].split(pu.replace[i][1]).join(pu.replace[i][0]);
-
-        // submode, style settings
-        if (rtext[11]) {
-            rtext[11] = rtext[11].split(pu.replace[i][1]).join(pu.replace[i][0]);
-        }
-
-        // custom colors, only checking for 14 as 14 and 15 will appear together or never
-        if (rtext[14]) {
-            rtext[14] = rtext[14].split(pu.replace[i][1]).join(pu.replace[i][0]);
-            rtext[15] = rtext[15].split(pu.replace[i][1]).join(pu.replace[i][0]);
-        }
-
-        // genre tags
-        if (rtext[17]) {
-            rtext[17] = rtext[17].split(pu.replace[i][1]).join(pu.replace[i][0]);
-        }
-    }
     rtext[5] = JSON.parse(rtext[5]);
 
     // workaround for incorrectly encoded empty centerlist
