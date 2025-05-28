@@ -20,7 +20,7 @@ export function encodeSCLPuz(puzzle: SclPuzzle | string) {
 
 export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	const { unzip } = PuzzleZipper;
-	let url = await expandTinyUrlAsync(input);
+	let url = await expandTinyUrlAsync(input.trim());
 	if (!url) throw new ConverterError('empty puzzle id');
 
 	// Penpa+ url format
