@@ -40,7 +40,7 @@ function ClearInput() {
 
 onMounted(() => {
 	addEventListener("load", () => {
-		// Restore syntax hilighting/
+		// Restore syntax highlighting/
 		// Update reactive inputUrl with pre-filled browser data.
 		// E.g. after page duplication or reactivation from sleep.
 		const inputTextArea = document.querySelector('textarea#editing') as HTMLTextAreaElement;
@@ -52,9 +52,12 @@ onMounted(() => {
 	// Attach resizer
 	const resizeObserver = new ResizeObserver(entries => {
 		for (const entry of entries) {
-			const hi = document.querySelector('#highlighting')! as HTMLElement;
+			const highlighting = document.querySelector('#highlighting')! as HTMLElement;
 			const bbs = entry.borderBoxSize[0];
-			hi.style.height = bbs.blockSize + 'px';
+			highlighting.style.height = bbs.blockSize + 'px';
+			highlighting.style.width = bbs.inlineSize + 'px';
+			const clearbutton = document.querySelector('#clearbutton')! as HTMLElement;
+			clearbutton.style.left = (bbs.inlineSize - 20) + 'px';
 		}
 	});
 	resizeObserver.observe(document.querySelector('#editing')!);
@@ -326,7 +329,7 @@ Prism.languages.url = Prism.languages.uri;
 
 <style scoped>
 textarea {
-	resize: vertical;
+	resize: both;
 	width: min(55rem, 100%);
 	min-height: 3rem;
 	word-break: break-all;
@@ -336,7 +339,7 @@ textarea {
 	position: absolute;
 	top: 0.5rem;
 	left: min(55rem, 100%);
-	translate: -4rem;
+	translate: -2.5rem;
 	z-index: 2;
 }
 
