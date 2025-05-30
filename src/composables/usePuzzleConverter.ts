@@ -1,10 +1,11 @@
 import { useAppState, type AppAction } from '@/stores/appState';
-import stringifyPretty from 'json-stringify-pretty-compact';
 import { ConverterFlags, type FlagName } from '@/converter-flags';
 import { convertPuzzleAsync } from '@/puzzle-link-converter';
 import { ConverterError } from '@/converter-error';
 import { PuzzleLoader } from '@/sudokupad/puzzleloader';
 import { loadFPuzzle } from '@/sudokupad/fpuzzlesdecoder';
+import { getMetadata } from '@/edit-metadata';
+import stringifyPretty from 'json-stringify-pretty-compact';
 
 const reFPuzPrefix = /^(fpuz(?:zles)?)(.*)/;
 const stripFPuzPrefix = (fpuzzle: string) => fpuzzle.replace(reFPuzPrefix, '$2');
@@ -20,7 +21,7 @@ export function usePuzzleConverter() {
 			if (appState.testMode) {
 				localStorage.setItem('testurl', appState.inputUrl);
 			}
-			
+
 			const converterFlags = new ConverterFlags();
 			converterFlags.setFlagValues(appState.selectedFlags as FlagName[]);
 			converterFlags.persist();
@@ -47,7 +48,7 @@ export function usePuzzleConverter() {
 				return;
 			}
 
-			if (!selectedAction.includes('json')) {
+			if (!selectedAction.includes('json') && !selectedAction.includes('metadata')) {
 				_lastActionSelection = selectedAction;
 			}
 
@@ -72,12 +73,17 @@ export function usePuzzleConverter() {
 				// 	}
 				// 	break;
 
+				case 'edit-metadata':
+					const puzzle = await ConvertPuzzleId(puzzleId);
+					appState.metadata = getMetadata(puzzle);
+					appState.metadata.dialogVisible = true;
+
+					appState.selectedAction = _lastActionSelection ?? 'open';
+					break;
+
 				case 'convert-tojson':
-					//let baseUrl = window.location.href.split('?url=', 1)[0];
-					//baseUrl += baseUrl.includes('?') ? '&url=' : '?url=';
-					//baseUrl += appState.inputUrl;
-					//history.pushState({url: appState.inputUrl}, '');
-					appState.inputUrl = await ConvertPuzzleIdToJson(puzzleId);
+					const prettyFormat = (obj: unknown) => stringifyPretty(obj, { maxLength: 150 });
+					appState.inputUrl = prettyFormat(await ConvertPuzzleId(puzzleId));
 					appState.outputUrl = '';
 					appState.selectedAction = _lastActionSelection ?? 'open';
 					break;
@@ -102,7 +108,7 @@ export function usePuzzleConverter() {
 	};
 }
 
-async function ConvertPuzzleIdToJson(puzzleId: string) {
+export async function ConvertPuzzleId(puzzleId: string) {
 	const { isRemotePuzzleId, parsePuzzleData, fetchPuzzle } = PuzzleLoader;
 
 	puzzleId = puzzleId.split('?')[0]; // Strip off parameters (settings)
@@ -121,18 +127,15 @@ async function ConvertPuzzleIdToJson(puzzleId: string) {
 		}
 	}
 
-	const prettyFormat = (obj: unknown) => stringifyPretty(obj, { maxLength: 150 });
 	if (reFPuzPrefix.test(puzzleId)) {
 		try {
 			let decodedUrl = loadFPuzzle.saveDecodeURIComponent(stripFPuzPrefix(puzzleId));
-			let fpuzzle = JSON.parse(loadFPuzzle.decompressPuzzle(decodedUrl)!);
-			return prettyFormat(fpuzzle);
+			return JSON.parse(loadFPuzzle.decompressPuzzle(decodedUrl)!);
 		} catch (err) {
 			console.error(err);
 			throw new ConverterError('Error while decoding F-Puzzle format');
 		}
 	} else {
-		let puzzle = await parsePuzzleData(puzzleId);
-		return prettyFormat(puzzle);
+		return await parsePuzzleData(puzzleId);
 	}
 }

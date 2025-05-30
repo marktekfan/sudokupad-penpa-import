@@ -206,6 +206,7 @@ import Textarea from 'primevue/textarea';
 import Toolbar from 'primevue/toolbar';
 import Toast from 'primevue/toast';
 import Tooltip from 'primevue/tooltip';
+import Dialog from 'primevue/dialog';
 
 import ToastService from 'primevue/toastservice';
 import PrimeVue from 'primevue/config';
@@ -251,5 +252,6 @@ app.component('SplitButton', SplitButton);
 app.component('Textarea', Textarea);
 app.component('Toast', Toast);
 app.component('Toolbar', Toolbar);
+app.component('Dialog', Dialog);
 
 app.mount('#app');
