@@ -18,6 +18,13 @@ export function encodeSCLPuz(puzzle: SclPuzzle | string) {
 	return 'scl' + loadFPuzzle.compressPuzzle(zip(puzzle));
 }
 
+export function isSclFormat(puzzle: any): puzzle is SclPuzzle {
+	return puzzle.id && puzzle.cells ? true : false;
+}
+export function isFPuzzlesFormat(puzzle: any): puzzle is SclPuzzle {
+	return puzzle.size && puzzle.grid ? true : false;
+}
+
 export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	const { unzip } = PuzzleZipper;
 	let url = await expandTinyUrlAsync(input.trim());
@@ -30,20 +37,24 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 		if (flags.foglink) {
 			convertRemoteFog(puzzle);
 		}
-		let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
+		let settings = Object.entries(puzzle.settings || {})
+			.map(([k, v]) => `setting-${k}=${v}`)
+			.join('&');
 		delete puzzle.settings;
 		return encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 	}
 
 	// f-puzzles url format
 	if (reFpuzzlesUrl.test(url)) {
-		let {fpuzzleid} = url.match(reFpuzzlesUrl)!.groups!;
+		let { fpuzzleid } = url.match(reFpuzzlesUrl)!.groups!;
 		if (flags.fpuzzles2scl || (flags.foglink && fpuzHasRemoteFog(fpuzzleid))) {
-			let puzzle = loadFPuzzle.parseFPuzzle(fpuzzleid) as SclPuzzle;			
+			let puzzle = loadFPuzzle.parseFPuzzle(fpuzzleid) as SclPuzzle;
 			if (flags.foglink) {
 				convertRemoteFog(puzzle);
 			}
-			let settings = Object.entries(puzzle.settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
+			let settings = Object.entries(puzzle.settings || {})
+				.map(([k, v]) => `setting-${k}=${v}`)
+				.join('&');
 			delete puzzle.settings;
 			return encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 		} else {
@@ -53,7 +64,7 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 
 	// sudokupad link format
 	if (reSudokuPadUrl.test(url)) {
-		let {puzzleid} = url.match(reSudokuPadUrl)!.groups!;
+		let { puzzleid } = url.match(reSudokuPadUrl)!.groups!;
 		if (flags.foglink) {
 			puzzleid = await convertRemoteFogPuzzleId(puzzleid);
 		}
@@ -62,7 +73,7 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 
 	// sudokupad.app url format
 	if (reCtc.test(url)) {
-		let {puzzleid} = url.match(reCtc)!.groups!;
+		let { puzzleid } = url.match(reCtc)!.groups!;
 		if (flags.foglink) {
 			puzzleid = await convertRemoteFogPuzzleId(puzzleid);
 		}
@@ -74,12 +85,6 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 		return url;
 	}
 
-	function isSclFormat(puzzle: any): puzzle is SclPuzzle {
-		return puzzle.id && puzzle.cells ? true : false;
-	}
-	function isFPuzzlesFormat(puzzle: any): puzzle is SclPuzzle {
-		return puzzle.size && puzzle.grid ? true : false;
-	}
 	// JSON format, should be scl or f-puzzles content
 	if (url.includes('{')) {
 		let json = url.replace(/^[\s'"]+/, '').replace(/[\s'"]+$/, '');
@@ -96,27 +101,8 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 				convertRemoteFog(puzzle as any);
 			}
 
-			let settings = Object.entries((puzzle as SclPuzzle).settings || {}).map(([k, v]) => `setting-${k}=${v}`).join('&');
-			delete (puzzle as SclPuzzle).settings; 
+			return convertToPuzzleId(puzzle, flags);
 
-			// scl content
-			if (isSclFormat(puzzle)) {
-				var puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
-				return puzzleId + (settings ? '?' + settings : '');
-			}
-
-			// f-puzzles content
-			if (isFPuzzlesFormat(puzzle)) {
-				if (flags.fpuzzles2scl) {
-					let sclPuzzle = loadFPuzzle.parseFPuzzle(puzzle) as SclPuzzle;
-					return encodeSCLPuz(sclPuzzle) + (settings ? '?' + settings : '');
-				} else {
-					var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
-					return puzzleId + (settings ? '?' + settings : '');
-				}
-			}
-
-			throw new ConverterError('Not a SudokuPad or f-puzzles JSON puzzle format');
 		} catch (ex: any) {
 			throw new ConverterError(ex.message);
 		}
@@ -128,4 +114,30 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 	}
 
 	throw new ConverterError('Not a SudokuPad, f-puzzles or Penpa URL');
+}
+
+export function convertToPuzzleId(puzzle: any, flags?: FlagValues): string {
+	let settings = Object.entries((puzzle as SclPuzzle).settings || {})
+		.map(([k, v]) => `setting-${k}=${v}`)
+		.join('&');
+	delete (puzzle as SclPuzzle).settings;
+
+	// scl content
+	if (isSclFormat(puzzle)) {
+		var puzzleId = encodeSCLPuz(JSON.stringify(puzzle));
+		return puzzleId + (settings ? '?' + settings : '');
+	}
+
+	// f-puzzles content
+	if (isFPuzzlesFormat(puzzle)) {
+		if (flags?.fpuzzles2scl) {
+			let sclPuzzle = loadFPuzzle.parseFPuzzle(puzzle) as SclPuzzle;
+			return encodeSCLPuz(sclPuzzle) + (settings ? '?' + settings : '');
+		} else {
+			var puzzleId = 'fpuzzles' + loadFPuzzle.compressPuzzle(JSON.stringify(puzzle));
+			return puzzleId + (settings ? '?' + settings : '');
+		}
+	}
+
+	throw new ConverterError('Not a SudokuPad or f-puzzles JSON puzzle format');
 }

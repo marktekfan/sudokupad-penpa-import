@@ -9,12 +9,20 @@ import { ConverterFlags, type FlagName } from '@/converter-flags';
 import { usePuzzleConverter } from '@/composables/usePuzzleConverter';
 import { useToast } from 'primevue/usetoast';
 import { useUniqueToast } from '@/composables/useUniqueToast';
-import { onMounted, ref, watch } from 'vue';
-import type Textarea from 'primevue/textarea';
+import { onMounted, ref, watch, type Ref } from 'vue';
+import MetadataEditor from './MetadataEditor.vue';
+import type { Metadata } from '@/edit-metadata';
+import { updateMetadata } from '@/edit-metadata';
+import stringifyPretty from 'json-stringify-pretty-compact';
 
 const appState = useAppState();
 const { converterTargets } = appState;
-const { selectedAction, selectedTarget, selectedFlags, converting, inputUrl, outputUrl } = storeToRefs(appState);
+const { selectedAction, selectedTarget, selectedFlags, converting, inputUrl, outputUrl, metadata } = storeToRefs(appState);
+const prettyFormat = (obj: unknown) => stringifyPretty(obj, { maxLength: 150 });
+
+function onUpdateMetadata(newMetadata: Ref<Metadata>) {
+	appState.inputUrl = prettyFormat(updateMetadata(newMetadata.value));
+}
 
 onMounted(async () => {
 	let uri = window.location.search.substring(1);
@@ -58,6 +66,7 @@ const converterActions: AppActionItem[] = [
 	*/
 	{ name: '──────────', value: '-', disabled: true },
 	{ name: 'Convert to JSON', value: 'convert-tojson' },
+	{ name: 'Edit Metadata', value: 'edit-metadata' },
 ];
 
 selectedAction.value = converterActions[0].value;
@@ -93,7 +102,7 @@ async function convertPuzzle(redirect = false) {
 		await puzzleConverter.ConvertPuzzle(redirect);
 	} catch (err: unknown) {
 		if (err instanceof Error) {
-			if (err.message.includes("JSON")) {
+			if (err.message.includes('JSON')) {
 				toast.add({ severity: 'error', summary: 'JSON Syntax Error', detail: err.message, life: 6000 });
 			} else {
 				toast.add({ severity: 'error', summary: 'Something went wrong', detail: err.message, life: 6000 });
@@ -191,6 +200,8 @@ function PasteNew(_: any) {
 				</div>
 			</div>
 		</div>
+
+		<MetadataEditor v-model="metadata" @update="onUpdateMetadata" />
 
 		<div v-if="appState.settingsVisible || appState.testMode">
 			<Fieldset legend="Converter Options" class="shadow-2">

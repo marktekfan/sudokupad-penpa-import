@@ -1,9 +1,10 @@
 import { useAppearance } from '@/composables/useAppearance';
+import type { Metadata } from '@/edit-metadata';
 import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
-export type AppAction = 'open' | 'create-url' | 'convert-tojson' | '-';
+export type AppAction = 'open' | 'create-url' | 'convert-tojson' | 'edit-metadata' | '-';
 
 export const useAppState = defineStore('AppState', () => {
 	const errorMessage = ref('');
@@ -14,6 +15,7 @@ export const useAppState = defineStore('AppState', () => {
 	const selectedAction = ref<AppAction>('open');
 	const selectedFlags = ref<string[]>([]);
 	const testMode = ref(false);
+	const metadata = ref<Metadata>();
 
 	const settingsVisible = useStorage('settingsVisible', false);
 
@@ -30,7 +32,7 @@ export const useAppState = defineStore('AppState', () => {
 	}
 
 	const appearance = useAppearance();
-	
+
 	return {
 		errorMessage,
 		inputUrl,
@@ -41,6 +43,8 @@ export const useAppState = defineStore('AppState', () => {
 		selectedFlags,
 
 		testMode,
+
+		metadata,
 
 		settingsVisible,
 		appearance,
