@@ -13,11 +13,10 @@ function saveClick() {
 function close() {
 	model.value.dialogVisible = false;
 }
-
 </script>
 
 <template>
-	<Dialog v-model:visible="model.dialogVisible" modal header="Edit Profile" :style="{ widthx: 'min(60rem, 90%)' }">
+	<Dialog v-model:visible="model.dialogVisible" modal header="Edit Profile">
 		<template #header>
 			<div class="inline-flex items-center justify-center gap-2">
 				<span class="font-bold whitespace-nowrap text-2xl">Puzzle Metadata</span>
@@ -53,6 +52,6 @@ textarea {
 	resize: both;
 	width: min(55rem, 90vw);
 	min-height: 3rem;
-	word-break: break-all;
+	word-break: break-word;
 }
 </style>
