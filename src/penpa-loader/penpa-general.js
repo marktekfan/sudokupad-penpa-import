@@ -2068,6 +2068,12 @@ function load(urlParam, type = 'url', origurl = null) {
         pu.multisolution = true;
     }
 
+    // Background image data
+    if (rtext_para[21]) {
+        let data = decrypt_data(rtext_para[21])
+        pu.bg_image_data = JSON.parse(data);
+    }
+
     // version save
     if (rtext[10]) {
         pu.version = JSON.parse(rtext[10]);

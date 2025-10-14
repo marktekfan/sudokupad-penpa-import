@@ -160,7 +160,7 @@ export interface PenpaPuzzle {
 	nx0: number;
 	width0: number;
 	width_c: number;
-
+	bg_image_data?: { url: string; opacity: number; x: number; y: number; width: number; height: number };
 	_document: Record<string, any>;
 	_userSettings: typeof UserSettings;
 	_size: number;

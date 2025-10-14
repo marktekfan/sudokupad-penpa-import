@@ -1200,6 +1200,16 @@ export class PenpaToSclConverter {
 		);
 	};
 
+	private addBackgroundImage = (puinfo: PuInfo, puzzle: SclPuzzle) => {
+		const { pu } = puinfo;
+		const { url, opacity = 100 } = pu.bg_image_data || {};
+		if (url) {
+			puzzle.metadata = puzzle.metadata || {};
+			puzzle.metadata.bgimage = url;
+			puzzle.metadata.bgimageopacity = opacity / 100;
+		}
+	}
+
 	public convertPenpaToScl = (pu: PenpaPuzzle | string) => {
 		if (typeof pu === 'string') {
 			pu = PenpaLoader.loadPenpaPuzzle(pu)!;
@@ -1286,6 +1296,8 @@ export class PenpaToSclConverter {
 		}
 
 		this.addSolution(puinfo, puzzle);
+
+		this.addBackgroundImage(puinfo, puzzle);
 
 		const defaultTitle = 'Untitled';
 		const defaultAuthor = 'Unknown';
