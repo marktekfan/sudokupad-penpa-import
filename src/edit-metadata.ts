@@ -27,11 +27,11 @@ export function getMetadata(puzzle: any): Metadata {
 		msgcorrect: '',
 	};
 
-	metadata.title = (puzzle.metadata?.title || getCageMetaData(puzzle, 'title')) as string;
-	metadata.author = (puzzle.metadata?.author || getCageMetaData(puzzle, 'author')) as string;
-	metadata.rules = (puzzle.metadata?.rules || getCageMetaData(puzzle, 'rules')) as string;
-	metadata.solution = (puzzle.metadata?.solution || getCageMetaData(puzzle, 'solution')) as string;
-	metadata.msgcorrect = (puzzle.metadata?.msgcorrect || getCageMetaData(puzzle, 'msgcorrect')) as string;
+	metadata.title = (puzzle.metadata?.title.toString() || getCageMetaData(puzzle, 'title')) as string;
+	metadata.author = (puzzle.metadata?.author.toString() || getCageMetaData(puzzle, 'author')) as string;
+	metadata.rules = (puzzle.metadata?.rules.toString() || getCageMetaData(puzzle, 'rules')) as string;
+	metadata.solution = (puzzle.metadata?.solution.toString() || getCageMetaData(puzzle, 'solution')) as string;
+	metadata.msgcorrect = (puzzle.metadata?.msgcorrect.toString() || getCageMetaData(puzzle, 'msgcorrect')) as string;
 
 	return metadata;
 }
