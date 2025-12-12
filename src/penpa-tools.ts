@@ -7,6 +7,7 @@ export interface WayPointLine {
 	keys: number[];
 	value: number;
 	cc?: string;
+	overDeletedGridLine?: boolean;
 	killercage?: number;
 }
 
@@ -127,6 +128,7 @@ export class PenpaTools {
 		const keys = Object.keys(lines);
 		keys.sort(PenpaTools.comparePenpaLinePoints);
 		keys.forEach(k => {
+			let overDeletedGridLine = false;
 			if (lines[k] === undefined) return;
 			if (lines[k] === 98) return; // x-mark, has only a single point.
 			if (lines[k] === 40) return; // don't combine short lines
@@ -139,13 +141,18 @@ export class PenpaTools {
 				let nextVal = lines[nextKey];
 				if (nextVal === undefined || lines[k] !== nextVal) break; // not found or different line style
 				if (linesCol && linesCol[k] !== linesCol[nextKey]) break; // or not same custom color
-				if (excludedLines.length != 0 && (excludedLines[k] || excludedLines[nextKey])) break; // explicitly don't combine (e.g. when dashed line over deletelineE)
+				//if (excludedLines[k] || excludedLines[nextKey]) break; // explicitly don't combine (e.g. when dashed line over deletelineE)
+				// // explicitly don't combine (e.g. when dashed line over deletelineE)
+
+				if (excludedLines[k] || excludedLines[nextKey]) {
+					overDeletedGridLine = true;
+				}
 				delete lines[nextKey];
 				p2 = nextp;
 			} while (true);
 			let newKey = makePointPair(p1, p2);
 			if (k != newKey) {
-				lines[newKey] = lines[k];
+				lines[newKey] = overDeletedGridLine ? -lines[k] : lines[k];
 				delete lines[k];
 				if (linesCol && linesCol[k]) {
 					linesCol[newKey] = linesCol[k];
@@ -159,7 +166,7 @@ export class PenpaTools {
 	reducePenpaLines2WaypointLines = (list: Dictionary<number>, listCol?: Dictionary<string>, excludedLines: Dictionary = []): WayPointLine[] => {
 		let comblist = this.combineStraightPenpaLines(list, listCol, excludedLines);
 		let wpLines = this.penpaLines2WaypointLines(comblist, listCol);
-		let combined = PenpaTools.concatenateEndpoints(wpLines, excludedLines);
+		let combined = PenpaTools.concatenateEndpoints(wpLines);
 		return combined;
 	};
 
@@ -168,7 +175,7 @@ export class PenpaTools {
 		keys.sort(PenpaTools.comparePenpaLinePoints);
 		let listwp = keys.map(k => {
 			let rcs = k.split(',').map(this.point2RC);
-			let line: WayPointLine = { wayPoints: [...rcs], value: list[k], keys: k.split(',').map(Number) };
+			let line: WayPointLine = { wayPoints: [...rcs], value: Math.abs(list[k]), keys: k.split(',').map(Number), overDeletedGridLine: list[k] < 0 };
 			if (listCol && listCol[k]) line.cc = listCol[k];
 			return line;
 		});
@@ -207,7 +214,7 @@ export class PenpaTools {
 		return [[x1, y1], ...wp.slice(1, -1), [x2, y2]];
 	}
 
-	static concatenateEndpoints(listwp: WayPointLine[], excludedLines: Dictionary = []): WayPointLine[] {
+	static concatenateEndpoints(listwp: WayPointLine[]): WayPointLine[] {
 		listwp = JSON.parse(JSON.stringify(listwp));
 		let changes = 0;
 		do {
@@ -217,11 +224,11 @@ export class PenpaTools {
 				if ([30, 40, 98].includes(line1.value)) return; // don't combine short, double or X lines
 				let startpoint1 = line1.wayPoints[0].toString();
 				let endpoint1 = line1.wayPoints[line1.wayPoints.length - 1].toString();
-				if (excludedLines.length != 0 && excludedLines[PenpaTools.makePointPair(line1.keys[0], line1.keys[1])]) return;
+				//if (excludedLines[PenpaTools.makePointPair(line1.keys[0], line1.keys[1])]) return;
 				listwp.forEach(line2 => {
 					if (line1 === line2 || line1.value !== line2.value) return;
 					if (line1.cc !== line2.cc) return;
-					if (excludedLines.length != 0 && excludedLines[PenpaTools.makePointPair(line2.keys[0], line2.keys[1])]) return;
+					//if (excludedLines[PenpaTools.makePointPair(line2.keys[0], line2.keys[1])]) return;
 					let startpoint2 = line2.wayPoints[0].toString();
 					let endpoint2 = line2.wayPoints[line2.wayPoints.length - 1].toString();
 					if (endpoint2 === endpoint1) {

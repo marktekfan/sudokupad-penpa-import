@@ -817,7 +817,8 @@ export class PenpaToSclConverter {
 				ctx.target = 'overlay';
 			}
 			// This is a line over a deleted grid line -> Move to cell-grids to prevent visual outlines.
-			if (excludedLines.length != 0 && excludedLines[PenpaTools.makePointPair(line.keys[0], line.keys[line.keys.length - 1])]) {
+			//if (excludedLines[PenpaTools.makePointPair(line.keys[0], line.keys[line.keys.length - 1])]) {
+			if (line.overDeletedGridLine) {
 				ctx.target = 'cell-grids';
 			}
 			set_line_style(ctx, line.value);
