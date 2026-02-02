@@ -55,7 +55,10 @@ export function extractTriggerEffects(format, json) {
 			}));
 	}
 	else if((underlays.length > 0 || overlays.length > 0) && cages.length > 0) {
+		const rows = json.cells?.length || 9;
+		const cols = json.cells?.[0]?.length || 9;
 		let triggerLabels = [...new Set([...underlays, ...overlays]
+			.filter(({center}) => center[0] >= 0 && center[0] < rows && center[1] >= 0 && center[1] < cols) // Ensure center is within grid
 			.map(({text}) => text)
 			.filter(text => reTriggerLabel.test(text) && cages.filter(c => text === c.value).length > 0)
 		)].sort();
