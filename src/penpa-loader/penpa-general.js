@@ -2067,13 +2067,19 @@ function load(urlParam, type = 'url', origurl = null) {
     if (rtext_para[20] && rtext_para[20] === "true") {
         pu.multisolution = true;
     }
-
-    // Background image data
-    if (rtext_para[21]) {
-        let data = decrypt_data(rtext_para[21])
-        pu.bg_image_data = JSON.parse(data);
+    
+    // Handle logicmastersindia.com/penpa-edit links
+    // https://logicmastersindia.com/penpa-edit/js/general.js Line
+    if (rtext_para[21] === "false" || rtext_para[21] === "true") {
+        // They store additional flags in [21] - [29], which can be ignored when converting
     }
-
+    else {
+        // Background image data
+        if (rtext_para[21]) {
+            let data = decrypt_data(rtext_para[21])
+            pu.bg_image_data = JSON.parse(data);
+        }
+    }
     // version save
     if (rtext[10]) {
         pu.version = JSON.parse(rtext[10]);
