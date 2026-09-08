@@ -31,7 +31,7 @@ export const PuzzleZipper = (() => {
 		else if(o !== null && typeof o === 'object') {
 			Object.keys(o).forEach(key => {
 				clearEmptyArrays(o[key]);
-				if(Array.isArray(o[key]) && o[key].length === 0) delete o[key];
+				if(Array.isArray(o[key]) && o[key].length === 0 && key !== 'foglight') delete o[key];
 			});
 		}
 		return o;
@@ -67,6 +67,9 @@ export const PuzzleZipper = (() => {
 		if(typeof jsonStr !== 'string') jsonStr = JSON.stringify(jsonStr);
 		var zipped = JSON.parse(jsonStr);
 		clearEmptyArrays(zipped);
+		if (Array.isArray(zipped.foglight) && zipped.foglight.length === 0)
+			return JSON.stringify(zipped);
+
 		mapProps(zipped, propMap);
 		mapValues(zipped, v => {
 			if(typeof v === 'string' && String(parseInt(v)) === v && v !== "NaN") v = parseInt(v);
