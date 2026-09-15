@@ -117,6 +117,10 @@ async function convertPuzzle(redirect = false) {
 	}
 }
 
+function OpenUrl() {
+	window.open(appState.outputUrl, '_blank');
+}
+
 async function CopyUrlToClipboard() {
 	// toast.add({ severity: 'success', summary: 'Generated URL copied to clipboard', xlife: 3000 });
 	// toast.add({ severity: 'contrast', summary: 'Generated URL copied to clipboard', xlife: 3000 });
@@ -191,12 +195,20 @@ function PasteNew(_: any) {
 			<div class="flex h-4rem">
 				<div>
 					<Button
+						label="Open URL"
+						@click="OpenUrl"
+						:disabled="!outputUrl"
+						class="my-2"
+					></Button>
+				</div>
+				<div>
+					<Button
 						icon-pos="right"
 						icon="pi pi-copy"
 						label="Copy URL to clipboard"
 						@click="CopyUrlToClipboard"
 						:disabled="!outputUrl"
-						class="my-2"
+						class="my-2 ml-3"
 					></Button>
 				</div>
 			</div>
