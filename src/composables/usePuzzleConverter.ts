@@ -57,6 +57,22 @@ export function usePuzzleConverter() {
 					appState.outputUrl = newUrl;
 					break;
 
+				case 'create-short-url':
+					//const response = {result: 'success', shortid: 'hpghpm3vr9'}
+					const response = await fetch("https://sudokupad.app/admin/createlink", {
+						"body": "{\"puzzle\":\"" + puzzleId + "\"}",
+						"method": "POST",
+					}).then(x => x.json());
+
+					if (response.result === 'success' && response.shortid) {
+						newUrl = destination + response.shortid;
+					} else {
+						throw new ConverterError('Failed to generate short URL');
+					}
+
+					appState.outputUrl = newUrl;
+					break;
+
 				// case 'create-tinyurl':
 				// 	{
 				// 		generatedUrlElem.value = '';

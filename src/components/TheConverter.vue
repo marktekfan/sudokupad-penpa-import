@@ -61,6 +61,7 @@ interface AppActionItem {
 const converterActions: AppActionItem[] = [
 	{ name: 'Open in new tab', value: 'open' },
 	{ name: 'Create URL', value: 'create-url' },
+	{ name: 'Generate Short URL', value: 'create-short-url' },
 	/*
 	{ name: "Create short TinyPuz.com", value: "create-tinyurl" },
 	*/
@@ -175,7 +176,7 @@ function PasteNew(_: any) {
 			</Button>
 		</div>
 
-		<div v-show="selectedAction == 'create-url' || outputUrl" class="flex flex-column gap-1">
+		<div v-show="selectedAction == 'create-url' || selectedAction == 'create-short-url' || outputUrl" class="flex flex-column gap-1">
 			<span> Generated URL </span>
 			<Textarea
 				ref="outputTextArea"

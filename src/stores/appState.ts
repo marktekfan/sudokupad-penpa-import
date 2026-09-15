@@ -4,7 +4,7 @@ import { useStorage } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
-export type AppAction = 'open' | 'create-url' | 'convert-tojson' | 'edit-metadata' | '-';
+export type AppAction = 'open' | 'create-url' | 'create-short-url' | 'convert-tojson' | 'edit-metadata' | '-';
 
 export const useAppState = defineStore('AppState', () => {
 	const errorMessage = ref('');
