@@ -6,6 +6,7 @@ import { PuzzleLoader } from '@/sudokupad/puzzleloader';
 import { loadFPuzzle } from '@/sudokupad/fpuzzlesdecoder';
 import { getMetadata } from '@/edit-metadata';
 import stringifyPretty from 'json-stringify-pretty-compact';
+import { gtag } from '@/gtag';
 
 const reFPuzPrefix = /^(fpuz(?:zles)?)(.*)/;
 const stripFPuzPrefix = (fpuzzle: string) => fpuzzle.replace(reFPuzPrefix, '$2');
@@ -42,6 +43,12 @@ export function usePuzzleConverter() {
 			}
 			let newUrl = destination + puzzleId;
 			//console.log(redirect, redirect.length);
+
+			gtag('event', 'convert_puzzle', {
+				'action': selectedAction,
+				'destination': destination,
+				'settings_visible': appState.settingsVisible
+			});
 
 			if (redirect) {
 				window.open(newUrl, '_self');

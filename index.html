@@ -11,10 +11,9 @@
 			function gtag() {
 				dataLayer.push(arguments);
 			}
-			if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-				gtag('js', new Date());
-				gtag('config', 'G-KNP4FWPNGW');
-			}
+			var param = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')  ? {'debug_mode':true} : {}
+			gtag('js', new Date());
+			gtag('config', 'G-KNP4FWPNGW', param);
 		</script>
 		<title>SudokuPad Penpa Converter</title>
 	</head>

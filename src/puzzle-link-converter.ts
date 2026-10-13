@@ -8,6 +8,7 @@ import { expandTinyUrlAsync } from './tinyurl';
 import { ConverterError } from './converter-error';
 import { type FlagValues } from './converter-flags';
 import { fpuzHasRemoteFog, convertRemoteFog, convertRemoteFogPuzzleId } from './foglink-feature';
+import { gtag } from './gtag';
 
 const reFpuzzlesUrl = /^\s*(http[s]?:\/\/)?([a-z]+\.)?f-puzzles.com\/.*\?load=(?<fpuzzleid>[^&]+)/;
 const reSudokuPadUrl = /^\s*(?<puzzleid>sudokupad:\/\/puzzle\/(.+))/;
@@ -41,6 +42,9 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 			.map(([k, v]) => `setting-${k}=${v}`)
 			.join('&');
 		delete puzzle.settings;
+		gtag('event', 'convert_penpa', {
+			'settings': settings
+		});
 		return encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 	}
 
@@ -56,8 +60,12 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 				.map(([k, v]) => `setting-${k}=${v}`)
 				.join('&');
 			delete puzzle.settings;
+			gtag('event', 'convert_fpuzzles', {
+				'settings': settings
+			});
 			return encodeSCLPuz(puzzle) + (settings ? '?' + settings : '');
 		} else {
+			gtag('event', 'convert_fpuzzles');
 			return 'fpuzzles' + fpuzzleid;
 		}
 	}
@@ -101,6 +109,7 @@ export async function convertPuzzleAsync(input: string, flags: FlagValues) {
 				convertRemoteFog(puzzle as any);
 			}
 
+			gtag('event', 'convert_json');			
 			return convertToPuzzleId(puzzle, flags);
 
 		} catch (ex: any) {

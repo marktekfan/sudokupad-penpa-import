@@ -4,12 +4,13 @@ import { ref } from 'vue';
 import type { MenuItemCommandEvent } from 'primevue/menuitem';
 import type { BasicColorSchema } from '@vueuse/core/index.cjs';
 import { useAppState } from '@/stores/appState';
-import { nextTick } from 'vue';
+import { nextTick, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { appearenceIcon, icons } from '@/composables/useAppearance';
+import { gtag } from '@/gtag';
 
 const appState = useAppState();
-const { appearance } = storeToRefs(appState);
+const { appearance, settingsVisible } = storeToRefs(appState);
 
 const menu = ref();
 const toggleAppearanceMenu = async (event: any) => {
@@ -19,6 +20,12 @@ const toggleAppearanceMenu = async (event: any) => {
 		menu.value.changeFocusedOptionIndex(index);
 	});
 };
+
+watch(settingsVisible, visible => {
+	gtag('event', 'toggle_converter_options', {
+		'settings_visible': visible
+	});
+})
 
 const appearanceMenuItems = [
 	{
